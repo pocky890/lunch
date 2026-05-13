@@ -315,10 +315,14 @@ function App() {
     if (!s || isDeadlinePassed(s.deadline)) return alert("已超過截止時間！");
     const ptsObj = await fGet("lunch/participants");
     const existing = snapToArr(ptsObj);
-    if (existing.some(p=>p.name===name)) { setPts(existing); setPhase("joined"); return; }
-    if (existing.some(p=>p.number===num)) { setNumWarn(`數字 ${num} 已被選走！請換一個`); return; }
-    const newRef = fRef("lunch/participants").push();
-    await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()});
+    const myEntry = existing.find(p=>p.name===name);
+    if (existing.some(p=>p.id!==(myEntry?.id) && p.number===num)) { setNumWarn(`數字 ${num} 已被選走！請換一個`); return; }
+    if (myEntry) {
+      await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num});
+    } else {
+      const newRef = fRef("lunch/participants").push();
+      await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()});
+    }
     if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) {
       await fRef(`lunch/restaurants/${form.category}`).push(rest);
       setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]}));
@@ -503,12 +507,21 @@ function App() {
     </div>
   );
 
-  if (phase==="joined") return (
-    <div className="page"><PasswordModal />
-      <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
-      <HeaderBar /><PtList list={pts} /><WeeklyRecord />
-    </div>
-  );
+  if (phase==="joined") {
+    function editMyEntry() {
+      const myEntry = pts.find(p=>p.name===form.name);
+      if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""}));
+      setPhase("join");
+    }
+    return (
+      <div className="page"><PasswordModal />
+        <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
+        <HeaderBar /><PtList list={pts} />
+        <button className="ghost" style={{marginTop:"1rem"}} onClick={editMyEntry}>✏️ 修改我的選擇</button>
+        <WeeklyRecord />
+      </div>
+    );
+  }
 
   if (phase==="results") {
     if (!result?.winner || pts.length < 2) return (
