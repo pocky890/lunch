@@ -470,15 +470,15 @@ function App() {
 
   if (phase==="setup") return (
     <div className="page"><PasswordModal />
-      <h2>🎰 午餐大樂透</h2><p style={{marginBottom:"1rem"}}>選好店、押好號，時間到準時開獎！</p>
-      <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:"1.25rem",alignItems:"start"}}>
-        <div><WeeklyRecord /></div>
-        <div>
-          <div className="card" style={{textAlign:"center"}}>
-            <p style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)",marginBottom:"14px",marginTop:0}}>⏰ 今天幾點開獎？</p>
-            <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{maxWidth:"220px",margin:"0 auto 14px",textAlign:"center"}} />
-            <button onClick={doSetup}>🚀 開始今天的樂透！</button>
-          </div>
+      <div style={{textAlign:"center",marginBottom:"2rem"}}>
+        <h2>🎰 午餐大樂透</h2>
+        <p style={{marginTop:"6px"}}>選好店、押好號，時間到準時開獎！</p>
+      </div>
+      <div style={{maxWidth:"320px",margin:"0 auto"}}>
+        <div className="card" style={{textAlign:"center"}}>
+          <p style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)",marginBottom:"14px",marginTop:0}}>⏰ 今天幾點開獎？</p>
+          <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{textAlign:"center"}} />
+          <button onClick={doSetup}>🚀 開始今天的樂透！</button>
         </div>
       </div>
     </div>
