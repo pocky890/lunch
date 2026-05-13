@@ -331,9 +331,14 @@ function App() {
   }
 
   async function doReset() {
-    await fSet("lunch/session", null); await fSet("lunch/participants", null);
+    const today = todayStr();
+    await fSet("lunch/session", null);
+    await fSet("lunch/participants", null);
+    await fSet(`lunch/drawn/${today}`, null);
+    await fRef(`lunch/weekly/${today}`).remove();
     savedRef.current = false;
     setSess(null); setPts([]); setResult(null); setCd("--:--");
+    setWeekly(w => { const n={...w}; delete n[today]; return n; });
     setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"});
     setPhase("setup");
   }
@@ -518,6 +523,7 @@ function App() {
         <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
         <HeaderBar /><PtList list={pts} />
         <button className="ghost" style={{marginTop:"1rem"}} onClick={editMyEntry}>✏️ 修改我的選擇</button>
+        <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
         <WeeklyRecord />
       </div>
     );
