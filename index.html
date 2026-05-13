@@ -129,6 +129,98 @@ function determineResult(pts, drawnNumber) {
   return { winner: sorted[0], soloWin: false, sorted };
 }
 
+function StatsPanel({weekly}) {
+  const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
+  const allRecords = Object.entries(weekly);
+
+  const restCounts = {};
+  allRecords.forEach(([, rec]) => {
+    if (rec?.rest) restCounts[rec.rest] = (restCounts[rec.rest] || 0) + 1;
+  });
+  const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]);
+
+  const soloMap = {};
+  allRecords.forEach(([date, rec]) => {
+    if (rec?.soloWin && rec.winner) {
+      if (!soloMap[rec.winner]) soloMap[rec.winner] = [];
+      soloMap[rec.winner].push(date);
+    }
+  });
+  const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
+
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const BAR_COLORS = isDark
+    ? ["#818CF8","#34D399","#FB923C","#60A5FA","#F472B6","#FBBF24","#86EFAC","#F87171"]
+    : ["#4338CA","#059669","#C2410C","#1D4ED8","#BE185D","#B45309","#15803D","#DC2626"];
+  const tickColor = isDark ? "#aeaeb2" : "#3a3a3c";
+  const gridColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
+
+  useEffect(() => {
+    if (!chartRef.current || sortedRests.length === 0) return;
+    if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
+    chartInstanceRef.current = new Chart(chartRef.current, {
+      type: "bar",
+      data: {
+        labels: sortedRests.map(([r]) => r),
+        datasets: [{
+          data: sortedRests.map(([,c]) => c),
+          backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]),
+          borderColor:     sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]),
+          borderWidth: 0, borderRadius: 6,
+        }]
+      },
+      options: {
+        indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 次` } }
+        },
+        scales: {
+          x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0, color: tickColor }, grid: { color: gridColor } },
+          y: { ticks: { font: { size: 13, weight: "600" }, color: tickColor }, grid: { display: false } }
+        }
+      }
+    });
+    return () => { if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null; } };
+  }, [JSON.stringify(sortedRests)]);
+
+  function fmtDate(ds) { const [,m,d] = ds.split("-"); return `${parseInt(m)}/${parseInt(d)}`; }
+
+  return (
+    <div style={{marginTop:"1rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
+      <div className="card">
+        <p style={{fontSize:"15px",fontWeight:"700",marginTop:0,marginBottom:"14px",color:"var(--t1)"}}>店家中選次數</p>
+        {sortedRests.length === 0
+          ? <p style={{textAlign:"center",color:"var(--t3)"}}>尚無紀錄</p>
+          : <div style={{height:`${Math.max(120, sortedRests.length*50)}px`,position:"relative"}}>
+              <canvas ref={chartRef} />
+            </div>
+        }
+      </div>
+      <div className="card">
+        <p style={{fontSize:"15px",fontWeight:"700",marginTop:0,marginBottom:"14px",color:"var(--t1)"}}>獨贏紀錄</p>
+        {sortedSolo.length === 0
+          ? <p style={{textAlign:"center",color:"var(--t3)"}}>尚無獨贏紀錄</p>
+          : sortedSolo.map(([name, dates]) => (
+              <div key={name} style={{display:"flex",alignItems:"flex-start",gap:"12px",marginBottom:"14px"}}>
+                <div style={{minWidth:"72px",flexShrink:0}}>
+                  <div style={{fontSize:"17px",fontWeight:"700",color:"var(--t1)"}}>{name}</div>
+                  <div style={{fontSize:"14px",fontWeight:"700",color:"#E8610A",marginTop:"2px"}}>{dates.length} 次</div>
+                </div>
+                <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"5px",paddingTop:"4px"}}>
+                  {[...dates].sort().map(d => (
+                    <span key={d} style={{background:"#FAEEDA",border:"1px solid #BA7517",color:"#633806",borderRadius:"5px",padding:"3px 9px",fontSize:"13px",fontWeight:"600"}}>{fmtDate(d)}</span>
+                  ))}
+                </div>
+              </div>
+            ))
+        }
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [phase,      setPhase]      = useState("loading");
   const [sess,       setSess]       = useState(null);
@@ -309,7 +401,7 @@ function App() {
             );
           })}
         </div>
-        {showStats && <StatsPanel />}
+        {showStats && <StatsPanel weekly={weekly} />}
       </div>
     );
   }
@@ -337,99 +429,6 @@ function App() {
             </div>
           );
         })}
-      </div>
-    );
-  }
-
-  function StatsPanel() {
-    const chartRef = useRef(null);
-    const chartInstanceRef = useRef(null);
-    const allRecords = Object.entries(weekly);
-
-    const restCounts = {};
-    allRecords.forEach(([, rec]) => {
-      if (rec?.rest) restCounts[rec.rest] = (restCounts[rec.rest] || 0) + 1;
-    });
-    const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]);
-
-    const soloMap = {};
-    allRecords.forEach(([date, rec]) => {
-      if (rec?.soloWin && rec.winner) {
-        if (!soloMap[rec.winner]) soloMap[rec.winner] = [];
-        soloMap[rec.winner].push(date);
-      }
-    });
-    const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
-
-    // 亮色/暗色各用不同色票：亮色用深飽和色，暗色用高亮度色
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const BAR_COLORS = isDark
-      ? ["#818CF8","#34D399","#FB923C","#60A5FA","#F472B6","#FBBF24","#86EFAC","#F87171"]
-      : ["#4338CA","#059669","#C2410C","#1D4ED8","#BE185D","#B45309","#15803D","#DC2626"];
-    const tickColor  = isDark ? "#aeaeb2" : "#3a3a3c";
-    const gridColor  = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-
-    useEffect(() => {
-      if (!chartRef.current || sortedRests.length === 0) return;
-      if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
-      chartInstanceRef.current = new Chart(chartRef.current, {
-        type: "bar",
-        data: {
-          labels: sortedRests.map(([r]) => r),
-          datasets: [{
-            data: sortedRests.map(([,c]) => c),
-            backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]),
-            borderColor:     sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]),
-            borderWidth: 0, borderRadius: 6,
-          }]
-        },
-        options: {
-          indexAxis: "y", responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 次` } }
-          },
-          scales: {
-            x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0, color: tickColor }, grid: { color: gridColor } },
-            y: { ticks: { font: { size: 13, weight: "600" }, color: tickColor }, grid: { display: false } }
-          }
-        }
-      });
-      return () => { if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null; } };
-    }, [JSON.stringify(sortedRests)]);
-
-    function fmtDate(ds) { const [,m,d] = ds.split("-"); return `${parseInt(m)}/${parseInt(d)}`; }
-
-    return (
-      <div style={{marginTop:"1rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
-        <div className="card">
-          <p style={{fontSize:"15px",fontWeight:"700",marginTop:0,marginBottom:"14px",color:"var(--t1)"}}>店家中選次數</p>
-          {sortedRests.length === 0
-            ? <p style={{textAlign:"center",color:"var(--t3)"}}>尚無紀錄</p>
-            : <div style={{height:`${Math.max(120, sortedRests.length*50)}px`,position:"relative"}}>
-                <canvas ref={chartRef} />
-              </div>
-          }
-        </div>
-        <div className="card">
-          <p style={{fontSize:"15px",fontWeight:"700",marginTop:0,marginBottom:"14px",color:"var(--t1)"}}>獨贏紀錄</p>
-          {sortedSolo.length === 0
-            ? <p style={{textAlign:"center",color:"var(--t3)"}}>尚無獨贏紀錄</p>
-            : sortedSolo.map(([name, dates]) => (
-                <div key={name} style={{display:"flex",alignItems:"flex-start",gap:"12px",marginBottom:"14px"}}>
-                  <div style={{minWidth:"72px",flexShrink:0}}>
-                    <div style={{fontSize:"17px",fontWeight:"700",color:"var(--t1)"}}>{name}</div>
-                    <div style={{fontSize:"14px",fontWeight:"700",color:"#E8610A",marginTop:"2px"}}>{dates.length} 次</div>
-                  </div>
-                  <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"5px",paddingTop:"4px"}}>
-                    {[...dates].sort().map(d => (
-                      <span key={d} style={{background:"#FAEEDA",border:"1px solid #BA7517",color:"#633806",borderRadius:"5px",padding:"3px 9px",fontSize:"13px",fontWeight:"600"}}>{fmtDate(d)}</span>
-                    ))}
-                  </div>
-                </div>
-              ))
-          }
-        </div>
       </div>
     );
   }
