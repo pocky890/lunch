@@ -112,7 +112,7 @@ async function getOrDrawNumber(dateStr) {
   let drawn = null;
   await fRef(`lunch/drawn/${dateStr}`).transaction(current => {
     if (current !== null) { drawn = current; return; }
-    drawn = Math.floor(Math.random() * 99) + 1;
+    drawn = Math.floor(Math.random() * 90) + 10;
     return drawn;
   });
   if (drawn === null) drawn = await fGet(`lunch/drawn/${dateStr}`);
@@ -310,7 +310,7 @@ function App() {
     const rest = form.rest==="cust" ? form.cust.trim() : form.rest;
     if (!rest) return alert("請選擇或輸入店家");
     const num = parseInt(form.number);
-    if (!num || num < 1 || num > 99) return alert("請輸入 1 到 99 之間的整數");
+    if (!num || num < 10 || num > 99) return alert("請輸入 10 到 99 之間的整數");
     const s = await fGet("lunch/session");
     if (!s || isDeadlinePassed(s.deadline)) return alert("已超過截止時間！");
     const ptsObj = await fGet("lunch/participants");
@@ -473,12 +473,12 @@ function App() {
           {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}
         </>)}
 
-        <label>選一個號碼（1 ~ 99，不可重複）</label>
+        <label>選一個號碼（10 ~ 99，不可重複）</label>
         <div style={{display:"flex",gap:"12px",alignItems:"flex-start"}}>
           <div style={{flex:"0 0 110px"}}>
-            <input type="number" min={1} max={99} value={form.number}
+            <input type="number" min={10} max={99} value={form.number}
               onChange={e=>{setForm({...form,number:e.target.value});setNumWarn("");}}
-              placeholder="1 ~ 99" style={{marginBottom:"4px"}} />
+              placeholder="10 ~ 99" style={{marginBottom:"4px"}} />
             {numWarn && <p style={{color:"#E24B4A",fontSize:"12px",marginTop:0,marginBottom:"8px"}}>{numWarn}</p>}
           </div>
           <div style={{flex:1,paddingTop:"2px"}}>
