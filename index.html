@@ -455,10 +455,10 @@ function App() {
 
   if (phase==="setup") return (
     <div className="page"><PasswordModal />
+      <h2>🎰 午餐大樂透</h2><p style={{marginBottom:"1rem"}}>選好店、押好號，時間到準時開獎！</p>
       <div className="layout">
         <div className="layout-main">
-          <h2>🎰 午餐大樂透</h2><p>選好店、押好號，時間到準時開獎！</p>
-          <div className="card gap">
+          <div className="card">
             <label>⏰ 今天幾點開獎？</label>
             <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
             <button onClick={doSetup}>🚀 開始今天的樂透！</button>
@@ -471,9 +471,9 @@ function App() {
 
   if (phase==="join") return (
     <div className="page"><PasswordModal />
+      <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
       <div className="layout">
         <div className="layout-main">
-          <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
           <HeaderBar />
           <div className="card">
             <label>你的名字</label>
@@ -531,9 +531,9 @@ function App() {
     }
     return (
       <div className="page"><PasswordModal />
+        <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
         <div className="layout">
           <div className="layout-main">
-            <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
             <HeaderBar /><PtList list={pts} />
             <button className="ghost" style={{marginTop:"1rem"}} onClick={editMyEntry}>✏️ 修改我的選擇</button>
             <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
