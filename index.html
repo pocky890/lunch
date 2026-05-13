@@ -457,6 +457,7 @@ function App() {
     <div className="page"><PasswordModal />
       <h2>🎰 午餐大樂透</h2><p style={{marginBottom:"1rem"}}>選好店、押好號，時間到準時開獎！</p>
       <div className="layout">
+        <div className="layout-side"><WeeklyRecord /></div>
         <div className="layout-main">
           <div className="card">
             <label>⏰ 今天幾點開獎？</label>
@@ -464,7 +465,6 @@ function App() {
             <button onClick={doSetup}>🚀 開始今天的樂透！</button>
           </div>
         </div>
-        <div className="layout-side"><WeeklyRecord /></div>
       </div>
     </div>
   );
@@ -472,9 +472,10 @@ function App() {
   if (phase==="join") return (
     <div className="page"><PasswordModal />
       <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
+      <HeaderBar />
       <div className="layout">
+        <div className="layout-side"><WeeklyRecord /></div>
         <div className="layout-main">
-          <HeaderBar />
           <div className="card">
             <label>你的名字</label>
             <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="輸入姓名" />
@@ -518,7 +519,6 @@ function App() {
           </div>
           {pts.length>0 && <div className="gap"><PtList list={pts} /></div>}
         </div>
-        <div className="layout-side"><WeeklyRecord /></div>
       </div>
     </div>
   );
@@ -532,13 +532,14 @@ function App() {
     return (
       <div className="page"><PasswordModal />
         <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
+        <HeaderBar />
         <div className="layout">
+          <div className="layout-side"><WeeklyRecord /></div>
           <div className="layout-main">
-            <HeaderBar /><PtList list={pts} />
+            <PtList list={pts} />
             <button className="ghost" style={{marginTop:"1rem"}} onClick={editMyEntry}>✏️ 修改我的選擇</button>
             <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
           </div>
-          <div className="layout-side"><WeeklyRecord /></div>
         </div>
       </div>
     );
@@ -548,11 +549,11 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div className="page"><PasswordModal />
         <div className="layout">
+          <div className="layout-side"><WeeklyRecord /></div>
           <div className="layout-main">
             <h2>時間到！</h2><p style={{marginBottom:"1.5rem"}}>今天只有 {pts.length} 人參加，無法開獎</p>
             <button className="ghost" onClick={openReset}>重新開始</button>
           </div>
-          <div className="layout-side"><WeeklyRecord /></div>
         </div>
       </div>
     );
@@ -562,6 +563,7 @@ function App() {
     return (
       <div className="page"><PasswordModal />
         <div className="layout">
+          <div className="layout-side"><WeeklyRecord /></div>
           <div className="layout-main">
             <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
               <p style={{marginTop:0,marginBottom:"6px",fontSize:"14px",letterSpacing:"1px",textTransform:"uppercase",color:"var(--t3)"}}>今天的號碼</p>
@@ -606,7 +608,6 @@ function App() {
             </div>
             <button className="ghost" onClick={openReset}>重新開始</button>
           </div>
-          <div className="layout-side"><WeeklyRecord /></div>
         </div>
       </div>
     );
