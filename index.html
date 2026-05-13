@@ -27,14 +27,15 @@
     .ghost { background: transparent !important; border: 1px solid var(--bd2) !important; color: var(--t2) !important; font-weight: 400 !important; }
     .card { background: var(--bg1); border: 1px solid var(--bd1); border-radius: var(--rl); padding: 1.4rem; }
     .page { max-width: 1020px; margin: 0 auto; padding: 1.5rem 1rem; }
-    .layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .layout   { display: flex; gap: 1.25rem; align-items: flex-start; }
     .layout-main { flex: 1; min-width: 0; }
-    .layout-side { width: 300px; flex-shrink: 0; position: sticky; top: 1.5rem; }
-    .col { flex: 1; min-width: 0; }
-    .col-sticky { width: 300px; flex-shrink: 0; }
-    @media (max-width: 720px) {
+    .layout-side { width: 320px; flex-shrink: 0; position: sticky; top: 1.5rem; }
+    .layout-3 { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 1.25rem; align-items: start; }
+    .col { min-width: 0; }
+    @media (max-width: 780px) {
       .layout { flex-direction: column; }
-      .layout-side, .col-sticky { width: 100%; }
+      .layout-side { width: 100%; position: static; }
+      .layout-3 { grid-template-columns: 1fr; }
     }
     .gap { margin-top: 1rem; }
     .row { display: flex; gap: 8px; }
@@ -476,8 +477,8 @@ function App() {
     <div className="page"><PasswordModal />
       <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
       <HeaderBar />
-      <div className="layout" style={{alignItems:"flex-start"}}>
-        <div className="col-sticky" style={{marginTop:0}}><WeeklyRecord /></div>
+      <div className="layout-3">
+        <div className="col"><WeeklyRecord /></div>
         <div className="col">
           <div className="card">
             <label>你的名字</label>
@@ -521,7 +522,7 @@ function App() {
             <button className="ghost" onClick={openReset}>重新設定時間</button>
           </div>
         </div>
-        <div className="col-sticky">
+        <div className="col">
           {pts.length>0
             ? <PtList list={pts} />
             : <div className="card" style={{textAlign:"center",color:"var(--t3)",fontSize:"15px",padding:"2rem 1rem"}}>尚無人加入</div>}
@@ -540,13 +541,13 @@ function App() {
       <div className="page"><PasswordModal />
         <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
         <HeaderBar />
-        <div className="layout">
-          <div className="col-sticky"><WeeklyRecord /></div>
+        <div className="layout-3">
+          <div className="col"><WeeklyRecord /></div>
           <div className="col">
             <button className="ghost" onClick={editMyEntry}>✏️ 修改我的選擇</button>
             <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
           </div>
-          <div className="col-sticky"><PtList list={pts} /></div>
+          <div className="col"><PtList list={pts} /></div>
         </div>
       </div>
     );
