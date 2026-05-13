@@ -30,7 +30,7 @@
     .layout   { display: flex; gap: 1.25rem; align-items: flex-start; }
     .layout-main { flex: 1; min-width: 0; }
     .layout-side { width: 320px; flex-shrink: 0; position: sticky; top: 1.5rem; }
-    .layout-3 { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 1.25rem; align-items: start; }
+    .layout-3 { display: grid; grid-template-columns: 1.4fr 1.4fr 1fr; gap: 1.25rem; align-items: start; }
     .col { min-width: 0; }
     @media (max-width: 780px) {
       .layout { flex-direction: column; }
@@ -426,12 +426,15 @@ function App() {
   }
 
   function HeaderBar() {
-    const cell = {background:"var(--bg2)",border:"1px solid var(--bd1)",borderRadius:"var(--r)",padding:"10px 20px",whiteSpace:"nowrap"};
+    const cell = {background:"var(--bg2)",border:"1px solid var(--bd1)",borderRadius:"var(--r)",padding:"12px 24px",whiteSpace:"nowrap",display:"flex",alignItems:"center",justifyContent:"center"};
     return (
       <div style={{display:"flex",gap:"8px",marginBottom:"1rem",justifyContent:"center"}}>
-        <div style={{...cell,fontSize:"15px",color:"var(--t2)"}}>截止 <strong style={{color:"var(--t1)"}}>{sess?.deadline}</strong></div>
-        <div style={{...cell,fontSize:"15px",color:"var(--t2)"}}>已加入 <strong style={{color:"var(--t1)"}}>{pts.length}</strong> 人</div>
-        <div style={{...cell,fontSize:"24px",fontWeight:"600",color:"var(--t1)",fontVariantNumeric:"tabular-nums",letterSpacing:"2px",minWidth:"110px",textAlign:"center"}}>{cd}</div>
+        <div style={{...cell,fontSize:"18px",color:"var(--t2)"}}>截止 <strong style={{color:"var(--t1)",fontSize:"22px",marginLeft:"6px"}}>{sess?.deadline}</strong></div>
+        <div style={{...cell,fontSize:"18px",color:"var(--t2)"}}>已加入 <strong style={{color:"var(--t1)",fontSize:"22px",margin:"0 6px"}}>{pts.length}</strong> 人</div>
+        <div style={{...cell,flexDirection:"column",gap:"2px",minWidth:"120px"}}>
+          <span style={{fontSize:"11px",color:"var(--t3)",letterSpacing:"1px",textTransform:"uppercase"}}>開獎倒數</span>
+          <span style={{fontSize:"26px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",letterSpacing:"2px"}}>{cd}</span>
+        </div>
       </div>
     );
   }
