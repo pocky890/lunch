@@ -501,26 +501,22 @@ function App() {
               {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}
             </>)}
             <label>選一個號碼（1 ~ 99，不可重複）</label>
-            <div style={{display:"flex",gap:"12px",alignItems:"flex-start"}}>
-              <div style={{flex:"0 0 100px"}}>
-                <input type="text" inputMode="numeric" maxLength={2} value={form.number}
-                  onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}}
-                  placeholder="1 ~ 99" style={{marginBottom:"4px"}} />
-                {numWarn && <p style={{color:"#E24B4A",fontSize:"12px",marginTop:0,marginBottom:"8px"}}>{numWarn}</p>}
-              </div>
-              <div style={{flex:1,paddingTop:"2px"}}>
+            <input type="text" inputMode="numeric" maxLength={2} value={form.number}
+              onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}}
+              placeholder="1 ~ 99" style={{marginBottom:"4px"}} />
+            {numWarn && <p style={{color:"#E24B4A",fontSize:"12px",marginTop:0,marginBottom:"8px"}}>{numWarn}</p>}
+            {takenNums.length>0 && (
+              <div style={{marginBottom:"12px"}}>
                 <p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"6px"}}>已被選走</p>
-                {takenNums.length===0
-                  ? <p style={{fontSize:"13px",color:"var(--t3)",marginTop:0}}>（尚無人選）</p>
-                  : <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
-                      {takenNums.map(({num,name})=>(
-                        <span key={num} style={{background:"var(--bg2)",border:"1px solid var(--bd2)",borderRadius:"6px",padding:"2px 7px",fontSize:"12px",color:"var(--t2)",whiteSpace:"nowrap"}}>
-                          {num} <span style={{color:"var(--t3)"}}>({name})</span>
-                        </span>
-                      ))}
-                    </div>}
+                <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
+                  {takenNums.map(({num,name})=>(
+                    <span key={num} style={{background:"var(--bg2)",border:"1px solid var(--bd2)",borderRadius:"6px",padding:"2px 7px",fontSize:"12px",color:"var(--t2)",whiteSpace:"nowrap"}}>
+                      {num} <span style={{color:"var(--t3)"}}>({name})</span>
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <button onClick={doJoin}>確認加入 →</button>
             <button className="ghost" onClick={openReset}>重新設定時間</button>
           </div>
