@@ -26,7 +26,14 @@
     button:hover { opacity: .88; }
     .ghost { background: transparent !important; border: 1px solid var(--bd2) !important; color: var(--t2) !important; font-weight: 400 !important; }
     .card { background: var(--bg1); border: 1px solid var(--bd1); border-radius: var(--rl); padding: 1.4rem; }
-    .page { max-width: 480px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .page { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .layout { display: flex; gap: 1.5rem; align-items: flex-start; }
+    .layout-main { flex: 1; min-width: 0; }
+    .layout-side { width: 320px; flex-shrink: 0; position: sticky; top: 1.5rem; }
+    @media (max-width: 680px) {
+      .layout { flex-direction: column; }
+      .layout-side { width: 100%; position: static; }
+    }
     .gap { margin-top: 1rem; }
     .row { display: flex; gap: 8px; }
     .badge-solo { font-size: 12px; background: #FAEEDA; color: #633806; padding: 2px 8px; border-radius: 5px; margin-top: 4px; font-weight: 600; }
@@ -448,67 +455,71 @@ function App() {
 
   if (phase==="setup") return (
     <div className="page"><PasswordModal />
-      <h2>🎰 午餐大樂透</h2><p>選好店、押好號，時間到準時開獎！</p>
-      <div className="card gap">
-        <label>⏰ 今天幾點開獎？</label>
-        <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
-        <button onClick={doSetup}>🚀 開始今天的樂透！</button>
+      <div className="layout">
+        <div className="layout-main">
+          <h2>🎰 午餐大樂透</h2><p>選好店、押好號，時間到準時開獎！</p>
+          <div className="card gap">
+            <label>⏰ 今天幾點開獎？</label>
+            <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
+            <button onClick={doSetup}>🚀 開始今天的樂透！</button>
+          </div>
+        </div>
+        <div className="layout-side"><WeeklyRecord /></div>
       </div>
-      <WeeklyRecord />
     </div>
   );
 
   if (phase==="join") return (
     <div className="page"><PasswordModal />
-      <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
-      <HeaderBar />
-      <div className="card">
-        <label>你的名字</label>
-        <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="輸入姓名" />
-
-        <label>餐廳類型</label>
-        <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})} style={{marginBottom:form.category?"6px":"12px"}}>
-          <option value="">— 請選擇類型 —</option>
-          {CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}
-        </select>
-
-        {form.category && (<>
-          <label>想吃的店家</label>
-          <select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})} style={{marginBottom:form.rest==="cust"?"6px":"12px"}}>
-            <option value="">— 請選擇店家 —</option>
-            {(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}
-            <option value="cust">＋ 其他（自行輸入，下次會出現在選單）</option>
-          </select>
-          {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}
-        </>)}
-
-        <label>選一個號碼（1 ~ 99，不可重複）</label>
-        <div style={{display:"flex",gap:"12px",alignItems:"flex-start"}}>
-          <div style={{flex:"0 0 110px"}}>
-            <input type="text" inputMode="numeric" maxLength={2} value={form.number}
-              onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}}
-              placeholder="1 ~ 99" style={{marginBottom:"4px"}} />
-            {numWarn && <p style={{color:"#E24B4A",fontSize:"12px",marginTop:0,marginBottom:"8px"}}>{numWarn}</p>}
+      <div className="layout">
+        <div className="layout-main">
+          <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
+          <HeaderBar />
+          <div className="card">
+            <label>你的名字</label>
+            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="輸入姓名" />
+            <label>餐廳類型</label>
+            <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})} style={{marginBottom:form.category?"6px":"12px"}}>
+              <option value="">— 請選擇類型 —</option>
+              {CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}
+            </select>
+            {form.category && (<>
+              <label>想吃的店家</label>
+              <select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})} style={{marginBottom:form.rest==="cust"?"6px":"12px"}}>
+                <option value="">— 請選擇店家 —</option>
+                {(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}
+                <option value="cust">＋ 其他（自行輸入，下次會出現在選單）</option>
+              </select>
+              {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}
+            </>)}
+            <label>選一個號碼（1 ~ 99，不可重複）</label>
+            <div style={{display:"flex",gap:"12px",alignItems:"flex-start"}}>
+              <div style={{flex:"0 0 110px"}}>
+                <input type="text" inputMode="numeric" maxLength={2} value={form.number}
+                  onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}}
+                  placeholder="1 ~ 99" style={{marginBottom:"4px"}} />
+                {numWarn && <p style={{color:"#E24B4A",fontSize:"12px",marginTop:0,marginBottom:"8px"}}>{numWarn}</p>}
+              </div>
+              <div style={{flex:1,paddingTop:"2px"}}>
+                <p style={{fontSize:"11px",color:"var(--t3)",marginTop:0,marginBottom:"6px"}}>已被選走</p>
+                {takenNums.length===0
+                  ? <p style={{fontSize:"12px",color:"var(--t3)",marginTop:0}}>（尚無人選）</p>
+                  : <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
+                      {takenNums.map(({num,name})=>(
+                        <span key={num} style={{background:"var(--bg2)",border:"1px solid var(--bd2)",borderRadius:"6px",padding:"2px 7px",fontSize:"12px",color:"var(--t2)",whiteSpace:"nowrap"}}>
+                          {num} <span style={{color:"var(--t3)"}}>({name})</span>
+                        </span>
+                      ))}
+                    </div>}
+              </div>
+            </div>
+            <button onClick={doJoin}>確認加入 →</button>
+            <button className="ghost" onClick={openReset}>重新設定時間</button>
           </div>
-          <div style={{flex:1,paddingTop:"2px"}}>
-            <p style={{fontSize:"11px",color:"var(--t3)",marginTop:0,marginBottom:"6px"}}>已被選走</p>
-            {takenNums.length===0
-              ? <p style={{fontSize:"12px",color:"var(--t3)",marginTop:0}}>（尚無人選）</p>
-              : <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
-                  {takenNums.map(({num,name})=>(
-                    <span key={num} style={{background:"var(--bg2)",border:"1px solid var(--bd2)",borderRadius:"6px",padding:"2px 7px",fontSize:"12px",color:"var(--t2)",whiteSpace:"nowrap"}}>
-                      {num} <span style={{color:"var(--t3)"}}>({name})</span>
-                    </span>
-                  ))}
-                </div>}
-          </div>
+          {pts.length>0 && <div className="gap"><PtList list={pts} /></div>}
         </div>
-
-        <button onClick={doJoin}>確認加入 →</button>
-        <button className="ghost" onClick={openReset}>重新設定時間</button>
+        <div className="layout-side"><WeeklyRecord /></div>
       </div>
-      {pts.length>0 && <div className="gap"><PtList list={pts} /></div>}
-      <WeeklyRecord />
     </div>
   );
 
@@ -520,11 +531,15 @@ function App() {
     }
     return (
       <div className="page"><PasswordModal />
-        <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
-        <HeaderBar /><PtList list={pts} />
-        <button className="ghost" style={{marginTop:"1rem"}} onClick={editMyEntry}>✏️ 修改我的選擇</button>
-        <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
-        <WeeklyRecord />
+        <div className="layout">
+          <div className="layout-main">
+            <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
+            <HeaderBar /><PtList list={pts} />
+            <button className="ghost" style={{marginTop:"1rem"}} onClick={editMyEntry}>✏️ 修改我的選擇</button>
+            <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
+          </div>
+          <div className="layout-side"><WeeklyRecord /></div>
+        </div>
       </div>
     );
   }
@@ -532,9 +547,13 @@ function App() {
   if (phase==="results") {
     if (!result?.winner || pts.length < 2) return (
       <div className="page"><PasswordModal />
-        <h2>時間到！</h2><p style={{marginBottom:"1.5rem"}}>今天只有 {pts.length} 人參加，無法開獎</p>
-        <button className="ghost" onClick={openReset}>重新開始</button>
-        <WeeklyRecord />
+        <div className="layout">
+          <div className="layout-main">
+            <h2>時間到！</h2><p style={{marginBottom:"1.5rem"}}>今天只有 {pts.length} 人參加，無法開獎</p>
+            <button className="ghost" onClick={openReset}>重新開始</button>
+          </div>
+          <div className="layout-side"><WeeklyRecord /></div>
+        </div>
       </div>
     );
     const {winner, soloWin, drawnNumber, sorted} = result;
@@ -542,52 +561,53 @@ function App() {
     const maxTotal = (pts.length-1)*50;
     return (
       <div className="page"><PasswordModal />
-        <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
-          <p style={{marginTop:0,marginBottom:"6px",fontSize:"14px",letterSpacing:"1px",textTransform:"uppercase",color:"var(--t3)"}}>今天的號碼</p>
-          <div style={{fontSize:"96px",fontWeight:"700",lineHeight:1,color:"var(--accent)",fontVariantNumeric:"tabular-nums"}}>{drawnNumber}</div>
-        </div>
-
-        {soloWin ? (<>
-          <div style={{background:"#FAEEDA",border:"2px solid #BA7517",borderRadius:"var(--rl)",padding:"1.5rem",marginBottom:"1rem",textAlign:"center"}}>
-            <div style={{fontSize:"14px",color:"#633806",marginBottom:"8px",fontWeight:"600",letterSpacing:"0.5px"}}>完全命中！獨贏！</div>
-            <div style={{fontSize:"32px",fontWeight:"800",color:"#412402",lineHeight:1.2}}>{winner.name}</div>
-            <div style={{fontSize:"18px",color:"#633806",marginTop:"10px"}}>{CAT_EMOJI[winner.category]} {winner.rest}</div>
-          </div>
-          <div className="card" style={{marginBottom:"1rem",textAlign:"center"}}>
-            <p style={{marginTop:0,marginBottom:"6px",fontSize:"15px"}}>請客方案</p>
-            <p style={{fontSize:"17px",color:"var(--t1)"}}>每人最多出 <strong>50 元</strong></p>
-            <p style={{marginTop:"4px",fontSize:"15px"}}>共 {pts.length-1} 人，上限共 {maxTotal} 元</p>
-          </div>
-        </>) : (<>
-          <div style={{background:"#E1F5EE",border:"2px solid #1D9E75",borderRadius:"var(--rl)",padding:"1.5rem",marginBottom:"1rem",textAlign:"center"}}>
-            <div style={{fontSize:"14px",color:"#085041",marginBottom:"8px",fontWeight:"600",letterSpacing:"0.5px"}}>最接近！各自付帳</div>
-            <div style={{fontSize:"36px",fontWeight:"800",color:"#04342C",lineHeight:1.2}}>{CAT_EMOJI[winner.category]} {winner.rest}</div>
-            <div style={{fontSize:"17px",color:"#1D9E75",marginTop:"10px"}}>由 <strong style={{color:"#04342C"}}>{winner.name}</strong> 選的</div>
-          </div>
-        </>)}
-
-        <div className="card" style={{marginBottom:"1rem"}}>
-          <p style={{fontSize:"14px",fontWeight:"600",letterSpacing:"0.5px",marginBottom:"12px",marginTop:0}}>本次排名</p>
-          {allSorted.map((p,i) => {
-            const dist = Math.abs(p.number - drawnNumber);
-            const isWinner = p.id === winner.id;
-            const rampIdx = pts.findIndex(x=>x.id===p.id);
-            const ramp = RAMPS[rampIdx%RAMPS.length];
-            return (
-              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 12px",background:isWinner?ramp.bg:"transparent",border:isWinner?`1px solid ${ramp.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"4px"}}>
-                <span style={{fontSize:"15px",color:"var(--t3)",width:"26px"}}>{i+1}</span>
-                <span style={{flex:1,fontWeight:isWinner?"700":"400",fontSize:"16px",color:isWinner?ramp.tx:"var(--t1)"}}>{p.name}</span>
-                <span style={{fontSize:"17px",fontWeight:"600",color:isWinner?ramp.tx:"var(--t2)",marginRight:"10px"}}>#{p.number}</span>
-                <span style={{fontSize:"14px",color:isWinner?ramp.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>
-                  {dist===0 ? "🎯 命中" : `距離 ${dist}`}
-                </span>
+        <div className="layout">
+          <div className="layout-main">
+            <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
+              <p style={{marginTop:0,marginBottom:"6px",fontSize:"14px",letterSpacing:"1px",textTransform:"uppercase",color:"var(--t3)"}}>今天的號碼</p>
+              <div style={{fontSize:"96px",fontWeight:"700",lineHeight:1,color:"var(--accent)",fontVariantNumeric:"tabular-nums"}}>{drawnNumber}</div>
+            </div>
+            {soloWin ? (<>
+              <div style={{background:"#FAEEDA",border:"2px solid #BA7517",borderRadius:"var(--rl)",padding:"1.5rem",marginBottom:"1rem",textAlign:"center"}}>
+                <div style={{fontSize:"14px",color:"#633806",marginBottom:"8px",fontWeight:"600",letterSpacing:"0.5px"}}>完全命中！獨贏！</div>
+                <div style={{fontSize:"32px",fontWeight:"800",color:"#412402",lineHeight:1.2}}>{winner.name}</div>
+                <div style={{fontSize:"18px",color:"#633806",marginTop:"10px"}}>{CAT_EMOJI[winner.category]} {winner.rest}</div>
               </div>
-            );
-          })}
+              <div className="card" style={{marginBottom:"1rem",textAlign:"center"}}>
+                <p style={{marginTop:0,marginBottom:"6px",fontSize:"15px"}}>請客方案</p>
+                <p style={{fontSize:"17px",color:"var(--t1)"}}>每人最多出 <strong>50 元</strong></p>
+                <p style={{marginTop:"4px",fontSize:"15px"}}>共 {pts.length-1} 人，上限共 {maxTotal} 元</p>
+              </div>
+            </>) : (<>
+              <div style={{background:"#E1F5EE",border:"2px solid #1D9E75",borderRadius:"var(--rl)",padding:"1.5rem",marginBottom:"1rem",textAlign:"center"}}>
+                <div style={{fontSize:"14px",color:"#085041",marginBottom:"8px",fontWeight:"600",letterSpacing:"0.5px"}}>最接近！各自付帳</div>
+                <div style={{fontSize:"36px",fontWeight:"800",color:"#04342C",lineHeight:1.2}}>{CAT_EMOJI[winner.category]} {winner.rest}</div>
+                <div style={{fontSize:"17px",color:"#1D9E75",marginTop:"10px"}}>由 <strong style={{color:"#04342C"}}>{winner.name}</strong> 選的</div>
+              </div>
+            </>)}
+            <div className="card" style={{marginBottom:"1rem"}}>
+              <p style={{fontSize:"14px",fontWeight:"600",letterSpacing:"0.5px",marginBottom:"12px",marginTop:0}}>本次排名</p>
+              {allSorted.map((p,i) => {
+                const dist = Math.abs(p.number - drawnNumber);
+                const isWinner = p.id === winner.id;
+                const rampIdx = pts.findIndex(x=>x.id===p.id);
+                const ramp = RAMPS[rampIdx%RAMPS.length];
+                return (
+                  <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 12px",background:isWinner?ramp.bg:"transparent",border:isWinner?`1px solid ${ramp.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"4px"}}>
+                    <span style={{fontSize:"15px",color:"var(--t3)",width:"26px"}}>{i+1}</span>
+                    <span style={{flex:1,fontWeight:isWinner?"700":"400",fontSize:"16px",color:isWinner?ramp.tx:"var(--t1)"}}>{p.name}</span>
+                    <span style={{fontSize:"17px",fontWeight:"600",color:isWinner?ramp.tx:"var(--t2)",marginRight:"10px"}}>#{p.number}</span>
+                    <span style={{fontSize:"14px",color:isWinner?ramp.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>
+                      {dist===0 ? "🎯 命中" : `距離 ${dist}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <button className="ghost" onClick={openReset}>重新開始</button>
+          </div>
+          <div className="layout-side"><WeeklyRecord /></div>
         </div>
-
-        <button className="ghost" onClick={openReset}>重新開始</button>
-        <WeeklyRecord />
       </div>
     );
   }
