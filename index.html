@@ -471,12 +471,12 @@ function App() {
   if (phase==="setup") return (
     <div className="page"><PasswordModal />
       <h2>🎰 午餐大樂透</h2><p style={{marginBottom:"1rem"}}>選好店、押好號，時間到準時開獎！</p>
-      <div className="layout">
-        <div className="layout-side"><WeeklyRecord /></div>
-        <div className="layout-main">
-          <div className="card">
-            <label>⏰ 今天幾點開獎？</label>
-            <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
+      <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:"1.25rem",alignItems:"start"}}>
+        <div><WeeklyRecord /></div>
+        <div>
+          <div className="card" style={{textAlign:"center"}}>
+            <p style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)",marginBottom:"14px",marginTop:0}}>⏰ 今天幾點開獎？</p>
+            <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{maxWidth:"220px",margin:"0 auto 14px",textAlign:"center"}} />
             <button onClick={doSetup}>🚀 開始今天的樂透！</button>
           </div>
         </div>
