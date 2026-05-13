@@ -514,7 +514,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div className="page"><PasswordModal />
         <h2>時間到！</h2><p style={{marginBottom:"1.5rem"}}>今天只有 {pts.length} 人參加，無法開獎</p>
-        <button className="ghost" onClick={openReset}>設定明天的時間</button>
+        <button className="ghost" onClick={openReset}>重新開始</button>
         <WeeklyRecord />
       </div>
     );
@@ -567,7 +567,7 @@ function App() {
           })}
         </div>
 
-        <button className="ghost" onClick={openReset}>設定明天的時間</button>
+        <button className="ghost" onClick={openReset}>重新開始</button>
         <WeeklyRecord />
       </div>
     );
