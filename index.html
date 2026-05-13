@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>午餐決策大賽</title>
+  <title>午餐大樂透 🎰</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -439,11 +439,11 @@ function App() {
 
   if (phase==="setup") return (
     <div className="page"><PasswordModal />
-      <h2>午餐決策大賽</h2><p>設定截止時間，到時自動抽號開獎</p>
+      <h2>🎰 午餐大樂透</h2><p>選好店、押好號，時間到準時開獎！</p>
       <div className="card gap">
-        <label>今天幾點截止？</label>
+        <label>⏰ 今天幾點開獎？</label>
         <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
-        <button onClick={doSetup}>建立今天的遊戲 →</button>
+        <button onClick={doSetup}>🚀 開始今天的樂透！</button>
       </div>
       <WeeklyRecord />
     </div>
@@ -451,7 +451,7 @@ function App() {
 
   if (phase==="join") return (
     <div className="page"><PasswordModal />
-      <h2>填寫資料</h2><p style={{marginBottom:"1rem"}}>截止前填寫，時間到自動開獎</p>
+      <h2>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem"}}>截止前選好店、押好號，時間到開獎！</p>
       <HeaderBar />
       <div className="card">
         <label>你的名字</label>
@@ -505,7 +505,7 @@ function App() {
 
   if (phase==="joined") return (
     <div className="page"><PasswordModal />
-      <h2>等待截止時間...</h2><p style={{marginBottom:"1rem"}}>時間到自動開獎</p>
+      <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
       <HeaderBar /><PtList list={pts} /><WeeklyRecord />
     </div>
   );
