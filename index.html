@@ -426,14 +426,22 @@ function App() {
   }
 
   function HeaderBar() {
-    const cell = {background:"var(--bg2)",border:"1px solid var(--bd1)",borderRadius:"var(--r)",padding:"12px 24px",whiteSpace:"nowrap",display:"flex",alignItems:"center",justifyContent:"center"};
+    const cell = {background:"var(--bg2)",border:"1px solid var(--bd1)",borderRadius:"var(--r)",padding:"12px 28px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px"};
+    const label = {fontSize:"12px",color:"var(--t3)",letterSpacing:"0.5px"};
+    const value = {fontSize:"24px",fontWeight:"700",color:"var(--t1)"};
     return (
       <div style={{display:"flex",gap:"8px",marginBottom:"1rem",justifyContent:"center"}}>
-        <div style={{...cell,fontSize:"18px",color:"var(--t2)"}}>截止 <strong style={{color:"var(--t1)",fontSize:"22px",marginLeft:"6px"}}>{sess?.deadline}</strong></div>
-        <div style={{...cell,fontSize:"18px",color:"var(--t2)"}}>已加入 <strong style={{color:"var(--t1)",fontSize:"22px",margin:"0 6px"}}>{pts.length}</strong> 人</div>
-        <div style={{...cell,flexDirection:"column",gap:"2px",minWidth:"120px"}}>
-          <span style={{fontSize:"11px",color:"var(--t3)",letterSpacing:"1px",textTransform:"uppercase"}}>開獎倒數</span>
-          <span style={{fontSize:"26px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",letterSpacing:"2px"}}>{cd}</span>
+        <div style={cell}>
+          <span style={label}>截止時間</span>
+          <span style={value}>{sess?.deadline}</span>
+        </div>
+        <div style={cell}>
+          <span style={label}>已加人數</span>
+          <span style={value}>{pts.length} 人</span>
+        </div>
+        <div style={{...cell,minWidth:"130px"}}>
+          <span style={label}>開獎倒數</span>
+          <span style={{fontSize:"32px",fontWeight:"800",color:"var(--accent)",fontVariantNumeric:"tabular-nums",letterSpacing:"3px"}}>{cd}</span>
         </div>
       </div>
     );
