@@ -427,7 +427,7 @@ function App() {
 
   function HeaderBar() {
     const cell = {background:"var(--bg2)",border:"1px solid var(--bd1)",borderRadius:"var(--r)",padding:"12px 28px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px"};
-    const label = {fontSize:"12px",color:"var(--t3)",letterSpacing:"0.5px"};
+    const label = {fontSize:"14px",color:"#ffffff",letterSpacing:"0.5px",fontWeight:"500"};
     const value = {fontSize:"24px",fontWeight:"700",color:"var(--t1)"};
     return (
       <div style={{display:"flex",gap:"8px",marginBottom:"1rem",justifyContent:"center"}}>
@@ -439,9 +439,9 @@ function App() {
           <span style={label}>已加人數</span>
           <span style={value}>{pts.length} 人</span>
         </div>
-        <div style={{...cell,minWidth:"130px"}}>
+        <div style={{...cell,width:"150px",flexShrink:0}}>
           <span style={label}>開獎倒數</span>
-          <span style={{fontSize:"32px",fontWeight:"800",color:"var(--accent)",fontVariantNumeric:"tabular-nums",letterSpacing:"3px"}}>{cd}</span>
+          <span style={{fontSize:"32px",fontWeight:"800",color:"var(--accent)",fontVariantNumeric:"tabular-nums",letterSpacing:"3px",width:"100%",textAlign:"center"}}>{cd}</span>
         </div>
       </div>
     );
