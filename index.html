@@ -3,46 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>午餐大樂透 🎰</title>
-  <meta property="og:title" content="午餐大樂透 🎰" />
+  <title>午餐大樂透</title>
+  <meta property="og:title" content="午餐大樂透" />
   <meta property="og:description" content="選好店、押好號，時間到準時開獎！" />
-  <meta property="og:type" content="website" />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
     :root {
-      --bg0:#f2f2f7; --bg1:#ffffff; --bg2:#f5f5f7;
-      --bd1:rgba(0,0,0,0.08); --bd2:rgba(0,0,0,0.18);
-      --t1:#1c1c1e; --t2:#636366; --t3:#aeaeb2;
-      --r:10px; --rl:14px; --accent:#5856D6;
+      /* Premium Light Theme (Apple/Stripe Inspired) */
+      --bg:   #F5F5F7;
+      --s1:   #FFFFFF;
+      --s2:   #FFFFFF;
+      --s3:   #F9FAFB;
+      --s4:   #F3F4F6;
+      --b1:   #E5E5EA;
+      --b2:   #D1D1D6;
+      --b3:   #C7C7CC;
+      --t1:   #1D1D1F;
+      --t2:   #515154;
+      --t3:   #86868B;
+      
+      /* Accents */
+      --a:    #0071E3;
+      --a2:   #0058B0;
+      --ah:   #0077ED;
+      --abg:  rgba(0, 113, 227, 0.06);
+      --abd:  rgba(0, 113, 227, 0.2);
+      
+      /* Semantic Colors */
+      --green:#34C759; 
+      --amber:#FF9500; 
+      --red:  #FF3B30;
+      
+      /* Border Radii */
+      --r:  12px; 
+      --r2: 20px; 
+      --r3: 24px;
     }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg0:#1c1c1e; --bg1:#2c2c2e; --bg2:#3a3a3c; --bd1:rgba(255,255,255,0.08); --bd2:rgba(255,255,255,0.18); --t1:#f2f2f7; --t2:#aeaeb2; --t3:#636366; }
-      input, select { background: var(--bg2) !important; color: var(--t1) !important; }
+    
+    html { font-size: 14px; }
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--t1);
+      min-height: 100vh;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg0); min-height: 100vh; color: var(--t1); font-size: 16px; }
-    h2 { font-size: 26px; font-weight: 600; }
-    p  { font-size: 15px; color: var(--t2); margin-top: 4px; }
-    input, select { display: block; width: 100%; padding: 13px 15px; border: 1px solid var(--bd2); border-radius: var(--r); font-size: 16px; background: var(--bg1); color: var(--t1); outline: none; margin-bottom: 14px; transition: border-color .15s; }
-    input:focus, select:focus { border-color: var(--accent); }
-    label { display: block; font-size: 14px; font-weight: 500; color: var(--t2); margin-bottom: 6px; }
-    button { display: block; width: 100%; padding: 14px; margin-bottom: 10px; border: none; border-radius: var(--r); font-size: 17px; font-weight: 600; background: var(--accent); color: #fff; cursor: pointer; transition: opacity .15s; }
-    button:hover { opacity: .88; }
-    .ghost { background: transparent !important; border: 1px solid var(--bd2) !important; color: var(--t2) !important; font-weight: 400 !important; }
-    .card { background: var(--bg1); border: 1px solid var(--bd1); border-radius: var(--rl); padding: 1.4rem; }
-    .page { max-width: 1020px; margin: 0 auto; padding: 1.5rem 1rem; }
-    .layout   { display: flex; gap: 1.25rem; align-items: flex-start; }
+    
+    #root { position: relative; z-index: 1; }
+
+    @keyframes fadeUp { 
+      from { opacity: 0; transform: translateY(16px); } 
+      to { opacity: 1; transform: none; } 
+    }
+    .fade-up { animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.8px; color: var(--t1); }
+    h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; color: var(--t1); }
+    p  { color: var(--t2); font-size: 14px; line-height: 1.6; }
+    
+    input, select {
+      display: block; width: 100%;
+      padding: 12px 14px;
+      background: #F5F5F7;
+      border: 1px solid transparent;
+      border-radius: var(--r);
+      color: var(--t1);
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    input:hover:not(:focus), select:hover:not(:focus) { background: #EAEAEB; }
+    input:focus, select:focus {
+      background: #FFFFFF;
+      border-color: var(--a);
+      box-shadow: 0 0 0 4px var(--abg);
+    }
+    input::placeholder { color: var(--t3); }
+    
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--t2); margin-bottom: 8px; }
+
+    button {
+      display: block; width: 100%;
+      padding: 12px 20px; margin-bottom: 12px;
+      border: none; border-radius: var(--r);
+      font-size: 14px; font-weight: 500;
+      background: #1D1D1F;
+      color: #FFFFFF; cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+    button:hover { background: #333336; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    button:active { transform: scale(0.98); }
+    
+    .ghost { background: #FFFFFF !important; border: 1px solid var(--b2) !important; color: var(--t1) !important; box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important; }
+    .ghost:hover { background: #F9FAFB !important; border-color: var(--b3) !important; }
+    .btn-sm { width: auto !important; padding: 6px 12px !important; font-size: 12px !important; margin-bottom: 0 !important; border-radius: 8px !important; }
+    .btn-danger { background: transparent !important; border: 1px solid rgba(255,59,48,0.3) !important; color: var(--red) !important; box-shadow: none !important; }
+    .btn-danger:hover { background: rgba(255,59,48,0.05) !important; }
+
+    .card {
+      background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r2);
+      padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .page { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .grid-3-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+    .col { min-width: 0; display: flex; flex-direction: column; }
+    .col > .card, .col > .empty-state { flex: 1; }
+    .layout-2 { display: flex; gap: 32px; align-items: flex-start; }
+    .layout-side { width: 320px; flex-shrink: 0; position: sticky; top: 100px; }
     .layout-main { flex: 1; min-width: 0; }
-    .layout-side { width: 320px; flex-shrink: 0; position: sticky; top: 1.5rem; }
-    .layout-3 { display: grid; grid-template-columns: 1.4fr 1.4fr 1fr; gap: 1.25rem; align-items: start; }
-    .col { min-width: 0; }
-    @media (max-width: 780px) {
-      .layout { flex-direction: column; }
+    
+    @media (max-width: 800px) {
+      .grid-3, .grid-3-meta { grid-template-columns: 1fr; gap: 16px; }
+      .layout-2 { flex-direction: column; gap: 16px; }
       .layout-side { width: 100%; position: static; }
-      .layout-3 { grid-template-columns: 1fr; }
     }
-    .gap { margin-top: 1rem; }
-    .row { display: flex; gap: 8px; }
-    .badge-solo { font-size: 12px; background: #FAEEDA; color: #633806; padding: 2px 8px; border-radius: 5px; margin-top: 4px; font-weight: 600; }
+    
+    .divider { height: 1px; background: var(--b1); margin: 24px 0; }
+
+    .site-header {
+      position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(229, 229, 234, 0.8);
+      margin-bottom: 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px);
+    }
+    .site-header-inner { max-width: 1080px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-size: 16px; font-weight: 700; color: var(--t1); display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 28px; height: 28px; border-radius: 8px; background: #1D1D1F; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .header-status { display: flex; align-items: center; gap: 8px; background: var(--s3); border: 1px solid var(--b1); border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 500; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.2); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .stat-card { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r2); padding: 24px; }
+    .stat-card.active-card { border-color: var(--abd); background-image: linear-gradient(180deg, var(--abg) 0%, transparent 80px); }
+    .stat-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; margin-bottom: 12px; }
+    .stat-value { font-size: 32px; font-weight: 700; color: var(--t1); line-height: 1; font-variant-numeric: tabular-nums; }
+    .stat-value.accent { color: var(--a); }
+    .stat-sub { font-size: 13px; color: var(--t3); margin-top: 10px; }
+
+    .week-row { display: flex; align-items: center; padding: 12px; border-radius: 10px; border: 1px solid transparent; margin-bottom: 4px; }
+    .week-row.today { background: #F0F7FF; border-color: #D1E5FF; }
+    .week-day { width: 36px; flex-shrink: 0; font-size: 13px; font-weight: 500; color: var(--t3); }
+    .week-day.today { color: var(--a); font-weight: 600; }
+
+    .pt-row { display: flex; align-items: center; padding: 12px 16px; border-radius: var(--r); border: 1px solid var(--b1); background: var(--s2); margin-bottom: 8px; }
+    .pt-num { font-size: 18px; font-weight: 700; color: var(--a); min-width: 40px; text-align: right; }
+
+    .num-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--s3); border: 1px solid var(--b1); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 500; }
+    .num-chip.taken { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+
+    .num-input-wrap { position: relative; }
+    .num-prefix { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--t3); font-weight: 600; }
+    .num-input-wrap input { padding-left: 32px; font-weight: 600; font-size: 16px; }
+
+    .form-title { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--b1); }
+    
+    .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-gold  { background: #FFF7ED; color: #C2410C; border: 1px solid #FED7AA; }
+    .badge-green { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+
+    .page-footer { border-top: 1px solid var(--b1); margin-top: 64px; padding: 32px 0; text-align: center; }
+    
+    .modal-bg { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeUp 0.2s ease; }
+
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; color: var(--t3); border: 1px dashed var(--b2); border-radius: var(--r2); background: var(--s3); }
+    
+    .result-number { font-size: 112px; font-weight: 800; background: linear-gradient(135deg, #1D1D1F 0%, #515154 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; margin-bottom: 16px; }
   </style>
 </head>
 <body>
@@ -77,32 +210,29 @@ const fRef = p => db.ref(p);
 const fGet = p => fRef(p).once("value").then(s => s.val());
 const fSet = (p, v) => fRef(p).set(v);
 
-const CATEGORIES  = ["台式麵飯","日式","輕食早午餐","異國料理","火鍋","速食"];
-const CAT_EMOJI   = {"台式麵飯":"🍜","日式":"🍣","輕食早午餐":"🥪","異國料理":"🌏","火鍋":"🍲","速食":"🍔"};
+const CATEGORIES  = ["台式麵飯","日式","輕食早午餐","異國料理","火鍋","速食","其它"];
+const CAT_EMOJI   = {"台式麵飯":"🍜","日式":"🍣","輕食早午餐":"🥪","異國料理":"🌏","火鍋":"🍲","速食":"🍔","其它":"🍽️"};
 const DEFAULT_RESTS = {
   "台式麵飯": ["奇味牛肉麵《張瑋記》","正群川味牛肉麵館","南北福州干拌麵","瑪岌牛肉麵","麵家紅葉軒","牛燒味","阿土小羊肉","黃海鮮","三商巧福","鬍鬚張","雞肉飯","好友鵝肉","新悅鵝肉"],
   "日式":     ["一幸拉麵","爭鮮迴轉壽司","鮮五丼"],
   "輕食早午餐":["初早午餐","路易莎咖啡","Q Burger","麥味登","Subway","弄堂里香"],
-  "異國料理": ["愛上越南","薩莉亞","雲南傣族小吃店","上富豐蘇杭湯包"],
+  "異國料理": ["愛上越南","薩莉亞","雲南傣族小吃店","上富杭湯包"],
   "火鍋":     ["三媽臭臭鍋","錢都","燒石鼎石頭小火鍋"],
-  "速食":     ["麥當勞","摩斯","PizzaHut"]
+  "速食":     ["麥當勞","摩斯","PizzaHut"],
+  "其它":     ["大豐路走走"]
 };
+
 const RAMPS = [
-  {bg:"#EEEDFE",bd:"#7F77DD",tx:"#3C3489"},{bg:"#E1F5EE",bd:"#1D9E75",tx:"#085041"},
-  {bg:"#FAECE7",bd:"#D85A30",tx:"#712B13"},{bg:"#FBEAF0",bd:"#D4537E",tx:"#4B1528"},
-  {bg:"#E6F1FB",bd:"#378ADD",tx:"#0C447C"},{bg:"#FAEEDA",bd:"#BA7517",tx:"#633806"},
-  {bg:"#EAF3DE",bd:"#639922",tx:"#27500A"},{bg:"#FCEBEB",bd:"#E24B4A",tx:"#791F1F"},
+  {bg:"#EEF2FF",bd:"#C7D2FE",tx:"#3730A3"}, {bg:"#ECFDF5",bd:"#A7F3D0",tx:"#065F46"},
+  {bg:"#FFFBEB",bd:"#FDE68A",tx:"#92400E"}, {bg:"#FDF2F8",bd:"#FBCFE8",tx:"#831843"},
+  {bg:"#EFF6FF",bd:"#BFDBFE",tx:"#1E3A8A"}, {bg:"#F5F3FF",bd:"#DDD6FE",tx:"#4C1D95"},
+  {bg:"#F0FDF4",bd:"#BBF7D0",tx:"#14532D"}, {bg:"#FEF2F2",bd:"#FECACA",tx:"#7F1D1D"}
 ];
 const WDAYS = ["週一","週二","週三","週四","週五"];
 
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-function isDeadlinePassed(dl) {
-  const now = new Date(), [h,m] = dl.split(":").map(Number);
-  return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
-}
+/* ── Pure logic ── */
+function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function isDeadlinePassed(dl) { const now = new Date(), [h,m] = dl.split(":").map(Number); return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m); }
 function calcCountdown(dl) {
   const now = new Date(), [h,m] = dl.split(":").map(Number);
   const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
@@ -115,155 +245,183 @@ function getWeekDates() {
   return Array.from({length:5}, (_,i) => { const d = new Date(mon); d.setDate(mon.getDate()+i); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; });
 }
 function snapToArr(val) { return Object.values(val||{}).sort((a,b)=>a.joinedAt-b.joinedAt); }
-function mergeRests(custObj) {
-  const m = {};
-  for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; }
-  return m;
-}
+function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; } return m; }
 
 async function getOrDrawNumber(dateStr) {
   let drawn = null;
-  await fRef(`lunch/drawn/${dateStr}`).transaction(current => {
-    if (current !== null) { drawn = current; return; }
-    drawn = Math.floor(Math.random() * 99) + 1;
-    return drawn;
-  });
+  await fRef(`lunch/drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = Math.floor(Math.random() * 99) + 1; return drawn; });
   if (drawn === null) drawn = await fGet(`lunch/drawn/${dateStr}`);
   return drawn;
 }
+
+// ✨ 全新的判斷邏輯（同分時以開獎號碼取餘數決定）
 function determineResult(pts, drawnNumber) {
   if (!pts || pts.length === 0) return null;
   const exact = pts.find(p => p.number === drawnNumber);
   if (exact) return { winner: exact, soloWin: true, sorted: pts };
-  const sorted = [...pts].sort((a,b) => {
-    const da = Math.abs(a.number-drawnNumber), db = Math.abs(b.number-drawnNumber);
-    return da !== db ? da - db : a.number - b.number;
-  });
-  return { winner: sorted[0], soloWin: false, sorted };
+  
+  // 先依距離排序
+  const sorted = [...pts].sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
+  
+  // 找出最小距離
+  const minDiff = Math.abs(sorted[0].number - drawnNumber);
+  
+  // 篩選出所有距離一樣近的人
+  const tiedWinners = sorted.filter(p => Math.abs(p.number - drawnNumber) === minDiff);
+  
+  // 利用開獎號碼取餘數，決定最終贏家
+  const winnerIndex = drawnNumber % tiedWinners.length;
+  const finalWinner = tiedWinners[winnerIndex];
+  
+  // 確保最終贏家排在第一位
+  const finalSorted = [finalWinner, ...sorted.filter(p => p.id !== finalWinner.id)];
+  return { winner: finalWinner, soloWin: false, sorted: finalSorted };
 }
 
-function StatsPanel({weekly}) {
-  const chartRef = useRef(null);
-  const chartInstanceRef = useRef(null);
-  const allRecords = Object.entries(weekly);
-
-  const restCounts = {};
-  allRecords.forEach(([, rec]) => {
-    if (rec?.rest) restCounts[rec.rest] = (restCounts[rec.rest] || 0) + 1;
-  });
-  const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]);
-
-  const soloMap = {};
-  allRecords.forEach(([date, rec]) => {
-    if (rec?.soloWin && rec.winner) {
-      if (!soloMap[rec.winner]) soloMap[rec.winner] = [];
-      soloMap[rec.winner].push(date);
-    }
-  });
-  const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
-
-  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const BAR_COLORS = isDark
-    ? ["#818CF8","#34D399","#FB923C","#60A5FA","#F472B6","#FBBF24","#86EFAC","#F87171"]
-    : ["#4338CA","#059669","#C2410C","#1D4ED8","#BE185D","#B45309","#15803D","#DC2626"];
-  const tickColor = isDark ? "#aeaeb2" : "#3a3a3c";
-  const gridColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-
-  useEffect(() => {
-    if (!chartRef.current || sortedRests.length === 0) return;
-    if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null; }
-    chartInstanceRef.current = new Chart(chartRef.current, {
-      type: "bar",
-      data: {
-        labels: sortedRests.map(([r]) => r),
-        datasets: [{
-          data: sortedRests.map(([,c]) => c),
-          backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]),
-          borderColor:     sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]),
-          borderWidth: 0, borderRadius: 6,
-        }]
-      },
-      options: {
-        indexAxis: "y", responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 次` } }
-        },
-        scales: {
-          x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0, color: tickColor }, grid: { color: gridColor } },
-          y: { ticks: { font: { size: 13, weight: "600" }, color: tickColor }, grid: { display: false } }
-        }
-      }
-    });
-    return () => { if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); chartInstanceRef.current = null; } };
-  }, [JSON.stringify(sortedRests)]);
-
-  function fmtDate(ds) { const [,m,d] = ds.split("-"); return `${parseInt(m)}/${parseInt(d)}`; }
-
+/* ── 獨立 UI Components (防止閃爍與重複渲染) ── */
+function SiteHeader({title, sub, live, cd}) {
   return (
-    <div style={{marginTop:"1rem",display:"flex",flexDirection:"column",gap:"1rem"}}>
-      <div className="card">
-        <p style={{fontSize:"15px",fontWeight:"700",marginTop:0,marginBottom:"14px",color:"var(--t1)"}}>店家中選次數</p>
-        {sortedRests.length === 0
-          ? <p style={{textAlign:"center",color:"var(--t3)"}}>尚無紀錄</p>
-          : <div style={{height:`${Math.max(120, sortedRests.length*50)}px`,position:"relative"}}>
-              <canvas ref={chartRef} />
-            </div>
-        }
-      </div>
-      <div className="card">
-        <p style={{fontSize:"15px",fontWeight:"700",marginTop:0,marginBottom:"14px",color:"var(--t1)"}}>獨贏紀錄</p>
-        {sortedSolo.length === 0
-          ? <p style={{textAlign:"center",color:"var(--t3)"}}>尚無獨贏紀錄</p>
-          : sortedSolo.map(([name, dates]) => (
-              <div key={name} style={{display:"flex",alignItems:"flex-start",gap:"12px",marginBottom:"14px"}}>
-                <div style={{minWidth:"72px",flexShrink:0}}>
-                  <div style={{fontSize:"17px",fontWeight:"700",color:"var(--t1)"}}>{name}</div>
-                  <div style={{fontSize:"14px",fontWeight:"700",color:"#E8610A",marginTop:"2px"}}>{dates.length} 次</div>
-                </div>
-                <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"5px",paddingTop:"4px"}}>
-                  {[...dates].sort().map(d => (
-                    <span key={d} style={{background:"#FAEEDA",border:"1px solid #BA7517",color:"#633806",borderRadius:"5px",padding:"3px 9px",fontSize:"13px",fontWeight:"600"}}>{fmtDate(d)}</span>
-                  ))}
-                </div>
-              </div>
-            ))
-        }
+    <div className="site-header">
+      <div className="site-header-inner">
+        <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
+          {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
+        </div>
       </div>
     </div>
   );
 }
 
+function Footer() {
+  return (
+    <div className="page-footer">
+      <p>截止時間一到，系統將自動開獎 &nbsp;·&nbsp; 資料僅在本次活動中使用</p>
+      <p style={{marginTop:"8px",color:"var(--b2)",fontSize:"12px"}}>© 2026 午餐大樂透</p>
+    </div>
+  );
+}
+
+function StatCards({deadline, ptsCount, cd}) {
+  return (
+    <div className="grid-3-meta">
+      <div className="stat-card"><div className="stat-label">截止時間</div><div className="stat-value">{deadline}</div><div className="stat-sub">今日開獎時間</div></div>
+      <div className="stat-card"><div className="stat-label">已加入人數</div><div className="stat-value">{ptsCount}<span style={{fontSize:"18px",fontWeight:"500",color:"var(--t3)"}}> 人</span></div><div className="stat-sub">一起選、一起吃、一起中</div></div>
+      <div className="stat-card active-card"><div className="stat-label">開獎倒數</div><div className="stat-value accent">{cd}</div><div className="stat-sub">即時倒數中</div></div>
+    </div>
+  );
+}
+
+function PtList({list}) {
+  if (!list || list.length === 0) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
+  return (
+    <div>
+      <p className="section-label" style={{marginBottom:"16px"}}>{list.length} 人參加</p>
+      {list.map((p,i) => {
+        const ramp = RAMPS[i%RAMPS.length];
+        return (
+          <div key={p.id||i} className="pt-row" style={{background:ramp.bg,borderColor:ramp.bd}}>
+            <div style={{width:"24px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
+            <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"8px"}}>{p.name}</span>
+            <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.rest}</span>
+            <span className="pt-num" style={{color:ramp.tx}}>#{p.number}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PasswordModal({ show, pw, setPw, err, onConfirm, onCancel }) {
+  if (!show) return null;
+  return (
+    <div className="modal-bg">
+      <div className="card fade-up" style={{width:"340px",maxWidth:"90vw",boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}>
+        <div style={{marginBottom:"24px"}}><h2 style={{fontSize:"18px",marginBottom:"6px"}}>管理員驗證</h2><p style={{fontSize:"14px"}}>輸入密碼才能重設今天的遊戲</p></div>
+        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onConfirm()} placeholder="輸入密碼" autoFocus />
+        {err && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"-8px",marginBottom:"12px"}}>{err}</p>}
+        <button onClick={onConfirm}>確認</button>
+        <button className="ghost" onClick={onCancel}>取消</button>
+      </div>
+    </div>
+  );
+}
+
+function StatsPanel({weekly}) {
+  const chartRef = useRef(null); const chartInstanceRef = useRef(null);
+  const allRecords = Object.entries(weekly); const restCounts = {};
+  allRecords.forEach(([, rec]) => { if (rec?.rest) restCounts[rec.rest] = (restCounts[rec.rest] || 0) + 1; });
+  const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]);
+  const soloMap = {};
+  allRecords.forEach(([date, rec]) => { if (rec?.soloWin && rec.winner) { if (!soloMap[rec.winner]) soloMap[rec.winner] = []; soloMap[rec.winner].push(date); } });
+  const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
+  const BAR_COLORS = ["#0071E3","#34C759","#FF9500","#5AC8FA","#FF2D55","#AF52DE","#FFCC00","#FF3B30"];
+  
+  useEffect(() => {
+    if (!chartRef.current || sortedRests.length === 0) return;
+    if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); }
+    chartInstanceRef.current = new Chart(chartRef.current, {
+      type: "bar",
+      data: { labels: sortedRests.map(([r]) => r), datasets: [{ data: sortedRests.map(([,c]) => c), backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4 }] },
+      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 次` } } }, scales: { x: { beginAtZero: true, ticks: { stepSize:1, precision:0, color:"#86868B" }, grid: { color:"rgba(0,0,0,0.05)" } }, y: { ticks: { font:{size:13,weight:"500",family:"Inter"}, color:"#515154" }, grid: { display:false } } } }
+    });
+    return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
+  }, [JSON.stringify(sortedRests)]);
+  
+  return (
+    <div style={{marginTop:"24px",display:"flex",flexDirection:"column",gap:"16px"}}>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>店家中選次數</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>獨贏紀錄</p>{sortedSolo.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無獨贏紀錄</p> : sortedSolo.map(([name, dates]) => (<div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}><div style={{minWidth:"80px",flexShrink:0}}><div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div><div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div></div><div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>{[...dates].sort().map(d => { const [,mm,dd] = d.split("-"); return <span key={d} className="badge badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>; })}</div></div>))}</div>
+    </div>
+  );
+}
+
+function WeeklyRecord({weekly, setWeekly, showStats, setShowStats}) {
+  const weekDates = getWeekDates(), today = todayStr();
+  async function clearWeekly() { const pw = window.prompt("管理員密碼"); if (pw === null) return; if (pw !== ADMIN_PASSWORD) { alert("密碼錯誤"); return; } await fSet("lunch/weekly", null); setWeekly({}); }
+  return (
+    <div className="card">
+      <div style={{display:"flex",alignItems:"center",marginBottom:"16px"}}><p className="section-label" style={{flex:1,marginBottom:0}}>本週紀錄</p><button onClick={()=>setShowStats(!showStats)} className="ghost btn-sm" style={{marginRight:"8px"}}>{showStats?"收起":"統計"}</button><button onClick={clearWeekly} className="btn-danger btn-sm">清除</button></div>
+      {weekDates.map((date,i) => {
+        const rec = weekly[date], isToday = date===today;
+        return (
+          <div key={date} className={`week-row${isToday?" today":""}`}><div className={`week-day${isToday?" today":""}`}>{WDAYS[i]}</div>
+            {rec ? (<div style={{flex:1,marginLeft:"12px",minWidth:0}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4}}>{rec.soloWin?rec.winner:rec.rest}</div><div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:"6px"}}>{rec.soloWin?rec.rest:rec.winner}{rec.soloWin && <span className="badge badge-gold">獨贏</span>}</div></div>) : <div style={{flex:1,marginLeft:"12px",fontSize:"14px",color:"var(--t3)"}}>—</div>}
+            {rec?.drawnNumber ? <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",marginLeft:"12px",minWidth:"40px",textAlign:"right",flexShrink:0}}>#{rec.drawnNumber}</div> : <div style={{minWidth:"40px"}} />}
+          </div>
+        );
+      })}
+      {showStats && <StatsPanel weekly={weekly} />}
+    </div>
+  );
+}
+
+/* ── App 主程式 ── */
 function App() {
-  const [phase,      setPhase]      = useState("loading");
-  const [sess,       setSess]       = useState(null);
-  const [pts,        setPts]        = useState([]);
-  const [rests,      setRests]      = useState(mergeRests(null));
-  const [weekly,     setWeekly]     = useState({});
-  const [form,       setForm]       = useState({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"});
-  const [result,     setResult]     = useState(null);
-  const [cd,         setCd]         = useState("--:--");
-  const [numWarn,    setNumWarn]    = useState("");
+  const [phase, setPhase] = useState("loading");
+  const [sess, setSess] = useState(null);
+  const [pts, setPts] = useState([]);
+  const [rests, setRests] = useState(mergeRests(null));
+  const [weekly, setWeekly] = useState({});
+  const [form, setForm] = useState({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"});
+  const [result, setResult] = useState(null);
+  const [cd, setCd] = useState("--:--");
+  const [numWarn, setNumWarn] = useState("");
   const [resetModal, setResetModal] = useState(false);
-  const [resetPw,    setResetPw]    = useState("");
-  const [resetErr,   setResetErr]   = useState("");
-  const [showStats,  setShowStats]  = useState(false);
-  const sessRef  = useRef(null);
-  const savedRef = useRef(false);
-  const timerRef = useRef(null);
+  const [resetPw, setResetPw] = useState("");
+  const [resetErr, setResetErr] = useState("");
+  const [showStats, setShowStats] = useState(false);
+  const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
 
   useEffect(() => { sessRef.current = sess; }, [sess]);
 
   useEffect(() => {
-    Promise.all([fGet("lunch/session"),fGet("lunch/restaurants"),fGet("lunch/weekly"),fGet("lunch/participants")])
-    .then(async ([s,custR,w,ptsObj]) => {
+    Promise.all([fGet("lunch/session"),fGet("lunch/restaurants"),fGet("lunch/weekly"),fGet("lunch/participants")]).then(async ([s,custR,w,ptsObj]) => {
       setRests(mergeRests(custR)); setWeekly(w||{});
       const today = todayStr();
       if (!s || s.date !== today) { setPhase("setup"); return; }
       const p = snapToArr(ptsObj); setSess(s); setPts(p);
       if (isDeadlinePassed(s.deadline)) {
-        const drawn = await getOrDrawNumber(today);
-        const res = determineResult(p, drawn);
+        const drawn = await getOrDrawNumber(today); const res = determineResult(p, drawn);
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
       } else { setPhase("join"); }
@@ -274,8 +432,7 @@ function App() {
     if (phase!=="join" && phase!=="joined") return;
     const pRef = fRef("lunch/participants");
     const handler = snap => setPts(snapToArr(snap.val()));
-    pRef.on("value", handler);
-    return () => pRef.off("value", handler);
+    pRef.on("value", handler); return () => pRef.off("value", handler);
   }, [phase]);
 
   useEffect(() => {
@@ -286,10 +443,7 @@ function App() {
       setCd(calcCountdown(dl));
       if (isDeadlinePassed(dl)) {
         clearInterval(timerRef.current);
-        const ptsObj = await fGet("lunch/participants");
-        const finalPts = snapToArr(ptsObj);
-        const drawn = await getOrDrawNumber(todayStr());
-        const res = determineResult(finalPts, drawn);
+        const ptsObj = await fGet("lunch/participants"), finalPts = snapToArr(ptsObj), drawn = await getOrDrawNumber(todayStr()), res = determineResult(finalPts, drawn);
         setResult(res ? {...res,drawnNumber:drawn} : {drawnNumber:drawn,winner:null,soloWin:false,sorted:finalPts});
         setPts(finalPts); setPhase("results");
       }
@@ -299,8 +453,7 @@ function App() {
 
   useEffect(() => {
     if (phase!=="results"||!result?.winner||savedRef.current) return;
-    savedRef.current = true;
-    const today = todayStr();
+    savedRef.current = true; const today = todayStr();
     fGet("lunch/weekly").then(async w => {
       if ((w||{})[today]) { setWeekly(w); return; }
       const nw = {...(w||{}), [today]: {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber}};
@@ -326,311 +479,132 @@ function App() {
     if (!num || num < 1 || num > 99) return alert("請輸入 1 到 99 之間的整數");
     const s = await fGet("lunch/session");
     if (!s || isDeadlinePassed(s.deadline)) return alert("已超過截止時間！");
-    const ptsObj = await fGet("lunch/participants");
-    const existing = snapToArr(ptsObj);
-    const myEntry = existing.find(p=>p.name===name);
-    if (existing.some(p=>p.id!==(myEntry?.id) && p.number===num)) { setNumWarn(`數字 ${num} 已被選走！請換一個`); return; }
-    if (myEntry) {
-      await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num});
-    } else {
-      const newRef = fRef("lunch/participants").push();
-      await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()});
-    }
-    if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) {
-      await fRef(`lunch/restaurants/${form.category}`).push(rest);
-      setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]}));
-    }
+    const existing = snapToArr(await fGet("lunch/participants")), myEntry = existing.find(p=>p.name===name);
+    if (existing.some(p=>p.id!==(myEntry?.id) && p.number===num)) { setNumWarn(`數字 ${num} 已被選走，請換一個`); return; }
+    if (myEntry) { await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num}); } 
+    else { const newRef = fRef("lunch/participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
+    if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) { await fRef(`lunch/restaurants/${form.category}`).push(rest); setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]})); }
     setPhase("joined");
   }
 
   async function doReset() {
     const today = todayStr();
-    await fSet("lunch/session", null);
-    await fSet("lunch/participants", null);
-    await fSet(`lunch/drawn/${today}`, null);
-    await fRef(`lunch/weekly/${today}`).remove();
-    savedRef.current = false;
-    setSess(null); setPts([]); setResult(null); setCd("--:--");
+    await fSet("lunch/session", null); await fSet("lunch/participants", null); await fSet(`lunch/drawn/${today}`, null); await fRef(`lunch/weekly/${today}`).remove();
+    savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--");
     setWeekly(w => { const n={...w}; delete n[today]; return n; });
-    setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"});
-    setPhase("setup");
-  }
-  function openReset() { setResetModal(true); setResetPw(""); setResetErr(""); }
-
-  function PasswordModal() {
-    if (!resetModal) return null;
-    async function confirm() {
-      if (resetPw !== ADMIN_PASSWORD) { setResetErr("密碼錯誤！"); return; }
-      setResetModal(false); await doReset();
-    }
-    return (
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
-        <div style={{background:"var(--bg1)",border:"1px solid var(--bd1)",borderRadius:"var(--rl)",padding:"1.5rem",width:"300px",maxWidth:"90vw"}}>
-          <h2 style={{marginBottom:"4px",fontSize:"18px"}}>管理員驗證</h2>
-          <p style={{marginBottom:"1rem"}}>輸入密碼才能重設今天的遊戲</p>
-          <input type="password" value={resetPw} onChange={e=>setResetPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&confirm()} placeholder="輸入密碼" autoFocus />
-          {resetErr && <p style={{color:"#E24B4A",marginBottom:"8px",marginTop:"-4px"}}>{resetErr}</p>}
-          <button onClick={confirm}>確認</button>
-          <button className="ghost" onClick={()=>setResetModal(false)}>取消</button>
-        </div>
-      </div>
-    );
+    setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"}); setPhase("setup");
   }
 
-  function WeeklyRecord() {
-    const weekDates = getWeekDates(), today = todayStr();
-    async function clearWeekly() {
-      const pw = window.prompt("請輸入管理員密碼");
-      if (pw === null) return;
-      if (pw !== ADMIN_PASSWORD) { alert("密碼錯誤！"); return; }
-      await fSet("lunch/weekly", null);
-      setWeekly({});
-    }
-    return (
-      <div className="card gap">
-        <div style={{display:"flex",alignItems:"center",marginBottom:"14px",gap:"6px"}}>
-          <p style={{fontSize:"15px",fontWeight:"600",marginTop:0,flex:1}}>本週午餐紀錄</p>
-          <button onClick={()=>setShowStats(s=>!s)} style={{width:"auto",padding:"5px 12px",fontSize:"13px",fontWeight:"500",marginBottom:0,background:showStats?"var(--accent)":"transparent",border:`1px solid ${showStats?"var(--accent)":"var(--bd2)"}`,color:showStats?"#fff":"var(--t2)",borderRadius:"6px"}}>
-            {showStats ? "▲ 收起統計" : "▼ 查看統計"}
-          </button>
-          <button onClick={clearWeekly} style={{width:"auto",padding:"5px 12px",fontSize:"13px",fontWeight:"400",marginBottom:0,background:"transparent",border:"1px solid var(--bd2)",color:"var(--t3)",borderRadius:"6px"}}>清除紀錄</button>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
-          {weekDates.map((date,i) => {
-            const rec = weekly[date], isToday = date===today;
-            return (
-              <div key={date} style={{display:"flex",alignItems:"center",padding:"12px 14px",background:isToday?"var(--bg2)":"transparent",border:`1px solid ${isToday?"var(--bd2)":"var(--bd1)"}`,borderRadius:"var(--r)",borderLeft:`3px solid ${isToday?"var(--accent)":"transparent"}`}}>
-                <div style={{width:"38px",flexShrink:0,fontSize:"15px",fontWeight:isToday?"700":"400",color:isToday?"var(--accent)":"var(--t3)"}}>{WDAYS[i]}</div>
-                {rec ? (
-                  <div style={{flex:1,marginLeft:"10px",minWidth:0}}>
-                    <div style={{fontSize:"17px",fontWeight:"700",color:"var(--t1)",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                      {rec.soloWin ? rec.winner : rec.rest}
-                    </div>
-                    <div style={{fontSize:"14px",color:"var(--t2)",marginTop:"2px",display:"flex",alignItems:"center",gap:"6px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                      {rec.soloWin ? rec.rest : rec.winner}
-                      {rec.soloWin && <span className="badge-solo">獨贏</span>}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{flex:1,marginLeft:"10px",fontSize:"16px",color:"var(--t3)"}}>—</div>
-                )}
-                {rec?.drawnNumber ? (
-                  <div style={{fontSize:"30px",fontWeight:"800",color:"#E8610A",fontVariantNumeric:"tabular-nums",marginLeft:"10px",minWidth:"52px",textAlign:"right",lineHeight:1,flexShrink:0}}>
-                    #{rec.drawnNumber}
-                  </div>
-                ) : <div style={{minWidth:"52px"}} />}
-              </div>
-            );
-          })}
-        </div>
-        {showStats && <StatsPanel weekly={weekly} />}
-      </div>
-    );
-  }
-
-  function HeaderBar() {
-    const cell = {background:"var(--bg2)",border:"1px solid var(--bd1)",borderRadius:"var(--r)",padding:"12px 28px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"4px"};
-    const label = {fontSize:"14px",color:"#ffffff",letterSpacing:"0.5px",fontWeight:"500"};
-    const value = {fontSize:"24px",fontWeight:"700",color:"var(--t1)"};
-    return (
-      <div style={{display:"flex",gap:"8px",marginBottom:"1rem",justifyContent:"center"}}>
-        <div style={cell}>
-          <span style={label}>截止時間</span>
-          <span style={value}>{sess?.deadline}</span>
-        </div>
-        <div style={cell}>
-          <span style={label}>已加人數</span>
-          <span style={value}>{pts.length} 人</span>
-        </div>
-        <div style={{...cell,width:"150px",flexShrink:0}}>
-          <span style={label}>開獎倒數</span>
-          <span style={{fontSize:"32px",fontWeight:"800",color:"var(--accent)",fontVariantNumeric:"tabular-nums",letterSpacing:"3px",width:"100%",textAlign:"center"}}>{cd}</span>
-        </div>
-      </div>
-    );
-  }
-
-  function PtList({list}) {
-    return (
-      <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-        {list.map((p,i) => {
-          const ramp = RAMPS[i%RAMPS.length];
-          return (
-            <div key={p.id||i} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:ramp.bg,border:`1px solid ${ramp.bd}`,borderRadius:"var(--r)"}}>
-              <span style={{flex:1,fontWeight:"600",fontSize:"16px",color:ramp.tx}}>{p.name}</span>
-              <span style={{fontSize:"14px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{CAT_EMOJI[p.category]||""} {p.rest}</span>
-              <span style={{fontSize:"20px",fontWeight:"700",color:ramp.tx,minWidth:"36px",textAlign:"right"}}>#{p.number}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
+  async function confirmReset() { if (resetPw !== ADMIN_PASSWORD) { setResetErr("密碼錯誤"); return; } setResetModal(false); await doReset(); }
 
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
-  if (phase==="loading") return <div className="page"><p style={{textAlign:"center",paddingTop:"3rem"}}>載入中...</p></div>;
+  if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
   if (phase==="setup") return (
-    <div className="page"><PasswordModal />
-      <div style={{textAlign:"center",marginBottom:"2rem"}}>
-        <h2>🎰 午餐大樂透</h2>
-        <p style={{marginTop:"6px"}}>選好店、押好號，時間到準時開獎！</p>
-      </div>
-      <div style={{maxWidth:"320px",margin:"0 auto"}}>
-        <div className="card" style={{textAlign:"center"}}>
-          <p style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)",marginBottom:"14px",marginTop:0}}>⏰ 今天幾點開獎？</p>
-          <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} style={{textAlign:"center"}} />
-          <button onClick={doSetup}>🚀 開始今天的樂透！</button>
+    <div>
+      <SiteHeader />
+      <div className="page fade-up">
+        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+        <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
+          <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
+          <div className="card"><label>開獎時間</label><input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} /><button onClick={doSetup} style={{marginTop:"8px"}}>建立遊戲</button></div>
+          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 
   if (phase==="join") return (
-    <div className="page"><PasswordModal />
-      <h2 style={{textAlign:"center"}}>🎟️ 購買彩券</h2><p style={{marginBottom:"1rem",textAlign:"center"}}>截止前選好店、押好號，時間到開獎！</p>
-      <HeaderBar />
-      <div className="layout-3">
-        <div className="col"><WeeklyRecord /></div>
-        <div className="col">
-          <div className="card">
-            <label>你的名字</label>
-            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="輸入姓名" />
-            <label>餐廳類型</label>
-            <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})} style={{marginBottom:form.category?"6px":"12px"}}>
-              <option value="">— 請選擇類型 —</option>
-              {CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}
-            </select>
-            {form.category && (<>
-              <label>想吃的店家</label>
-              <select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})} style={{marginBottom:form.rest==="cust"?"6px":"12px"}}>
-                <option value="">— 請選擇店家 —</option>
-                {(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}
-                <option value="cust">＋ 其他（自行輸入，下次會出現在選單）</option>
-              </select>
-              {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}
-            </>)}
-            <label>選一個號碼（1 ~ 99，不可重複）</label>
-            <input type="text" inputMode="numeric" maxLength={2} value={form.number}
-              onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}}
-              placeholder="1 ~ 99" style={{marginBottom:"4px"}} />
-            {numWarn && <p style={{color:"#E24B4A",fontSize:"12px",marginTop:0,marginBottom:"8px"}}>{numWarn}</p>}
-            {takenNums.length>0 && (
-              <div style={{marginBottom:"12px"}}>
-                <p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"6px"}}>已被選走</p>
-                <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
-                  {takenNums.map(({num,name})=>(
-                    <span key={num} style={{background:"var(--bg2)",border:"1px solid var(--bd2)",borderRadius:"6px",padding:"2px 7px",fontSize:"12px",color:"var(--t2)",whiteSpace:"nowrap"}}>
-                      {num} <span style={{color:"var(--t3)"}}>({name})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <button onClick={doJoin}>確認加入 →</button>
-            <button className="ghost" onClick={openReset}>重新設定時間</button>
+    <div>
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" live={true} cd={cd} />
+      <div className="page fade-up">
+        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+        <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <div className="grid-3">
+          <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
+          <div className="col">
+            <div className="card">
+              <div className="form-title"><h2>加入遊戲</h2><p>選好店、押好幸運號碼</p></div>
+              <label>你的名字</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="輸入姓名" />
+              <label>餐廳類型</label>
+              <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
+              {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
+              <label>選一個號碼（1 ~ 99）</label><div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={2} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}} placeholder="1 ~ 99" style={{marginBottom:"8px"}} /></div>
+              {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
+              {takenNums.length>0 && (<div style={{marginBottom:"20px",marginTop:"8px"}}><p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"8px",fontWeight:"500"}}>已被選走</p><div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>{takenNums.map(({num,name})=>(<span key={num} className="num-chip taken">{num} <span style={{opacity:0.7,fontWeight:"400"}}>({name})</span></span>))}</div></div>)}
+              <div className="divider" /><button onClick={doJoin}>確認加入</button><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>重新設定時間</button>
+            </div>
           </div>
-        </div>
-        <div className="col">
-          {pts.length>0
-            ? <PtList list={pts} />
-            : <div className="card" style={{textAlign:"center",color:"var(--t3)",fontSize:"15px",padding:"2rem 1rem"}}>尚無人加入</div>}
+          <div className="col"><PtList list={pts} /></div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 
   if (phase==="joined") {
-    function editMyEntry() {
-      const myEntry = pts.find(p=>p.name===form.name);
-      if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""}));
-      setPhase("join");
-    }
+    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setPhase("join"); }
     return (
-      <div className="page"><PasswordModal />
-        <h2>⏳ 等待開獎中...</h2><p style={{marginBottom:"1rem"}}>坐好，時間到準時揭曉！</p>
-        <HeaderBar />
-        <div className="layout-3">
-          <div className="col"><WeeklyRecord /></div>
-          <div className="col">
-            <button className="ghost" onClick={editMyEntry}>✏️ 修改我的選擇</button>
-            <button className="ghost" onClick={openReset}>🗑️ 管理員：清除今日遊戲</button>
+      <div>
+        <SiteHeader title="等待開獎中" sub="時間到準時揭曉" live={true} cd={cd} />
+        <div className="page fade-up">
+          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+          <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+          <div className="grid-3">
+            <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
+            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
+            <div className="col"><PtList list={pts} /></div>
           </div>
-          <div className="col"><PtList list={pts} /></div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   if (phase==="results") {
     if (!result?.winner || pts.length < 2) return (
-      <div className="page"><PasswordModal />
-        <div className="layout">
-          <div className="layout-side"><WeeklyRecord /></div>
-          <div className="layout-main">
-            <h2>時間到！</h2><p style={{marginBottom:"1.5rem"}}>今天只有 {pts.length} 人參加，無法開獎</p>
-            <button className="ghost" onClick={openReset}>重新開始</button>
-          </div>
+      <div>
+        <SiteHeader title="開獎結果" />
+        <div className="page fade-up">
+          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+          <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
         </div>
+        <Footer />
       </div>
     );
-    const {winner, soloWin, drawnNumber, sorted} = result;
-    const allSorted = sorted || pts;
-    const maxTotal = (pts.length-1)*50;
+    const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts, maxTotal = (pts.length-1)*50;
     return (
-      <div className="page"><PasswordModal />
-        <div className="layout">
-          <div className="layout-side"><WeeklyRecord /></div>
-          <div className="layout-main">
-            <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
-              <p style={{marginTop:0,marginBottom:"6px",fontSize:"14px",letterSpacing:"1px",textTransform:"uppercase",color:"var(--t3)"}}>今天的號碼</p>
-              <div style={{fontSize:"96px",fontWeight:"700",lineHeight:1,color:"var(--accent)",fontVariantNumeric:"tabular-nums"}}>{drawnNumber}</div>
+      <div>
+        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} />
+        <div className="page fade-up">
+          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+          <div className="layout-2">
+            <div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
+            <div className="layout-main">
+              <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className="result-number">{drawnNumber}</div></div>
+              {soloWin ? (
+                <div style={{background:"#FFF7ED",border:"1px solid #FFEDD5",borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:"#F97316"}} /><span className="badge badge-gold" style={{marginBottom:"16px",display:"inline-flex"}}>完全命中 · 獨贏</span><div style={{fontSize:"32px",fontWeight:"700",color:"#9A3412",marginBottom:"8px"}}>{winner.name}</div><div style={{fontSize:"15px",fontWeight:"500",color:"#C2410C",marginBottom:"20px"}}>{winner.rest}</div><div style={{height:"1px",background:"#FED7AA",margin:"0 0 16px"}} /><p style={{marginTop:0,fontSize:"14px",color:"#9A3412"}}>請客方案 · 每人最多 <strong style={{color:"#7C2D12"}}>50 元</strong> · 共 {pts.length-1} 人，上限 {maxTotal} 元</p></div>
+              ) : (
+                <div style={{background:"#F0FDF4",border:"1px solid #DCFCE7",borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:"#22C55E"}} /><span className="badge badge-green" style={{marginBottom:"16px",display:"inline-flex"}}>最接近 · 各自付帳</span><div style={{fontSize:"28px",fontWeight:"700",color:"#166534",marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:"#15803D"}}>由 <strong style={{color:"#14532D",fontWeight:"600"}}>{winner.name}</strong> 推薦</div></div>
+              )}
+              <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
+                {allSorted.map((p,i) => {
+                  const dist = Math.abs(p.number - drawnNumber), isWinner = p.id === winner.id, ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];
+                  return (
+                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:isWinner?ramp.bg:"transparent",border:isWinner?`1px solid ${ramp.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"6px"}}><span style={{fontSize:"13px",fontWeight:"500",color:"var(--t3)",width:"24px",flexShrink:0}}>{i+1}</span><span style={{flex:1,fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?ramp.tx:"var(--t1)"}}>{p.name}</span><span style={{fontSize:"16px",fontWeight:"600",color:isWinner?ramp.tx:"var(--t2)",marginRight:"16px"}}>#{p.number}</span><span style={{fontSize:"13px",fontWeight:"500",color:isWinner?ramp.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>{dist===0?"命中":`差 ${dist}`}</span></div>
+                  );
+                })}
+              </div>
+              <button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始遊戲</button>
             </div>
-            {soloWin ? (<>
-              <div style={{background:"#FAEEDA",border:"2px solid #BA7517",borderRadius:"var(--rl)",padding:"1.5rem",marginBottom:"1rem",textAlign:"center"}}>
-                <div style={{fontSize:"14px",color:"#633806",marginBottom:"8px",fontWeight:"600",letterSpacing:"0.5px"}}>完全命中！獨贏！</div>
-                <div style={{fontSize:"32px",fontWeight:"800",color:"#412402",lineHeight:1.2}}>{winner.name}</div>
-                <div style={{fontSize:"18px",color:"#633806",marginTop:"10px"}}>{CAT_EMOJI[winner.category]} {winner.rest}</div>
-              </div>
-              <div className="card" style={{marginBottom:"1rem",textAlign:"center"}}>
-                <p style={{marginTop:0,marginBottom:"6px",fontSize:"15px"}}>請客方案</p>
-                <p style={{fontSize:"17px",color:"var(--t1)"}}>每人最多出 <strong>50 元</strong></p>
-                <p style={{marginTop:"4px",fontSize:"15px"}}>共 {pts.length-1} 人，上限共 {maxTotal} 元</p>
-              </div>
-            </>) : (<>
-              <div style={{background:"#E1F5EE",border:"2px solid #1D9E75",borderRadius:"var(--rl)",padding:"1.5rem",marginBottom:"1rem",textAlign:"center"}}>
-                <div style={{fontSize:"14px",color:"#085041",marginBottom:"8px",fontWeight:"600",letterSpacing:"0.5px"}}>最接近！各自付帳</div>
-                <div style={{fontSize:"36px",fontWeight:"800",color:"#04342C",lineHeight:1.2}}>{CAT_EMOJI[winner.category]} {winner.rest}</div>
-                <div style={{fontSize:"17px",color:"#1D9E75",marginTop:"10px"}}>由 <strong style={{color:"#04342C"}}>{winner.name}</strong> 選的</div>
-              </div>
-            </>)}
-            <div className="card" style={{marginBottom:"1rem"}}>
-              <p style={{fontSize:"14px",fontWeight:"600",letterSpacing:"0.5px",marginBottom:"12px",marginTop:0}}>本次排名</p>
-              {allSorted.map((p,i) => {
-                const dist = Math.abs(p.number - drawnNumber);
-                const isWinner = p.id === winner.id;
-                const rampIdx = pts.findIndex(x=>x.id===p.id);
-                const ramp = RAMPS[rampIdx%RAMPS.length];
-                return (
-                  <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 12px",background:isWinner?ramp.bg:"transparent",border:isWinner?`1px solid ${ramp.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"4px"}}>
-                    <span style={{fontSize:"15px",color:"var(--t3)",width:"26px"}}>{i+1}</span>
-                    <span style={{flex:1,fontWeight:isWinner?"700":"400",fontSize:"16px",color:isWinner?ramp.tx:"var(--t1)"}}>{p.name}</span>
-                    <span style={{fontSize:"17px",fontWeight:"600",color:isWinner?ramp.tx:"var(--t2)",marginRight:"10px"}}>#{p.number}</span>
-                    <span style={{fontSize:"14px",color:isWinner?ramp.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>
-                      {dist===0 ? "🎯 命中" : `距離 ${dist}`}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <button className="ghost" onClick={openReset}>重新開始</button>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
-
   return null;
 }
 
