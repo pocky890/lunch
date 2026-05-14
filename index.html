@@ -51,6 +51,7 @@
       min-height: 100vh;
       line-height: 1.55;
       -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
     
     #root { position: relative; z-index: 1; }
@@ -100,16 +101,22 @@
     }
     button:hover { background: #333336; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
     button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; transform: none !important; }
     
-    .ghost { background: #FFFFFF !important; border: 1px solid var(--b2) !important; color: var(--t1) !important; box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important; }
+    .ghost { background: #FFFFFF !important; border: 1px solid var(--b2) !important; color: var(--t1) !important; box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important; transition: all 0.2s; }
     .ghost:hover { background: #F9FAFB !important; border-color: var(--b3) !important; }
     .btn-sm { width: auto !important; padding: 6px 12px !important; font-size: 12px !important; margin-bottom: 0 !important; border-radius: 8px !important; }
     .btn-danger { background: transparent !important; border: 1px solid rgba(255,59,48,0.3) !important; color: var(--red) !important; box-shadow: none !important; }
     .btn-danger:hover { background: rgba(255,59,48,0.05) !important; }
 
+    /* --- ✨ 精緻的莫蘭迪冰藍質感漸層卡片 --- */
     .card {
-      background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r2);
-      padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.02);
+      background: linear-gradient(135deg, #FFFFFF 0%, #F6F8FC 60%, #EDF2F9 100%);
+      border: 1px solid rgba(0, 113, 227, 0.08);
+      border-radius: var(--r2);
+      padding: 24px; 
+      box-shadow: 0 8px 32px rgba(0, 17, 51, 0.03), 0 1px 2px rgba(0,0,0,0.02);
+      transition: all 0.3s ease;
     }
 
     .page { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
@@ -132,6 +139,7 @@
     .site-header {
       position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(229, 229, 234, 0.8);
       margin-bottom: 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
     .site-header-inner { max-width: 1080px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
     .logo { font-size: 16px; font-weight: 700; color: var(--t1); display: flex; align-items: center; gap: 10px; }
@@ -140,19 +148,32 @@
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.2); animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    .stat-card { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r2); padding: 24px; }
-    .stat-card.active-card { border-color: var(--abd); background-image: linear-gradient(180deg, var(--abg) 0%, transparent 80px); }
+    /* --- ✨ 精緻冰藍漸層數據卡片 --- */
+    .stat-card { 
+      background: linear-gradient(135deg, #FFFFFF 0%, #F6F8FC 60%, #EDF2F9 100%);
+      border: 1px solid rgba(0, 113, 227, 0.08); 
+      border-radius: var(--r2); 
+      padding: 24px; 
+      box-shadow: 0 4px 16px rgba(0, 17, 51, 0.02);
+      transition: all 0.3s ease;
+    }
+    .stat-card.active-card { 
+      border-color: var(--abd); 
+      background: linear-gradient(180deg, var(--abg) 0%, transparent 80px), linear-gradient(135deg, #FFFFFF 0%, #F6F8FC 60%, #EDF2F9 100%); 
+      box-shadow: 0 8px 24px rgba(0, 113, 227, 0.08);
+    }
+    
     .stat-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; margin-bottom: 12px; }
     .stat-value { font-size: 32px; font-weight: 700; color: var(--t1); line-height: 1; font-variant-numeric: tabular-nums; }
     .stat-value.accent { color: var(--a); }
     .stat-sub { font-size: 13px; color: var(--t3); margin-top: 10px; }
 
-    .week-row { display: flex; align-items: center; padding: 12px; border-radius: 10px; border: 1px solid transparent; margin-bottom: 4px; }
+    .week-row { display: flex; align-items: center; padding: 12px; border-radius: 10px; border: 1px solid transparent; margin-bottom: 4px; transition: background-color 0.3s ease;}
     .week-row.today { background: #F0F7FF; border-color: #D1E5FF; }
     .week-day { width: 36px; flex-shrink: 0; font-size: 13px; font-weight: 500; color: var(--t3); }
     .week-day.today { color: var(--a); font-weight: 600; }
 
-    .pt-row { display: flex; align-items: center; padding: 12px 16px; border-radius: var(--r); border: 1px solid var(--b1); background: var(--s2); margin-bottom: 8px; }
+    .pt-row { display: flex; align-items: center; padding: 12px 16px; border-radius: var(--r); border: 1px solid var(--b1); background: var(--s2); margin-bottom: 8px; transition: background-color 0.3s ease;}
     .pt-num { font-size: 18px; font-weight: 700; color: var(--a); min-width: 40px; text-align: right; }
 
     .num-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--s3); border: 1px solid var(--b1); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 500; }
@@ -170,12 +191,78 @@
 
     .page-footer { border-top: 1px solid var(--b1); margin-top: 64px; padding: 32px 0; text-align: center; }
     
-    .modal-bg { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeUp 0.2s ease; }
+    .modal-bg { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeUp 0.2s ease; transition: background-color 0.3s ease;}
 
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; color: var(--t3); border: 1px dashed var(--b2); border-radius: var(--r2); background: var(--s3); }
+    .empty-state { 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; 
+      padding: 48px 24px; text-align: center; color: var(--t3); 
+      border: 1px dashed rgba(0, 113, 227, 0.2); 
+      border-radius: var(--r2); 
+      background: linear-gradient(135deg, #FCFDFD 0%, #F0F4F8 100%); 
+      transition: all 0.3s ease;
+    }
     
     .result-number { font-size: 112px; font-weight: 800; background: linear-gradient(135deg, #1D1D1F 0%, #515154 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
     .section-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; margin-bottom: 16px; }
+
+    .toast-container {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: var(--t1); color: var(--bg); padding: 12px 24px; border-radius: 30px;
+      font-size: 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      z-index: 9999; animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .theme-toggle {
+      width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-size: 16px; margin-bottom: 0; box-shadow: none; border: 1px solid var(--b1) !important; background: transparent !important;
+    }
+
+    /* --- 手動深色模式 (深海藍質感漸層) --- */
+    body.dark-mode {
+      --bg:   #000000;
+      --s1:   #1C1C1E;
+      --s2:   #1C1C1E;
+      --s3:   #2C2C2E;
+      --s4:   #3A3A3C;
+      --b1:   #38383A;
+      --b2:   #48484A;
+      --b3:   #636366;
+      --t1:   #F5F5F7;
+      --t2:   #EBEBF5;
+      --t3:   rgba(235, 235, 245, 0.6);
+    }
+    
+    body.dark-mode .card,
+    body.dark-mode .stat-card {
+      background: linear-gradient(135deg, #2A2B30 0%, #1A1B20 100%);
+      border-color: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    
+    body.dark-mode .stat-card.active-card {
+      background: linear-gradient(180deg, rgba(0, 113, 227, 0.15) 0%, transparent 80px), linear-gradient(135deg, #2A2B30 0%, #1A1B20 100%);
+      border-color: var(--abd);
+    }
+
+    body.dark-mode .empty-state {
+      background: linear-gradient(135deg, #232428 0%, #17181C 100%);
+      border-color: #383A40;
+    }
+
+    body.dark-mode input, body.dark-mode select { background: var(--s3); color: var(--t1); }
+    body.dark-mode input:hover:not(:focus), body.dark-mode select:hover:not(:focus) { background: var(--s4); }
+    body.dark-mode input:focus, body.dark-mode select:focus { background: var(--s1); border-color: var(--a); box-shadow: 0 0 0 4px var(--abg); }
+    
+    body.dark-mode button:not(.ghost) { background: var(--t1); color: var(--bg); }
+    body.dark-mode button:not(.ghost):hover { background: #FFFFFF; }
+    
+    body.dark-mode .ghost { background: transparent !important; color: var(--t1) !important; border-color: var(--b2) !important; }
+    body.dark-mode .ghost:hover { background: var(--s3) !important; }
+    
+    body.dark-mode .site-header { background: rgba(0, 0, 0, 0.85); border-bottom-color: var(--b1); }
+    body.dark-mode .result-number { background: linear-gradient(135deg, #F5F5F7 0%, #86868B 100%); -webkit-background-clip: text; }
+    body.dark-mode .modal-bg { background: rgba(0, 0, 0, 0.6); }
+    body.dark-mode .logo-icon { background: var(--t1); color: var(--bg); }
   </style>
 </head>
 <body>
@@ -254,38 +341,34 @@ async function getOrDrawNumber(dateStr) {
   return drawn;
 }
 
-// ✨ 全新的判斷邏輯（同分時以開獎號碼取餘數決定）
+// 包含你的同分取餘數邏輯
 function determineResult(pts, drawnNumber) {
   if (!pts || pts.length === 0) return null;
   const exact = pts.find(p => p.number === drawnNumber);
   if (exact) return { winner: exact, soloWin: true, sorted: pts };
   
-  // 先依距離排序
   const sorted = [...pts].sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
-  
-  // 找出最小距離
   const minDiff = Math.abs(sorted[0].number - drawnNumber);
-  
-  // 篩選出所有距離一樣近的人
   const tiedWinners = sorted.filter(p => Math.abs(p.number - drawnNumber) === minDiff);
   
-  // 利用開獎號碼取餘數，決定最終贏家
   const winnerIndex = drawnNumber % tiedWinners.length;
   const finalWinner = tiedWinners[winnerIndex];
   
-  // 確保最終贏家排在第一位
   const finalSorted = [finalWinner, ...sorted.filter(p => p.id !== finalWinner.id)];
   return { winner: finalWinner, soloWin: false, sorted: finalSorted };
 }
 
-/* ── 獨立 UI Components (防止閃爍與重複渲染) ── */
-function SiteHeader({title, sub, live, cd}) {
+/* ── UI Components ── */
+function SiteHeader({title, sub, live, cd, isDark, toggleDark}) {
   return (
     <div className="site-header">
       <div className="site-header-inner">
         <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
         <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
           {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
+          <button className="ghost theme-toggle" onClick={toggleDark} title="切換深淺色模式">
+            {isDark ? "☀️" : "🌙"}
+          </button>
         </div>
       </div>
     </div>
@@ -331,12 +414,12 @@ function PtList({list}) {
   );
 }
 
-function PasswordModal({ show, pw, setPw, err, onConfirm, onCancel }) {
+function PasswordModal({ show, pw, setPw, err, onConfirm, onCancel, title="管理員驗證", desc="輸入密碼才能執行此操作" }) {
   if (!show) return null;
   return (
     <div className="modal-bg">
       <div className="card fade-up" style={{width:"340px",maxWidth:"90vw",boxShadow:"0 16px 48px rgba(0,0,0,0.12)"}}>
-        <div style={{marginBottom:"24px"}}><h2 style={{fontSize:"18px",marginBottom:"6px"}}>管理員驗證</h2><p style={{fontSize:"14px"}}>輸入密碼才能重設今天的遊戲</p></div>
+        <div style={{marginBottom:"24px"}}><h2 style={{fontSize:"18px",marginBottom:"6px"}}>{title}</h2><p style={{fontSize:"14px"}}>{desc}</p></div>
         <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onConfirm()} placeholder="輸入密碼" autoFocus />
         {err && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"-8px",marginBottom:"12px"}}>{err}</p>}
         <button onClick={onConfirm}>確認</button>
@@ -348,12 +431,18 @@ function PasswordModal({ show, pw, setPw, err, onConfirm, onCancel }) {
 
 function StatsPanel({weekly}) {
   const chartRef = useRef(null); const chartInstanceRef = useRef(null);
-  const allRecords = Object.entries(weekly); const restCounts = {};
+  
+  // ✨ 恢復：抓取全歷史資料來進行「持續統計」，不會被新的一週清空
+  const allRecords = Object.entries(weekly);
+  
+  const restCounts = {};
   allRecords.forEach(([, rec]) => { if (rec?.rest) restCounts[rec.rest] = (restCounts[rec.rest] || 0) + 1; });
   const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]);
+  
   const soloMap = {};
   allRecords.forEach(([date, rec]) => { if (rec?.soloWin && rec.winner) { if (!soloMap[rec.winner]) soloMap[rec.winner] = []; soloMap[rec.winner].push(date); } });
   const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
+  
   const BAR_COLORS = ["#0071E3","#34C759","#FF9500","#5AC8FA","#FF2D55","#AF52DE","#FFCC00","#FF3B30"];
   
   useEffect(() => {
@@ -369,24 +458,75 @@ function StatsPanel({weekly}) {
   
   return (
     <div style={{marginTop:"24px",display:"flex",flexDirection:"column",gap:"16px"}}>
-      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>店家中選次數</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
-      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>獨贏紀錄</p>{sortedSolo.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無獨贏紀錄</p> : sortedSolo.map(([name, dates]) => (<div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}><div style={{minWidth:"80px",flexShrink:0}}><div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div><div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div></div><div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>{[...dates].sort().map(d => { const [,mm,dd] = d.split("-"); return <span key={d} className="badge badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>; })}</div></div>))}</div>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>獨贏紀錄 (持續統計)</p>{sortedSolo.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無獨贏紀錄</p> : sortedSolo.map(([name, dates]) => (<div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}><div style={{minWidth:"80px",flexShrink:0}}><div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div><div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div></div><div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>{[...dates].sort().map(d => { const [,mm,dd] = d.split("-"); return <span key={d} className="badge badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>; })}</div></div>))}</div>
     </div>
   );
 }
 
 function WeeklyRecord({weekly, setWeekly, showStats, setShowStats}) {
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearPw, setClearPw] = useState("");
+  const [clearErr, setClearErr] = useState("");
+  const [targetDate, setTargetDate] = useState(null); // ✨ 新增：記住要刪除哪一天
+  
   const weekDates = getWeekDates(), today = todayStr();
-  async function clearWeekly() { const pw = window.prompt("管理員密碼"); if (pw === null) return; if (pw !== ADMIN_PASSWORD) { alert("密碼錯誤"); return; } await fSet("lunch/weekly", null); setWeekly({}); }
+
+  // ✨ 點擊單日垃圾桶的處理函式
+  function handleDeleteClick(date) {
+    setTargetDate(date);
+    setShowClearModal(true); setClearPw(""); setClearErr("");
+  }
+
+  // ✨ 精準刪除指定日期，圖表自動同步
+  async function confirmDelete() {
+    if (clearPw !== ADMIN_PASSWORD) { setClearErr("密碼錯誤"); return; }
+    setShowClearModal(false);
+    if (targetDate) {
+      await fRef(`lunch/weekly/${targetDate}`).remove(); 
+      setWeekly(prev => { const n={...prev}; delete n[targetDate]; return n; }); 
+      setTargetDate(null);
+    }
+  }
+
   return (
     <div className="card">
-      <div style={{display:"flex",alignItems:"center",marginBottom:"16px"}}><p className="section-label" style={{flex:1,marginBottom:0}}>本週紀錄</p><button onClick={()=>setShowStats(!showStats)} className="ghost btn-sm" style={{marginRight:"8px"}}>{showStats?"收起":"統計"}</button><button onClick={clearWeekly} className="btn-danger btn-sm">清除</button></div>
+      <PasswordModal show={showClearModal} pw={clearPw} setPw={setClearPw} err={clearErr} onConfirm={confirmDelete} onCancel={() => setShowClearModal(false)} desc={`輸入密碼才能刪除 ${targetDate} 的紀錄`} />
+      
+      <div style={{display:"flex",alignItems:"center",marginBottom:"16px"}}>
+        <p className="section-label" style={{flex:1,marginBottom:0}}>本週開獎結果</p>
+        <button onClick={()=>setShowStats(!showStats)} className="ghost btn-sm" style={{marginRight: 0}}>{showStats?"收起":"排行榜"}</button>
+        {/* ✨ 移除了原本危險的「一次清除全部」按鈕 */}
+      </div>
+      
       {weekDates.map((date,i) => {
         const rec = weekly[date], isToday = date===today;
         return (
-          <div key={date} className={`week-row${isToday?" today":""}`}><div className={`week-day${isToday?" today":""}`}>{WDAYS[i]}</div>
-            {rec ? (<div style={{flex:1,marginLeft:"12px",minWidth:0}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4}}>{rec.soloWin?rec.winner:rec.rest}</div><div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:"6px"}}>{rec.soloWin?rec.rest:rec.winner}{rec.soloWin && <span className="badge badge-gold">獨贏</span>}</div></div>) : <div style={{flex:1,marginLeft:"12px",fontSize:"14px",color:"var(--t3)"}}>—</div>}
-            {rec?.drawnNumber ? <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",marginLeft:"12px",minWidth:"40px",textAlign:"right",flexShrink:0}}>#{rec.drawnNumber}</div> : <div style={{minWidth:"40px"}} />}
+          <div key={date} className={`week-row${isToday?" today":""}`}>
+            <div className={`week-day${isToday?" today":""}`}>{WDAYS[i]}</div>
+            {rec ? (
+              <>
+                <div style={{flex:1,marginLeft:"12px",minWidth:0}}>
+                  <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4}}>{rec.soloWin?rec.winner:rec.rest}</div>
+                  <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:"6px"}}>{rec.soloWin?rec.rest:rec.winner}{rec.soloWin && <span className="badge badge-gold">獨贏</span>}</div>
+                </div>
+                <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",marginLeft:"12px",minWidth:"40px",textAlign:"right",flexShrink:0}}>#{rec.drawnNumber}</div>
+                
+                {/* ✨ 單日的精準刪除按鈕 (垃圾桶) */}
+                <button 
+                  className="ghost btn-danger" 
+                  style={{width: "28px", height: "28px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", marginLeft: "12px", marginBottom: 0, flexShrink: 0, opacity: 0.6}} 
+                  onClick={() => handleDeleteClick(date)} 
+                  title="刪除此日紀錄"
+                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+              </>
+            ) : (
+              <div style={{flex:1,marginLeft:"12px",fontSize:"14px",color:"var(--t3)"}}>—</div>
+            )}
           </div>
         );
       })}
@@ -402,7 +542,13 @@ function App() {
   const [pts, setPts] = useState([]);
   const [rests, setRests] = useState(mergeRests(null));
   const [weekly, setWeekly] = useState({});
-  const [form, setForm] = useState({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"});
+  
+  const [form, setForm] = useState(() => {
+    let savedName = "";
+    try { savedName = localStorage.getItem("lunch_name") || ""; } catch(e) {}
+    return { name: savedName, category:"", rest:"", cust:"", number:"", deadline:"11:50" };
+  });
+  
   const [result, setResult] = useState(null);
   const [cd, setCd] = useState("--:--");
   const [numWarn, setNumWarn] = useState("");
@@ -410,7 +556,29 @@ function App() {
   const [resetPw, setResetPw] = useState("");
   const [resetErr, setResetErr] = useState("");
   const [showStats, setShowStats] = useState(false);
+
+  // ✨ 確保 Loading 與 Toast 正常運作
+  const [isLoading, setIsLoading] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try { return localStorage.getItem("lunch_theme") === "dark"; } 
+    catch(e) { return false; }
+  });
+
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
+
+  function showToast(msg) {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(""), 3000);
+  }
+
+  useEffect(() => {
+    try {
+      if (isDarkMode) { document.body.classList.add("dark-mode"); localStorage.setItem("lunch_theme", "dark"); } 
+      else { document.body.classList.remove("dark-mode"); localStorage.setItem("lunch_theme", "light"); }
+    } catch(e) {}
+  }, [isDarkMode]);
 
   useEffect(() => { sessRef.current = sess; }, [sess]);
 
@@ -462,36 +630,61 @@ function App() {
   }, [phase, result]);
 
   async function doSetup() {
-    if (!/^\d{2}:\d{2}$/.test(form.deadline)) return alert("請輸入正確時間格式 HH:MM");
-    if (isDeadlinePassed(form.deadline)) return alert("截止時間已過！請設定未來的時間");
-    const s = {deadline:form.deadline, date:todayStr()};
-    await fSet("lunch/session", s); await fSet("lunch/participants", null);
-    setSess(s); setPts([]); setResult(null); setPhase("join");
+    if (!/^\d{2}:\d{2}$/.test(form.deadline)) return showToast("請輸入正確時間格式 HH:MM");
+    if (isDeadlinePassed(form.deadline)) return showToast("截止時間已過！請設定未來的時間");
+    
+    setIsLoading(true);
+    try {
+      const s = {deadline:form.deadline, date:todayStr()};
+      await fSet("lunch/session", s); await fSet("lunch/participants", null);
+      setSess(s); setPts([]); setResult(null); setPhase("join");
+    } catch (e) {
+      showToast("連線錯誤，請重試");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function doJoin() {
     const name = form.name.trim();
-    if (!name) return alert("請輸入姓名");
-    if (!form.category) return alert("請選擇餐廳類型");
+    if (!name) return showToast("請輸入姓名");
+    if (!form.category) return showToast("請選擇餐廳類型");
     const rest = form.rest==="cust" ? form.cust.trim() : form.rest;
-    if (!rest) return alert("請選擇或輸入店家");
+    if (!rest) return showToast("請選擇或輸入店家");
     const num = parseInt(form.number);
-    if (!num || num < 1 || num > 99) return alert("請輸入 1 到 99 之間的整數");
-    const s = await fGet("lunch/session");
-    if (!s || isDeadlinePassed(s.deadline)) return alert("已超過截止時間！");
-    const existing = snapToArr(await fGet("lunch/participants")), myEntry = existing.find(p=>p.name===name);
-    if (existing.some(p=>p.id!==(myEntry?.id) && p.number===num)) { setNumWarn(`數字 ${num} 已被選走，請換一個`); return; }
-    if (myEntry) { await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num}); } 
-    else { const newRef = fRef("lunch/participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
-    if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) { await fRef(`lunch/restaurants/${form.category}`).push(rest); setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]})); }
-    setPhase("joined");
+    if (!num || num < 1 || num > 99) return showToast("請輸入 1 到 99 之間的整數");
+    
+    setIsLoading(true);
+    try {
+      const s = await fGet("lunch/session");
+      if (!s || isDeadlinePassed(s.deadline)) {
+        setIsLoading(false);
+        return showToast("已超過截止時間！");
+      }
+      const existing = snapToArr(await fGet("lunch/participants")), myEntry = existing.find(p=>p.name===name);
+      if (existing.some(p=>p.id!==(myEntry?.id) && p.number===num)) { 
+        setIsLoading(false);
+        setNumWarn(`數字 ${num} 已被選走，請換一個`); 
+        return; 
+      }
+      
+      if (myEntry) { await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num}); } 
+      else { const newRef = fRef("lunch/participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
+      if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) { await fRef(`lunch/restaurants/${form.category}`).push(rest); setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]})); }
+      
+      try { localStorage.setItem("lunch_name", name); } catch(e) {}
+      setPhase("joined");
+    } catch (e) {
+      showToast("加入失敗，請重試");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function doReset() {
     const today = todayStr();
-    await fSet("lunch/session", null); await fSet("lunch/participants", null); await fSet(`lunch/drawn/${today}`, null); await fRef(`lunch/weekly/${today}`).remove();
+    await fSet("lunch/session", null); await fSet("lunch/participants", null); await fSet(`lunch/drawn/${today}`, null);
     savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--");
-    setWeekly(w => { const n={...w}; delete n[today]; return n; });
     setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"}); setPhase("setup");
   }
 
@@ -503,24 +696,31 @@ function App() {
 
   if (phase==="setup") return (
     <div>
-      <SiteHeader />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
       <div className="page fade-up">
-        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
-          <div className="card"><label>開獎時間</label><input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} /><button onClick={doSetup} style={{marginTop:"8px"}}>建立遊戲</button></div>
+          <div className="card">
+            <label>開獎時間</label>
+            <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
+            <button onClick={doSetup} disabled={isLoading} style={{marginTop:"8px"}}>
+              {isLoading ? "處理中..." : "建立遊戲"}
+            </button>
+          </div>
           <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
         </div>
       </div>
+      {toastMsg && <div className="toast-container">{toastMsg}</div>}
       <Footer />
     </div>
   );
 
   if (phase==="join") return (
     <div>
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" live={true} cd={cd} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" live={true} cd={cd} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
       <div className="page fade-up">
-        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
         <div className="grid-3">
           <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
@@ -534,12 +734,17 @@ function App() {
               <label>選一個號碼（1 ~ 99）</label><div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={2} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}} placeholder="1 ~ 99" style={{marginBottom:"8px"}} /></div>
               {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
               {takenNums.length>0 && (<div style={{marginBottom:"20px",marginTop:"8px"}}><p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"8px",fontWeight:"500"}}>已被選走</p><div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>{takenNums.map(({num,name})=>(<span key={num} className="num-chip taken">{num} <span style={{opacity:0.7,fontWeight:"400"}}>({name})</span></span>))}</div></div>)}
-              <div className="divider" /><button onClick={doJoin}>確認加入</button><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>重新設定時間</button>
+              <div className="divider" />
+              <button onClick={doJoin} disabled={isLoading}>
+                {isLoading ? "處理中..." : "確認加入"}
+              </button>
+              <button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>重新設定時間</button>
             </div>
           </div>
           <div className="col"><PtList list={pts} /></div>
         </div>
       </div>
+      {toastMsg && <div className="toast-container">{toastMsg}</div>}
       <Footer />
     </div>
   );
@@ -548,9 +753,9 @@ function App() {
     function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setPhase("join"); }
     return (
       <div>
-        <SiteHeader title="等待開獎中" sub="時間到準時揭曉" live={true} cd={cd} />
+        <SiteHeader title="等待開獎中" sub="時間到準時揭曉" live={true} cd={cd} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
         <div className="page fade-up">
-          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
           <div className="grid-3">
             <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
@@ -566,9 +771,9 @@ function App() {
   if (phase==="results") {
     if (!result?.winner || pts.length < 2) return (
       <div>
-        <SiteHeader title="開獎結果" />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
         <div className="page fade-up">
-          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
         </div>
         <Footer />
@@ -577,9 +782,9 @@ function App() {
     const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts, maxTotal = (pts.length-1)*50;
     return (
       <div>
-        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} />
+        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
         <div className="page fade-up">
-          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} />
+          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
             <div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} /></div>
             <div className="layout-main">
