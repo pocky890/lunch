@@ -359,14 +359,135 @@ function determineResult(pts, drawnNumber) {
   return { winner: finalWinner, soloWin: false, sorted: finalSorted };
 }
 
+function managedToRests(managed) {
+  const m = {};
+  for (const cat of CATEGORIES) { m[cat] = Object.keys(managed?.[cat] || {}).sort(); }
+  return m;
+}
+
+/* ── Admin Panel ── */
+function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord }) {
+  const [tab, setTab] = React.useState("restaurants");
+  const [cat, setCat] = React.useState(CATEGORIES[0]);
+  const [newRest, setNewRest] = React.useState("");
+  const [renaming, setRenaming] = React.useState(null);
+  const [renameVal, setRenameVal] = React.useState("");
+  const [todayWinner, setTodayWinner] = React.useState("");
+  const [todayRest, setTodayRest] = React.useState("");
+  const [saveMsg, setSaveMsg] = React.useState("");
+  const today = todayStr(), todayRec = weekly[today];
+  if (!open) return null;
+
+  if (!auth) return (
+    <div className="modal-bg">
+      <div className="card fade-up" style={{width:"340px",maxWidth:"90vw"}}>
+        <div style={{marginBottom:"20px"}}><h2 style={{fontSize:"18px",marginBottom:"6px"}}>管理員面板</h2><p>輸入密碼進入管理介面</p></div>
+        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onAuth(pw)} placeholder="輸入密碼" autoFocus />
+        {pwErr && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"-8px",marginBottom:"12px"}}>{pwErr}</p>}
+        <button onClick={()=>onAuth(pw)}>確認</button>
+        <button className="ghost" onClick={onClose}>取消</button>
+      </div>
+    </div>
+  );
+
+  const catRests = rests[cat] || [];
+  async function handleAdd() { const n=newRest.trim(); if(!n)return; await onAddRest(cat,n); setNewRest(""); }
+  async function handleRename() {
+    if(!renaming)return; const n=renameVal.trim(); if(!n){setRenaming(null);return;}
+    await onRenameRest(renaming.cat, renaming.name, n); setRenaming(null);
+  }
+  async function handleSave() {
+    await onSaveTodayRecord(todayWinner, todayRest);
+    setSaveMsg("已儲存 ✓"); setTimeout(()=>setSaveMsg(""),2000);
+  }
+
+  const tabBtn = (id,label) => (
+    <button key={id} onClick={()=>{setTab(id);if(id==="record"&&todayRec){setTodayWinner(todayRec.winner||"");setTodayRest(todayRec.rest||"");}}}
+      style={{marginBottom:0,width:"auto",padding:"8px 16px",fontSize:"13px",borderRadius:"8px",
+        background:tab===id?"var(--a)":"transparent",color:tab===id?"#fff":"var(--t2)",
+        border:tab===id?"none":"1px solid var(--b2)"}}>
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="card fade-up" style={{width:"580px",maxWidth:"95vw",maxHeight:"82vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:"20px",flexShrink:0}}>
+          <h2 style={{flex:1,fontSize:"18px"}}>管理員面板</h2>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+        <div style={{display:"flex",gap:"8px",marginBottom:"20px",flexShrink:0}}>
+          {tabBtn("restaurants","🍜 餐廳管理")}
+          {tabBtn("record","📋 今日紀錄")}
+        </div>
+        <div style={{flex:1,overflowY:"auto"}}>
+          {tab==="restaurants" && <>
+            <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px"}}>
+              {CATEGORIES.map(c=>(
+                <button key={c} onClick={()=>{setCat(c);setRenaming(null);}}
+                  style={{marginBottom:0,width:"auto",padding:"6px 12px",fontSize:"12px",borderRadius:"20px",
+                    background:cat===c?"var(--t1)":"transparent",color:cat===c?"#fff":"var(--t2)",
+                    border:cat===c?"none":"1px solid var(--b2)"}}>
+                  {CAT_EMOJI[c]} {c}
+                </button>
+              ))}
+            </div>
+            <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",overflow:"hidden",marginBottom:"16px"}}>
+              {catRests.length===0
+                ? <div style={{padding:"20px",textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無店家</div>
+                : catRests.map((name,idx)=>(
+                  <div key={name} style={{display:"flex",alignItems:"center",padding:"10px 14px",gap:"8px",borderBottom:idx<catRests.length-1?"1px solid var(--b1)":"none"}}>
+                    {renaming?.cat===cat&&renaming?.name===name ? <>
+                      <input value={renameVal} onChange={e=>setRenameVal(e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")handleRename();if(e.key==="Escape")setRenaming(null);}}
+                        autoFocus style={{flex:1,marginBottom:0,fontSize:"14px"}} />
+                      <button onClick={handleRename} style={{width:"auto",padding:"6px 12px",fontSize:"12px",marginBottom:0}}>確認</button>
+                      <button className="ghost" onClick={()=>setRenaming(null)} style={{width:"auto",padding:"6px 12px",fontSize:"12px",marginBottom:0}}>取消</button>
+                    </> : <>
+                      <span style={{flex:1,fontSize:"14px",color:"var(--t1)"}}>{name}</span>
+                      <button className="ghost" onClick={()=>{setRenaming({cat,name});setRenameVal(name);}}
+                        style={{width:"auto",padding:"5px 10px",fontSize:"12px",marginBottom:0}}>改名</button>
+                      <button className="ghost btn-danger" onClick={()=>onDeleteRest(cat,name)}
+                        style={{width:"auto",padding:"5px 10px",fontSize:"12px",marginBottom:0}}>刪除</button>
+                    </>}
+                  </div>
+                ))
+              }
+            </div>
+            <div style={{display:"flex",gap:"8px"}}>
+              <input value={newRest} onChange={e=>setNewRest(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAdd()}
+                placeholder={`在「${cat}」新增店家`} style={{flex:1,marginBottom:0}} />
+              <button onClick={handleAdd} style={{width:"auto",padding:"12px 16px",marginBottom:0,flexShrink:0}}>新增</button>
+            </div>
+          </>}
+          {tab==="record" && (
+            !todayRec
+              ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>今天尚無開獎紀錄</div>
+              : <>
+                  <label>中獎者</label>
+                  <input value={todayWinner} onChange={e=>setTodayWinner(e.target.value)} />
+                  <label>餐廳</label>
+                  <input value={todayRest} onChange={e=>setTodayRest(e.target.value)} />
+                  <button onClick={handleSave}>儲存變更</button>
+                  {saveMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"-4px"}}>{saveMsg}</p>}
+                </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── UI Components ── */
-function SiteHeader({title, sub, isDark, toggleDark}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin}) {
   return (
     <div className="site-header">
       <div className="site-header-inner">
         <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
         <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
           {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
+          <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>
           <button className="ghost theme-toggle" onClick={toggleDark} title="切換深淺色模式">
             {isDark ? "☀️" : "🌙"}
           </button>
@@ -570,6 +691,19 @@ function App() {
     catch(e) { return false; }
   });
 
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminAuth, setAdminAuth] = useState(false);
+  const [adminPw, setAdminPw] = useState("");
+  const [adminPwErr, setAdminPwErr] = useState("");
+
+  function openAdmin() { setAdminOpen(true); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
+  function closeAdmin() { setAdminOpen(false); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
+  function handleAdminAuth(pw) { if (pw===ADMIN_PASSWORD) { setAdminAuth(true); setAdminPwErr(""); } else { setAdminPwErr("密碼錯誤"); } }
+  async function adminAddRest(cat, name) { await fRef(`lunch/restaurants_managed/${cat}/${name}`).set(true); }
+  async function adminDeleteRest(cat, name) { await fRef(`lunch/restaurants_managed/${cat}/${name}`).remove(); }
+  async function adminRenameRest(cat, oldName, newName) { if (oldName===newName) return; await fRef(`lunch/restaurants_managed/${cat}/${newName}`).set(true); await fRef(`lunch/restaurants_managed/${cat}/${oldName}`).remove(); }
+  async function adminSaveTodayRecord(winner, rest) { const today=todayStr(); if (!weekly[today]) return; await fRef(`lunch/weekly/${today}`).update({winner, rest}); }
+
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
 
   function showToast(msg) {
@@ -586,6 +720,20 @@ function App() {
 
   useEffect(() => { sessRef.current = sess; }, [sess]);
 
+  // 餐廳清單即時監聽（首次自動從 DEFAULT_RESTS 初始化）
+  useEffect(() => {
+    const ref = fRef("lunch/restaurants_managed");
+    const handler = async snap => {
+      if (snap.val() === null) {
+        const seed = {};
+        for (const cat of CATEGORIES) { seed[cat] = {}; DEFAULT_RESTS[cat].forEach(n => { seed[cat][n] = true; }); }
+        await fSet("lunch/restaurants_managed", seed);
+      } else { setRests(managedToRests(snap.val())); }
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
   // 週紀錄即時監聽（所有人自動同步）
   useEffect(() => {
     const ref = fRef("lunch/weekly");
@@ -595,8 +743,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fGet("lunch/session"),fGet("lunch/restaurants"),fGet("lunch/participants")]).then(async ([s,custR,ptsObj]) => {
-      setRests(mergeRests(custR));
+    Promise.all([fGet("lunch/session"),fGet("lunch/participants")]).then(async ([s,ptsObj]) => {
       const today = todayStr();
       if (!s || s.date !== today) { setPhase("setup"); return; }
       const p = snapToArr(ptsObj); setSess(s); setPts(p);
@@ -688,7 +835,7 @@ function App() {
       
       if (myEntry) { await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num}); } 
       else { const newRef = fRef("lunch/participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
-      if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) { await fRef(`lunch/restaurants/${form.category}`).push(rest); setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]})); }
+      if (form.rest==="cust" && rest) { await fRef(`lunch/restaurants_managed/${form.category}/${rest}`).set(true); }
       
       try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
       setPhase("joined");
@@ -713,11 +860,14 @@ function App() {
 
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
+  const AP = <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} />;
+
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
   if (phase==="setup") return (
     <div>
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
+      {AP}
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
@@ -739,7 +889,8 @@ function App() {
 
   if (phase==="join") return (
     <div>
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
+      {AP}
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -774,7 +925,8 @@ function App() {
     function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setPhase("join"); }
     return (
       <div>
-        <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
+        {AP}
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -792,7 +944,8 @@ function App() {
   if (phase==="results") {
     if (!result?.winner || pts.length < 2) return (
       <div>
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
+        {AP}
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
@@ -803,7 +956,8 @@ function App() {
     const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts, maxTotal = (pts.length-1)*50;
     return (
       <div>
-        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} />
+        {AP}
+        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
