@@ -264,6 +264,16 @@
     body.dark-mode .result-number { background: linear-gradient(135deg, #F5F5F7 0%, #86868B 100%); -webkit-background-clip: text; }
     body.dark-mode .modal-bg { background: rgba(0, 0, 0, 0.6); }
     body.dark-mode .logo-icon { background: var(--t1); color: var(--bg); }
+
+    /* --- 深色模式：hardcode 亮色修正 --- */
+    body.dark-mode .week-row.today { background: rgba(0, 113, 227, 0.15); border-color: rgba(0, 113, 227, 0.35); }
+    body.dark-mode .badge-gold  { background: rgba(194, 65, 12, 0.18); color: #FDBA74; border-color: rgba(194, 65, 12, 0.35); }
+    body.dark-mode .badge-green { background: rgba(21, 128, 61, 0.18); color: #86EFAC; border-color: rgba(21, 128, 61, 0.35); }
+    body.dark-mode .num-chip.taken { background: rgba(153, 27, 27, 0.2); border-color: rgba(239, 68, 68, 0.3); color: #FCA5A5; }
+    /* RAMPS 參加者列表：覆蓋 inline 的 pastel 背景與深色文字 */
+    body.dark-mode .pt-row { background: var(--s3) !important; border-color: var(--b1) !important; }
+    body.dark-mode .pt-row > * { color: var(--t2) !important; }
+    body.dark-mode .pt-row .pt-num { color: var(--a) !important; }
   </style>
 </head>
 <body>
