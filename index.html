@@ -385,6 +385,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
   const [todayWinner, setTodayWinner] = React.useState("");
   const [todayRest, setTodayRest] = React.useState("");
   const [saveMsg, setSaveMsg] = React.useState("");
+  const [testMsg, setTestMsg] = React.useState("");
   const today = todayStr(), todayRec = weekly[today];
   if (!open) return null;
 
@@ -410,6 +411,19 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
     await onSaveTodayRecord(todayWinner, todayRest);
     setSaveMsg("已儲存 ✓"); setTimeout(()=>setSaveMsg(""),2000);
   }
+  async function handleTestNotify() {
+    setTestMsg("發送中…");
+    try {
+      await fetch("https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ winner:"測試人員", rest:"測試餐廳", drawnNumber:42, soloWin:false, totalPeople:5 })
+      });
+      setTestMsg("✓ 已送出測試通知"); setTimeout(()=>setTestMsg(""),3000);
+    } catch(e) {
+      setTestMsg("✗ 發送失敗"); setTimeout(()=>setTestMsg(""),3000);
+    }
+  }
 
   const tabBtn = (id,label) => (
     <button key={id} onClick={()=>{setTab(id);if(id==="record"&&todayRec){setTodayWinner(todayRec.winner||"");setTodayRest(todayRec.rest||"");}}}
@@ -430,6 +444,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
         <div style={{display:"flex",gap:"8px",marginBottom:"20px",flexShrink:0}}>
           {tabBtn("restaurants","🍜 餐廳管理")}
           {tabBtn("record","📋 今日紀錄")}
+          {tabBtn("test","🔔 測試通知")}
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="restaurants" && <>
@@ -471,6 +486,19 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
               <button onClick={handleAdd} style={{width:"auto",padding:"12px 16px",marginBottom:0,flexShrink:0}}>新增</button>
             </div>
           </>}
+          {tab==="test" && (
+            <div style={{textAlign:"center",padding:"16px 0"}}>
+              <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"20px",lineHeight:1.6}}>送出假資料到 n8n webhook<br/>不影響 Firebase 任何紀錄</p>
+              <div style={{background:"var(--s3)",borderRadius:"var(--r)",padding:"14px 16px",marginBottom:"20px",textAlign:"left",fontSize:"13px",color:"var(--t2)",lineHeight:1.8}}>
+                <div>中獎者：<strong style={{color:"var(--t1)"}}>測試人員</strong></div>
+                <div>餐廳：<strong style={{color:"var(--t1)"}}>測試餐廳</strong></div>
+                <div>號碼：<strong style={{color:"var(--t1)"}}>#42</strong></div>
+                <div>人數：<strong style={{color:"var(--t1)"}}>5 人</strong></div>
+              </div>
+              <button onClick={handleTestNotify} style={{width:"auto",padding:"12px 32px",margin:"0 auto"}}>發送測試通知</button>
+              {testMsg && <p style={{marginTop:"12px",fontSize:"14px",color:"var(--a)"}}>{testMsg}</p>}
+            </div>
+          )}
           {tab==="record" && (
             !todayRec
               ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>今天尚無開獎紀錄</div>
