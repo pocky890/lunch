@@ -437,7 +437,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
               {CATEGORIES.map(c=>(
                 <button key={c} onClick={()=>{setCat(c);setRenaming(null);}}
                   style={{marginBottom:0,width:"auto",padding:"6px 12px",fontSize:"12px",borderRadius:"20px",
-                    background:cat===c?"var(--t1)":"transparent",color:cat===c?"#fff":"var(--t2)",
+                    background:cat===c?"var(--a)":"transparent",color:cat===c?"#fff":"var(--t2)",
                     border:cat===c?"none":"1px solid var(--b2)"}}>
                   {CAT_EMOJI[c]} {c}
                 </button>
@@ -964,6 +964,13 @@ function App() {
       </div>
     );
     const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts, maxTotal = (pts.length-1)*50;
+    // 深色模式下 winner 卡片 & 排名列替代色
+    const gc = isDarkMode
+      ? {bg:"rgba(34,197,94,0.10)",bd:"rgba(34,197,94,0.25)",top:"#22C55E",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
+      : {bg:"#F0FDF4",bd:"#DCFCE7",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"};
+    const oc = isDarkMode
+      ? {bg:"rgba(249,115,22,0.10)",bd:"rgba(249,115,22,0.25)",top:"#F97316",h:"#FDBA74",sub:"#FB923C",div:"rgba(249,115,22,0.25)",p:"#FDBA74",str:"#FB923C"}
+      : {bg:"#FFF7ED",bd:"#FFEDD5",top:"#F97316",h:"#9A3412",sub:"#C2410C",div:"#FED7AA",p:"#9A3412",str:"#7C2D12"};
     return (
       <div>
         {AP}
@@ -975,15 +982,16 @@ function App() {
             <div className="layout-main">
               <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className="result-number">{drawnNumber}</div></div>
               {soloWin ? (
-                <div style={{background:"#FFF7ED",border:"1px solid #FFEDD5",borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:"#F97316"}} /><span className="badge badge-gold" style={{marginBottom:"16px",display:"inline-flex"}}>完全命中 · 獨贏</span><div style={{fontSize:"32px",fontWeight:"700",color:"#9A3412",marginBottom:"8px"}}>{winner.name}</div><div style={{fontSize:"15px",fontWeight:"500",color:"#C2410C",marginBottom:"20px"}}>{winner.rest}</div><div style={{height:"1px",background:"#FED7AA",margin:"0 0 16px"}} /><p style={{marginTop:0,fontSize:"14px",color:"#9A3412"}}>請客方案 · 每人最多 <strong style={{color:"#7C2D12"}}>50 元</strong> · 共 {pts.length-1} 人，上限 {maxTotal} 元</p></div>
+                <div style={{background:oc.bg,border:`1px solid ${oc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:oc.top}} /><span className="badge badge-gold" style={{marginBottom:"16px",display:"inline-flex"}}>完全命中 · 獨贏</span><div style={{fontSize:"32px",fontWeight:"700",color:oc.h,marginBottom:"8px"}}>{winner.name}</div><div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px"}}>{winner.rest}</div><div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} /><p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · 每人最多 <strong style={{color:oc.str}}>50 元</strong> · 共 {pts.length-1} 人，上限 {maxTotal} 元</p></div>
               ) : (
-                <div style={{background:"#F0FDF4",border:"1px solid #DCFCE7",borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:"#22C55E"}} /><span className="badge badge-green" style={{marginBottom:"16px",display:"inline-flex"}}>最接近 · 各自付帳</span><div style={{fontSize:"28px",fontWeight:"700",color:"#166534",marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:"#15803D"}}>由 <strong style={{color:"#14532D",fontWeight:"600"}}>{winner.name}</strong> 推薦</div></div>
+                <div style={{background:gc.bg,border:`1px solid ${gc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:gc.top}} /><span className="badge badge-green" style={{marginBottom:"16px",display:"inline-flex"}}>最接近 · 各自付帳</span><div style={{fontSize:"28px",fontWeight:"700",color:gc.h,marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:gc.sub}}>由 <strong style={{color:gc.str,fontWeight:"600"}}>{winner.name}</strong> 推薦</div></div>
               )}
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
                   const dist = Math.abs(p.number - drawnNumber), isWinner = p.id === winner.id, ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];
+                  const wr = isWinner ? (isDarkMode ? {bg:gc.bg,bd:gc.bd,tx:gc.h} : {bg:ramp.bg,bd:ramp.bd,tx:ramp.tx}) : null;
                   return (
-                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:isWinner?ramp.bg:"transparent",border:isWinner?`1px solid ${ramp.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"6px"}}><span style={{fontSize:"13px",fontWeight:"500",color:"var(--t3)",width:"24px",flexShrink:0}}>{i+1}</span><span style={{flex:1,fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?ramp.tx:"var(--t1)"}}>{p.name}</span><span style={{fontSize:"16px",fontWeight:"600",color:isWinner?ramp.tx:"var(--t2)",marginRight:"16px"}}>#{p.number}</span><span style={{fontSize:"13px",fontWeight:"500",color:isWinner?ramp.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>{dist===0?"命中":`差 ${dist}`}</span></div>
+                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:isWinner?wr.bg:"transparent",border:isWinner?`1px solid ${wr.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"6px"}}><span style={{fontSize:"13px",fontWeight:"500",color:"var(--t3)",width:"24px",flexShrink:0}}>{i+1}</span><span style={{flex:1,fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)"}}>{p.name}</span><span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)",marginRight:"16px"}}>#{p.number}</span><span style={{fontSize:"13px",fontWeight:"500",color:isWinner?wr.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>{dist===0?"命中":`差 ${dist}`}</span></div>
                   );
                 })}
               </div>
