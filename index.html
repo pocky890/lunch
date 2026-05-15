@@ -293,7 +293,8 @@
     appId:             "1:992662799993:web:3bc3c1c3fd78dd7f8fb6a8"
   };
   const ADMIN_PASSWORD = "7788";
-  const DB_PREFIX    = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
+  const DB_PREFIX         = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
+  const TEST_DRAWN_NUMBER = 78; // 測試模式固定開獎號碼
   const WEBHOOK_URL  = DB_PREFIX === "lunch_test"
     ? "https://epf-agent.perfectcorp.com/webhook/747f6aca-3a7d-476a-a271-7a80c71363f9"
     : "https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7";
@@ -355,7 +356,7 @@ function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { con
 
 async function getOrDrawNumber(dateStr) {
   let drawn = null;
-  await fRef(`drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = Math.floor(Math.random() * 99) + 1; return drawn; });
+  await fRef(`drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = DB_PREFIX === "lunch_test" ? TEST_DRAWN_NUMBER : Math.floor(Math.random() * 99) + 1; return drawn; });
   if (drawn === null) drawn = await fGet(`drawn/${dateStr}`);
   return drawn;
 }
@@ -455,14 +456,15 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
   async function handleTestNotify(soloWin) {
     setTestMsg("發送中…");
     try {
-      await fetch(WEBHOOK_URL, {
+      const res = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winner:"測試人員", winnerNumber:33, rest:"測試餐廳", drawnNumber:42, soloWin: soloWin ? 1 : 0, totalPeople:5 })
+        body: JSON.stringify({ winner:"測試人員", winnerNumber:33, rest:"測試餐廳", drawnNumber:TEST_DRAWN_NUMBER, soloWin: soloWin ? 1 : 0, totalPeople:5 })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTestMsg(`✓ 已送出「${soloWin?"獨贏":"最接近"}」測試通知`); setTimeout(()=>setTestMsg(""),3000);
     } catch(e) {
-      setTestMsg("✗ 發送失敗"); setTimeout(()=>setTestMsg(""),3000);
+      setTestMsg(`✗ 發送失敗：${e.message}`); setTimeout(()=>setTestMsg(""),5000);
     }
   }
 
@@ -533,7 +535,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
               <div style={{background:"var(--s3)",borderRadius:"var(--r)",padding:"14px 16px",marginBottom:"20px",fontSize:"13px",color:"var(--t2)",lineHeight:1.8}}>
                 <div>中獎者：<strong style={{color:"var(--t1)"}}>測試人員</strong></div>
                 <div>餐廳：<strong style={{color:"var(--t1)"}}>測試餐廳</strong></div>
-                <div>號碼：<strong style={{color:"var(--t1)"}}>#42</strong></div>
+                <div>號碼：<strong style={{color:"var(--t1)"}}>#{TEST_DRAWN_NUMBER}</strong></div>
                 <div>人數：<strong style={{color:"var(--t1)"}}>5 人</strong></div>
               </div>
               <div style={{display:"flex",gap:"8px"}}>
