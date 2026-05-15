@@ -642,7 +642,7 @@ function StatsPanel({weekly, isDark}) {
 
   const restCounts = {};
   allRecords.forEach(([, rec]) => { if (rec?.rest) restCounts[rec.rest] = (restCounts[rec.rest] || 0) + 1; });
-  const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]);
+  const sortedRests = Object.entries(restCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
 
   const soloMap = {};
   allRecords.forEach(([date, rec]) => { if (rec?.soloWin && rec.winner) { if (!soloMap[rec.winner]) soloMap[rec.winner] = []; soloMap[rec.winner].push(date); } });
