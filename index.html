@@ -667,7 +667,7 @@ function StatsPanel({weekly, isDark}) {
   
   return (
     <div style={{marginTop:"24px",display:"flex",flexDirection:"column",gap:"16px"}}>
-      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>Top 10 店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>獨贏紀錄 (持續統計)</p>{sortedSolo.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無獨贏紀錄</p> : sortedSolo.map(([name, dates]) => (<div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}><div style={{minWidth:"80px",flexShrink:0}}><div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div><div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div></div><div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>{[...dates].sort().map(d => { const [,mm,dd] = d.split("-"); return <span key={d} className="badge badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>; })}</div></div>))}</div>
     </div>
   );
