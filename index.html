@@ -604,7 +604,17 @@ function App() {
         const drawn = await getOrDrawNumber(today); const res = determineResult(p, drawn);
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
-      } else { setPhase("join"); }
+      } else {
+        // 同台電腦開新分頁：若今天已送出過，直接恢復 joined 狀態
+        let joinedDate = "";
+        try { joinedDate = localStorage.getItem("lunch_joined_date") || ""; } catch(e) {}
+        const savedName = form.name;
+        if (joinedDate === today && savedName && p.some(pt => pt.name === savedName)) {
+          setPhase("joined");
+        } else {
+          setPhase("join");
+        }
+      }
     }).catch(() => setPhase("setup"));
   }, []);
 
@@ -680,7 +690,7 @@ function App() {
       else { const newRef = fRef("lunch/participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
       if (form.rest==="cust" && rest && !DEFAULT_RESTS[form.category]?.includes(rest)) { await fRef(`lunch/restaurants/${form.category}`).push(rest); setRests(r => ({...r, [form.category]: [...new Set([...(r[form.category]||[]), rest])]})); }
       
-      try { localStorage.setItem("lunch_name", name); } catch(e) {}
+      try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
       setPhase("joined");
     } catch (e) {
       showToast("加入失敗，請重試");
