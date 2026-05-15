@@ -293,7 +293,10 @@
     appId:             "1:992662799993:web:3bc3c1c3fd78dd7f8fb6a8"
   };
   const ADMIN_PASSWORD = "7788";
-  const DB_PREFIX = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
+  const DB_PREFIX    = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
+  const WEBHOOK_URL  = DB_PREFIX === "lunch_test"
+    ? "https://epf-agent.perfectcorp.com/webhook/747f6aca-3a7d-476a-a271-7a80c71363f9"
+    : "https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7";
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -452,7 +455,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
   async function handleTestNotify(soloWin) {
     setTestMsg("發送中…");
     try {
-      await fetch("https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7", {
+      await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ winner:"測試人員", winnerNumber:33, rest:"測試餐廳", drawnNumber:42, soloWin: soloWin ? 1 : 0, totalPeople:5 })
@@ -957,7 +960,7 @@ function App() {
       if ((w||{})[today]) { setWeekly(w); return; }
       const nw = {...(w||{}), [today]: {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber}};
       await fSet("weekly", nw); setWeekly(nw);
-      fetch("https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7", {
+      fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
