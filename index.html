@@ -805,6 +805,17 @@ function App() {
       if ((w||{})[today]) { setWeekly(w); return; }
       const nw = {...(w||{}), [today]: {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber}};
       await fSet("lunch/weekly", nw); setWeekly(nw);
+      fetch("https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          winner:      result.winner.name,
+          rest:        result.winner.rest,
+          drawnNumber: result.drawnNumber,
+          soloWin:     result.soloWin,
+          totalPeople: pts.length
+        })
+      }).catch(() => {});
     });
   }, [phase, result]);
 
