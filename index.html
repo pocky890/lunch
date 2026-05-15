@@ -417,7 +417,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
       await fetch("https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winner:"測試人員", rest:"測試餐廳", drawnNumber:42, soloWin: soloWin ? 1 : 0, totalPeople:5 })
+        body: JSON.stringify({ winner:"測試人員", winnerNumber:33, rest:"測試餐廳", drawnNumber:42, soloWin: soloWin ? 1 : 0, totalPeople:5 })
       });
       setTestMsg(`✓ 已送出「${soloWin?"獨贏":"最接近"}」測試通知`); setTimeout(()=>setTestMsg(""),3000);
     } catch(e) {
@@ -840,11 +840,12 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          winner:      result.winner.name,
-          rest:        result.winner.rest,
-          drawnNumber: result.drawnNumber,
-          soloWin:     result.soloWin ? 1 : 0,
-          totalPeople: pts.length
+          winner:       result.winner.name,
+          winnerNumber: result.winner.number,
+          rest:         result.winner.rest,
+          drawnNumber:  result.drawnNumber,
+          soloWin:      result.soloWin ? 1 : 0,
+          totalPeople:  pts.length
         })
       }).catch(() => {});
     });
