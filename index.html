@@ -274,6 +274,10 @@
     body.dark-mode .pt-row { background: var(--s3) !important; border-color: var(--b1) !important; }
     body.dark-mode .pt-row > * { color: var(--t2) !important; }
     body.dark-mode .pt-row .pt-num { color: var(--a) !important; }
+
+    /* ─── 開獎動畫 ─── */
+    @keyframes numFlash { 0%,100%{opacity:1;}50%{opacity:0.2;} }
+    @keyframes revealPop { 0%{transform:scale(0.7);opacity:0;}60%{transform:scale(1.18);}100%{transform:scale(1);opacity:1;} }
   </style>
 </head>
 <body>
@@ -289,6 +293,7 @@
     appId:             "1:992662799993:web:3bc3c1c3fd78dd7f8fb6a8"
   };
   const ADMIN_PASSWORD = "7788";
+  const DB_PREFIX = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -304,7 +309,7 @@ const { useState, useEffect, useRef } = React;
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const db   = firebase.database();
-const fRef = p => db.ref(p);
+const fRef = p => db.ref(`${DB_PREFIX}/${p}`);
 const fGet = p => fRef(p).once("value").then(s => s.val());
 const fSet = (p, v) => fRef(p).set(v);
 
@@ -347,8 +352,8 @@ function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { con
 
 async function getOrDrawNumber(dateStr) {
   let drawn = null;
-  await fRef(`lunch/drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = Math.floor(Math.random() * 99) + 1; return drawn; });
-  if (drawn === null) drawn = await fGet(`lunch/drawn/${dateStr}`);
+  await fRef(`drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = Math.floor(Math.random() * 99) + 1; return drawn; });
+  if (drawn === null) drawn = await fGet(`drawn/${dateStr}`);
   return drawn;
 }
 
@@ -373,6 +378,39 @@ function managedToRests(managed) {
   const m = {};
   for (const cat of CATEGORIES) { m[cat] = Object.keys(managed?.[cat] || {}).sort(); }
   return m;
+}
+
+/* ── Draw Animation ── */
+function DrawAnimation({ drawnNumber, onDone, isDark }) {
+  const [num, setNum] = React.useState(Math.floor(Math.random()*99)+1);
+  const [revealed, setRevealed] = React.useState(false);
+  React.useEffect(() => {
+    const ts = [];
+    const s = (fn, d) => { const t = setTimeout(fn, d); ts.push(t); };
+    let cum = 0;
+    // 快(55ms×25) → 中(110ms×10) → 慢(220ms×6) → 很慢(360ms×3)
+    [...Array(25).fill(55), ...Array(10).fill(110), ...Array(6).fill(220), ...Array(3).fill(360)].forEach(d => {
+      cum += d; s(() => setNum(Math.floor(Math.random()*99)+1), cum);
+    });
+    cum += 420;
+    s(() => { setNum(drawnNumber); setRevealed(true); }, cum);
+    s(onDone, cum + 1900);
+    return () => ts.forEach(clearTimeout);
+  }, []);
+  return (
+    <div style={{position:"fixed",inset:0,background:isDark?"#000000":"#EEF2F9",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:2000,animation:"fadeUp 0.4s ease both"}}>
+      <p style={{fontSize:"12px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"28px"}}>今日幸運號碼</p>
+      <div key={String(revealed)} style={{
+        fontSize:"clamp(100px,22vw,180px)",fontWeight:"800",lineHeight:1,fontVariantNumeric:"tabular-nums",letterSpacing:"-4px",
+        background:revealed?"linear-gradient(135deg, #0071E3 0%, #5AC8FA 100%)":(isDark?"linear-gradient(135deg, #F5F5F7 0%, #86868B 100%)":"linear-gradient(135deg, #1D1D1F 0%, #515154 100%)"),
+        WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+        animation:revealed?"revealPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both":"numFlash 0.15s linear infinite",
+      }}>
+        {String(num).padStart(2,"0")}
+      </div>
+      {revealed && <div style={{marginTop:"32px",fontSize:"14px",color:"var(--t3)",animation:"fadeUp 0.5s ease 0.3s both"}}>🎰 開獎完成，即將顯示結果…</div>}
+    </div>
+  );
 }
 
 /* ── Admin Panel ── */
@@ -525,7 +563,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin}) {
   return (
     <div className="site-header">
       <div className="site-header-inner">
-        <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
+        <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span>{DB_PREFIX==="lunch_test"&&<span style={{background:"#FF9500",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"2px 8px",borderRadius:"20px",letterSpacing:"0.5px",marginLeft:"6px"}}>🧪 TEST</span>}</div>
         <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
           {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
           <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>
@@ -630,7 +668,88 @@ function StatsPanel({weekly, isDark}) {
   );
 }
 
-function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark}) {
+function HistoryModal({ weekly, onClose }) {
+  const [weekIdx, setWeekIdx] = React.useState(0);
+  function getMondayStr(dateStr) {
+    const d = new Date(dateStr+"T00:00:00"), dow = d.getDay();
+    const mon = new Date(d); mon.setDate(d.getDate()-(dow===0?6:dow-1));
+    return `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,"0")}-${String(mon.getDate()).padStart(2,"0")}`;
+  }
+  const weekGroups = {};
+  Object.keys(weekly).sort().reverse().forEach(date => { const m=getMondayStr(date); if(!weekGroups[m])weekGroups[m]=[]; weekGroups[m].push(date); });
+  const sortedWeeks = Object.keys(weekGroups).sort().reverse(); // 0 = 最新週
+  const total = sortedWeeks.length;
+
+  const monStr = sortedWeeks[weekIdx] || null;
+  const weekData = monStr ? (() => {
+    const mon = new Date(monStr+"T00:00:00");
+    const fri = new Date(mon); fri.setDate(mon.getDate()+4);
+    const days = Array.from({length:5},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; });
+    const label = `${mon.getFullYear()}/${mon.getMonth()+1}/${mon.getDate()} – ${fri.getMonth()+1}/${fri.getDate()}`;
+    return { days, label, count: days.filter(d=>weekly[d]).length };
+  })() : null;
+
+  const navBtn = (label, disabled, onClick) => (
+    <button onClick={onClick} disabled={disabled} className="ghost btn-sm"
+      style={{marginBottom:0, padding:"6px 14px", opacity:disabled?0.3:1, cursor:disabled?"default":"pointer"}}>
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="card fade-up" style={{width:"480px",maxWidth:"95vw",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:"20px",flexShrink:0}}>
+          <h2 style={{flex:1,fontSize:"18px"}}>📅 歷史開獎紀錄</h2>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+
+        {total===0 ? (
+          <p style={{textAlign:"center",color:"var(--t2)",padding:"32px 0"}}>尚無歷史紀錄</p>
+        ) : (<>
+          {/* 週導航 */}
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"20px",flexShrink:0}}>
+            {navBtn("← 上一週", weekIdx >= total-1, ()=>setWeekIdx(i=>i+1))}
+            <div style={{flex:1,textAlign:"center"}}>
+              <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{weekData.label}</div>
+              <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"3px"}}>{weekIdx===0?"本週":`${weekIdx+1} 週前`} · {weekData.count}/5 天有紀錄</div>
+            </div>
+            {navBtn("下一週 →", weekIdx===0, ()=>setWeekIdx(i=>i-1))}
+          </div>
+
+          {/* 當週五天 */}
+          <div>
+            {weekData.days.map((date,i)=>{
+              const rec=weekly[date]; const [,m,d]=date.split("-");
+              return (
+                <div key={date} style={{display:"flex",alignItems:"center",padding:"11px 12px",borderRadius:"10px",marginBottom:"4px",background:rec?"var(--s3)":"transparent",border:`1px solid ${rec?"var(--b1)":"transparent"}`}}>
+                  <div style={{width:"32px",flexShrink:0,fontSize:"13px",fontWeight:"600",color:"var(--t2)"}}>{WDAYS[i]}</div>
+                  <div style={{width:"42px",flexShrink:0,fontSize:"12px",color:"var(--t3)"}}>{parseInt(m)}/{parseInt(d)}</div>
+                  {rec?(<>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.winner:rec.rest}</div>
+                      <div style={{fontSize:"12px",color:"var(--t2)",display:"flex",alignItems:"center",gap:"4px",marginTop:"2px"}}>
+                        <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</span>
+                        {rec.soloWin&&<span className="badge badge-gold" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0}}>獨贏</span>}
+                      </div>
+                    </div>
+                    <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",marginLeft:"12px",flexShrink:0}}>#{rec.drawnNumber}</div>
+                  </>):(<div style={{flex:1,fontSize:"13px",color:"var(--t3)"}}>—</div>)}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{textAlign:"center",marginTop:"16px",fontSize:"12px",color:"var(--t3)"}}>
+            {weekIdx+1} / {total} 週
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory}) {
   const [showClearModal, setShowClearModal] = useState(false);
   const [clearPw, setClearPw] = useState("");
   const [clearErr, setClearErr] = useState("");
@@ -649,7 +768,7 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark}) {
     if (clearPw !== ADMIN_PASSWORD) { setClearErr("密碼錯誤"); return; }
     setShowClearModal(false);
     if (targetDate) {
-      await fRef(`lunch/weekly/${targetDate}`).remove(); 
+      await fRef(`weekly/${targetDate}`).remove(); 
       setWeekly(prev => { const n={...prev}; delete n[targetDate]; return n; }); 
       setTargetDate(null);
     }
@@ -661,8 +780,8 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark}) {
       
       <div style={{display:"flex",alignItems:"center",marginBottom:"16px"}}>
         <p className="section-label" style={{flex:1,marginBottom:0}}>本週開獎結果</p>
+        <button onClick={onHistory} className="ghost btn-sm" style={{marginBottom:0,marginRight:"8px"}}>📅 歷史</button>
         <button onClick={()=>setShowStats(!showStats)} className="ghost btn-sm" style={{marginRight: 0}}>{showStats?"收起":"排行榜"}</button>
-        {/* ✨ 移除了原本危險的「一次清除全部」按鈕 */}
       </div>
       
       {weekDates.map((date,i) => {
@@ -722,6 +841,8 @@ function App() {
   const [resetPw, setResetPw] = useState("");
   const [resetErr, setResetErr] = useState("");
   const [showStats, setShowStats] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [animResult, setAnimResult] = useState(null);
 
   // ✨ 確保 Loading 與 Toast 正常運作
   const [isLoading, setIsLoading] = useState(false);
@@ -740,10 +861,10 @@ function App() {
   function openAdmin() { setAdminOpen(true); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
   function closeAdmin() { setAdminOpen(false); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
   function handleAdminAuth(pw) { if (pw===ADMIN_PASSWORD) { setAdminAuth(true); setAdminPwErr(""); } else { setAdminPwErr("密碼錯誤"); } }
-  async function adminAddRest(cat, name) { await fRef(`lunch/restaurants_managed/${cat}/${name}`).set(true); }
-  async function adminDeleteRest(cat, name) { await fRef(`lunch/restaurants_managed/${cat}/${name}`).remove(); }
-  async function adminRenameRest(cat, oldName, newName) { if (oldName===newName) return; await fRef(`lunch/restaurants_managed/${cat}/${newName}`).set(true); await fRef(`lunch/restaurants_managed/${cat}/${oldName}`).remove(); }
-  async function adminSaveTodayRecord(winner, rest) { const today=todayStr(); if (!weekly[today]) return; await fRef(`lunch/weekly/${today}`).update({winner, rest}); }
+  async function adminAddRest(cat, name) { await fRef(`restaurants_managed/${cat}/${name}`).set(true); }
+  async function adminDeleteRest(cat, name) { await fRef(`restaurants_managed/${cat}/${name}`).remove(); }
+  async function adminRenameRest(cat, oldName, newName) { if (oldName===newName) return; await fRef(`restaurants_managed/${cat}/${newName}`).set(true); await fRef(`restaurants_managed/${cat}/${oldName}`).remove(); }
+  async function adminSaveTodayRecord(winner, rest) { const today=todayStr(); if (!weekly[today]) return; await fRef(`weekly/${today}`).update({winner, rest}); }
 
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
 
@@ -763,12 +884,12 @@ function App() {
 
   // 餐廳清單即時監聽（首次自動從 DEFAULT_RESTS 初始化）
   useEffect(() => {
-    const ref = fRef("lunch/restaurants_managed");
+    const ref = fRef("restaurants_managed");
     const handler = async snap => {
       if (snap.val() === null) {
         const seed = {};
         for (const cat of CATEGORIES) { seed[cat] = {}; DEFAULT_RESTS[cat].forEach(n => { seed[cat][n] = true; }); }
-        await fSet("lunch/restaurants_managed", seed);
+        await fSet("restaurants_managed", seed);
       } else { setRests(managedToRests(snap.val())); }
     };
     ref.on("value", handler);
@@ -777,14 +898,14 @@ function App() {
 
   // 週紀錄即時監聽（所有人自動同步）
   useEffect(() => {
-    const ref = fRef("lunch/weekly");
+    const ref = fRef("weekly");
     const handler = snap => setWeekly(snap.val() || {});
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
 
   useEffect(() => {
-    Promise.all([fGet("lunch/session"),fGet("lunch/participants")]).then(async ([s,ptsObj]) => {
+    Promise.all([fGet("session"),fGet("participants")]).then(async ([s,ptsObj]) => {
       const today = todayStr();
       if (!s || s.date !== today) { setPhase("setup"); return; }
       const p = snapToArr(ptsObj); setSess(s); setPts(p);
@@ -808,7 +929,7 @@ function App() {
 
   useEffect(() => {
     if (phase!=="join" && phase!=="joined") return;
-    const pRef = fRef("lunch/participants");
+    const pRef = fRef("participants");
     const handler = snap => setPts(snapToArr(snap.val()));
     pRef.on("value", handler); return () => pRef.off("value", handler);
   }, [phase]);
@@ -821,9 +942,9 @@ function App() {
       setCd(calcCountdown(dl));
       if (isDeadlinePassed(dl)) {
         clearInterval(timerRef.current);
-        const ptsObj = await fGet("lunch/participants"), finalPts = snapToArr(ptsObj), drawn = await getOrDrawNumber(todayStr()), res = determineResult(finalPts, drawn);
-        setResult(res ? {...res,drawnNumber:drawn} : {drawnNumber:drawn,winner:null,soloWin:false,sorted:finalPts});
-        setPts(finalPts); setPhase("results");
+        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), drawn = await getOrDrawNumber(todayStr()), res = determineResult(finalPts, drawn);
+        const rd = res ? {...res,drawnNumber:drawn} : {drawnNumber:drawn,winner:null,soloWin:false,sorted:finalPts};
+        setPts(finalPts); setAnimResult(rd); setPhase("drawing");
       }
     }, 1000);
     return () => clearInterval(timerRef.current);
@@ -832,10 +953,10 @@ function App() {
   useEffect(() => {
     if (phase!=="results"||!result?.winner||savedRef.current) return;
     savedRef.current = true; const today = todayStr();
-    fGet("lunch/weekly").then(async w => {
+    fGet("weekly").then(async w => {
       if ((w||{})[today]) { setWeekly(w); return; }
       const nw = {...(w||{}), [today]: {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber}};
-      await fSet("lunch/weekly", nw); setWeekly(nw);
+      await fSet("weekly", nw); setWeekly(nw);
       fetch("https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -858,7 +979,7 @@ function App() {
     setIsLoading(true);
     try {
       const s = {deadline:form.deadline, date:todayStr()};
-      await fSet("lunch/session", s); await fSet("lunch/participants", null);
+      await fSet("session", s); await fSet("participants", null);
       setSess(s); setPts([]); setResult(null); setPhase("join");
     } catch (e) {
       showToast("連線錯誤，請重試");
@@ -878,17 +999,17 @@ function App() {
     
     setIsLoading(true);
     try {
-      const s = await fGet("lunch/session");
+      const s = await fGet("session");
       if (!s || isDeadlinePassed(s.deadline)) return showToast("已超過截止時間！");
-      const existing = snapToArr(await fGet("lunch/participants")), myEntry = existing.find(p=>p.name===name);
+      const existing = snapToArr(await fGet("participants")), myEntry = existing.find(p=>p.name===name);
       if (existing.some(p=>p.id!==(myEntry?.id) && p.number===num)) {
         setNumWarn(`數字 ${num} 已被選走，請換一個`);
         return;
       }
       
-      if (myEntry) { await fRef(`lunch/participants/${myEntry.id}`).update({category:form.category, rest, number:num}); } 
-      else { const newRef = fRef("lunch/participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
-      if (form.rest==="cust" && rest) { await fRef(`lunch/restaurants_managed/${form.category}/${rest}`).set(true); }
+      if (myEntry) { await fRef(`participants/${myEntry.id}`).update({category:form.category, rest, number:num}); } 
+      else { const newRef = fRef("participants").push(); await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now()}); }
+      if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
       
       try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
       setPhase("joined");
@@ -901,10 +1022,10 @@ function App() {
 
   async function doReset() {
     const today = todayStr();
-    await fSet("lunch/session", null);
-    await fSet("lunch/participants", null);
-    await fSet(`lunch/drawn/${today}`, null);
-    await fRef(`lunch/weekly/${today}`).remove();
+    await fSet("session", null);
+    await fSet("participants", null);
+    await fSet(`drawn/${today}`, null);
+    await fRef(`weekly/${today}`).remove();
     savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--");
     setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"}); setPhase("setup");
   }
@@ -913,7 +1034,7 @@ function App() {
 
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
-  const AP = <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} />;
+  const AP = <>{showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}<AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} /></>;
 
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
@@ -932,7 +1053,7 @@ function App() {
               {isLoading ? "處理中..." : "建立遊戲"}
             </button>
           </div>
-          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} /></div>
+          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -948,7 +1069,7 @@ function App() {
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
         <div className="grid-3">
-          <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} /></div>
+          <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
           <div className="col">
             <div className="card">
               <div className="form-title"><h2>加入遊戲</h2><p>選好店、押好幸運號碼</p></div>
@@ -984,7 +1105,7 @@ function App() {
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
           <div className="grid-3">
-            <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} /></div>
+            <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
             <div className="col"><PtList list={pts} /></div>
           </div>
@@ -994,6 +1115,10 @@ function App() {
     );
   }
 
+  if (phase==="drawing") return (
+    <DrawAnimation drawnNumber={animResult?.drawnNumber} isDark={isDarkMode} onDone={()=>{ setResult(animResult); setAnimResult(null); setPhase("results"); }} />
+  );
+
   if (phase==="results") {
     if (!result?.winner || pts.length < 2) return (
       <div>
@@ -1001,7 +1126,7 @@ function App() {
         <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
-          <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
+          <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
         </div>
         <Footer />
       </div>
@@ -1021,7 +1146,7 @@ function App() {
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
-            <div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} /></div>
+            <div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
             <div className="layout-main">
               <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className="result-number">{drawnNumber}</div></div>
               {soloWin ? (
