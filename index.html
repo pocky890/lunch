@@ -317,6 +317,7 @@ const fRef = p => db.ref(`${DB_PREFIX}/${p}`);
 const fGet = p => fRef(p).once("value").then(s => s.val());
 const fSet = (p, v) => fRef(p).set(v);
 
+// 餐廳分類
 const CATEGORIES  = ["台式麵飯","日式","輕食早午餐","異國料理","火鍋","速食","其它"];
 const CAT_EMOJI   = {"台式麵飯":"🍜","日式":"🍣","輕食早午餐":"🥪","異國料理":"🌏","火鍋":"🍲","速食":"🍔","其它":"🍽️"};
 const DEFAULT_RESTS = {
