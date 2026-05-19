@@ -385,6 +385,44 @@ function managedToRests(managed) {
   return m;
 }
 
+function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
+
+/* ── Help Modal ── */
+function HelpModal({ onClose }) {
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="card fade-up" style={{width:"440px",maxWidth:"95vw",maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:"20px",flexShrink:0}}>
+          <h2 style={{flex:1,fontSize:"18px"}}>🎲 遊戲說明</h2>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🍜 基本玩法</div>
+            <div>每天截止時間前，每個人選一家想吃的餐廳，並押一個 1～99 的幸運號碼。時間到，系統自動抽出幸運號碼，決定今天吃哪裡！</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🏆 開獎規則</div>
+            <div>誰的號碼最接近幸運號碼，今天就去吃他選的店，大家<strong style={{color:"var(--t1)"}}>各自付帳</strong>。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎯 獨贏（完全命中）</div>
+            <div>如果有人選的號碼<strong style={{color:"var(--t1)"}}>完全等於</strong>幸運號碼，就是「獨贏」！其他人每人最多補助 <strong style={{color:"var(--t1)"}}>50 元</strong>，讓他吃他選的店。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🤝 同分決勝</div>
+            <div>若多人差距相同，用「幸運號碼 mod 同分人數」決定最終得主。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>✏️ 修改 / 取消</div>
+            <div>截止前可以隨時修改餐廳和號碼，或直接取消參加、標記今日不參加。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Draw Animation ── */
 function DrawAnimation({ drawnNumber, onDone, isDark }) {
   const [num, setNum] = React.useState(Math.floor(Math.random()*99)+1);
@@ -419,7 +457,7 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
 }
 
 /* ── Admin Panel ── */
-function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord }) {
+function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, onAuth, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
   const [newRest, setNewRest] = React.useState("");
@@ -457,10 +495,18 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
   async function handleTestNotify(soloWin) {
     setTestMsg("發送中…");
     try {
+      const testPts = pts.length > 0 ? pts : [{name:"小明",number:42,rest:"牛肉麵"},{name:"小華",number:55,rest:"拉麵"}];
+      const testAbsent = absent.length > 0 ? absent : ["阿土","大毛"];
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winner:"測試人員", winnerNumber:33, rest:"測試餐廳", drawnNumber:TEST_DRAWN_NUMBER, soloWin: soloWin ? 1 : 0, totalPeople:5 })
+        body: JSON.stringify({
+          winner: "測試人員", winnerNumber: 33, rest: "測試餐廳",
+          drawnNumber: TEST_DRAWN_NUMBER, soloWin: soloWin ? 1 : 0,
+          totalPeople: testPts.length,
+          participants: testPts.map(p=>`${p.name} #${p.number} (${p.rest})`).join(", "),
+          absent: testAbsent.join(", ")
+        })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTestMsg(`✓ 已送出「${soloWin?"獨贏":"最接近"}」測試通知`); setTimeout(()=>setTestMsg(""),3000);
@@ -537,7 +583,10 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
                 <div>中獎者：<strong style={{color:"var(--t1)"}}>測試人員</strong></div>
                 <div>餐廳：<strong style={{color:"var(--t1)"}}>測試餐廳</strong></div>
                 <div>號碼：<strong style={{color:"var(--t1)"}}>#{TEST_DRAWN_NUMBER}</strong></div>
-                <div>人數：<strong style={{color:"var(--t1)"}}>5 人</strong></div>
+                <div>人數：<strong style={{color:"var(--t1)"}}>{pts.length > 0 ? pts.length : 2} 人</strong></div>
+                <div>參加：<strong style={{color:"var(--t1)"}}>{pts.length > 0 ? pts.map(p=>p.name).join("、") : "小明、小華"}</strong></div>
+                {(absent.length > 0) && <div>不參加：<strong style={{color:"var(--t1)"}}>{absent.join("、")}</strong></div>}
+                {(absent.length === 0) && <div style={{color:"var(--t3)"}}>不參加（範例）：<strong>阿土、大毛</strong></div>}
               </div>
               <div style={{display:"flex",gap:"8px"}}>
                 <button onClick={()=>handleTestNotify(false)} style={{flex:1,padding:"12px",marginBottom:0}}>📍 測試「最接近」</button>
@@ -565,13 +614,14 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, onAuth, onClo
 }
 
 /* ── UI Components ── */
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp}) {
   return (
     <div className="site-header">
       <div className="site-header-inner">
         <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span>{DB_PREFIX==="lunch_test"&&<span style={{background:"#FF9500",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"2px 8px",borderRadius:"20px",letterSpacing:"0.5px",marginLeft:"6px"}}>🧪 TEST</span>}</div>
         <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
           {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
+          <button className="ghost theme-toggle" onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
           <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>
           <button className="ghost theme-toggle" onClick={toggleDark} title="切換深淺色模式">
             {isDark ? "☀️" : "🌙"}
@@ -601,11 +651,14 @@ function StatCards({deadline, ptsCount, cd}) {
   );
 }
 
-function PtList({list}) {
-  if (!list || list.length === 0) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
+function PtList({list, absent = []}) {
+  const empty = (!list || list.length === 0) && absent.length === 0;
+  if (empty) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
   return (
     <div>
-      <p className="section-label" style={{marginBottom:"16px"}}>{list.length} 人參加</p>
+      <p className="section-label" style={{marginBottom:"16px"}}>
+        {list.length} 人參加{absent.length > 0 ? ` · ${absent.length} 人不參加` : ""}
+      </p>
       {list.map((p,i) => {
         const ramp = RAMPS[i%RAMPS.length];
         return (
@@ -617,6 +670,15 @@ function PtList({list}) {
           </div>
         );
       })}
+      {absent.length > 0 && <>
+        <div style={{height:"1px",background:"var(--b1)",margin:"12px 0"}} />
+        <p style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",marginBottom:"8px"}}>今日不參加</p>
+        {absent.map(name => (
+          <div key={name} style={{display:"flex",alignItems:"center",padding:"8px 12px",borderRadius:"8px",background:"var(--s3)",border:"1px solid var(--b1)",marginBottom:"4px",opacity:0.7}}>
+            <span style={{fontSize:"13px",color:"var(--t3)"}}>🙅 {name}</span>
+          </div>
+        ))}
+      </>}
     </div>
   );
 }
@@ -851,7 +913,9 @@ function App() {
   const [resetErr, setResetErr] = useState("");
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [animResult, setAnimResult] = useState(null);
+  const [absent, setAbsent] = useState([]);
 
   // ✨ 確保 Loading 與 Toast 正常運作
   const [isLoading, setIsLoading] = useState(false);
@@ -913,21 +977,35 @@ function App() {
     return () => ref.off("value", handler);
   }, []);
 
+  // 不參加名單即時監聽（全程）
   useEffect(() => {
-    Promise.all([fGet("session"),fGet("participants")]).then(async ([s,ptsObj]) => {
+    const ref = fRef("absent");
+    const handler = snap => {
+      const val = snap.val() || {};
+      setAbsent(Object.values(val).map(v => typeof v === "object" ? v.name : v));
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  useEffect(() => {
+    Promise.all([fGet("session"),fGet("participants"),fGet("absent")]).then(async ([s,ptsObj,absentObj]) => {
       const today = todayStr();
       if (!s || s.date !== today) { setPhase("setup"); return; }
-      const p = snapToArr(ptsObj); setSess(s); setPts(p);
+      const p = snapToArr(ptsObj);
+      const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
+      setSess(s); setPts(p); setAbsent(absentNames);
       if (isDeadlinePassed(s.deadline)) {
         const drawn = await getOrDrawNumber(today); const res = determineResult(p, drawn);
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
       } else {
-        // 同台電腦開新分頁：若今天已送出過，直接恢復 joined 狀態
-        let joinedDate = "";
-        try { joinedDate = localStorage.getItem("lunch_joined_date") || ""; } catch(e) {}
+        let joinedDate = "", absentDate = "";
+        try { joinedDate = localStorage.getItem("lunch_joined_date") || ""; absentDate = localStorage.getItem("lunch_absent_date") || ""; } catch(e) {}
         const savedName = form.name;
-        if (joinedDate === today && savedName && p.some(pt => pt.name === savedName)) {
+        if (absentDate === today && savedName && absentNames.includes(savedName)) {
+          setPhase("absent");
+        } else if (joinedDate === today && savedName && p.some(pt => pt.name === savedName)) {
           setPhase("joined");
         } else {
           setPhase("join");
@@ -937,14 +1015,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (phase!=="join" && phase!=="joined") return;
+    if (phase!=="join" && phase!=="joined" && phase!=="absent") return;
     const pRef = fRef("participants");
     const handler = snap => setPts(snapToArr(snap.val()));
     pRef.on("value", handler); return () => pRef.off("value", handler);
   }, [phase]);
 
   useEffect(() => {
-    if (!sess || (phase!=="join" && phase!=="joined")) return;
+    if (!sess || (phase!=="join" && phase!=="joined" && phase!=="absent")) return;
     setCd(calcCountdown(sess.deadline));
     timerRef.current = setInterval(async () => {
       const dl = sessRef.current?.deadline; if (!dl) return;
@@ -975,7 +1053,9 @@ function App() {
           rest:         result.winner.rest,
           drawnNumber:  result.drawnNumber,
           soloWin:      result.soloWin ? 1 : 0,
-          totalPeople:  pts.length
+          totalPeople:  pts.length,
+          participants: pts.map(p=>`${p.name} #${p.number} (${p.rest})`).join(", "),
+          absent:       absent.join(", ")
         })
       }).catch(() => {});
     });
@@ -1029,13 +1109,43 @@ function App() {
     }
   }
 
+  async function doAbsent() {
+    const name = form.name.trim();
+    if (!name) return showToast("請先輸入姓名");
+    setIsLoading(true);
+    try {
+      await fRef(`absent/${sanitizeKey(name)}`).set({name, absentAt: Date.now()});
+      try { localStorage.setItem("lunch_absent_date", todayStr()); } catch(e) {}
+      setPhase("absent");
+    } catch(e) {
+      showToast("標記失敗，請重試");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function doCancelAbsent() {
+    const name = form.name.trim();
+    await fRef(`absent/${sanitizeKey(name)}`).remove();
+    try { localStorage.removeItem("lunch_absent_date"); } catch(e) {}
+    setPhase("join");
+  }
+
+  async function doCancel() {
+    const myEntry = pts.find(p => p.name === form.name);
+    if (myEntry) await fRef(`participants/${myEntry.id}`).remove();
+    try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
+    setPhase("join");
+  }
+
   async function doReset() {
     const today = todayStr();
     await fSet("session", null);
     await fSet("participants", null);
+    await fSet("absent", null);
     await fSet(`drawn/${today}`, null);
     await fRef(`weekly/${today}`).remove();
-    savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--");
+    savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--"); setAbsent([]);
     setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"}); setPhase("setup");
   }
 
@@ -1043,14 +1153,18 @@ function App() {
 
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
-  const AP = <>{showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}<AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} /></>;
+  const AP = <>
+    {showHelp && <HelpModal onClose={()=>setShowHelp(false)} />}
+    {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
+    <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} pts={pts} absent={absent} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} />
+  </>;
 
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
@@ -1073,7 +1187,7 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -1094,9 +1208,11 @@ function App() {
                 {isLoading ? "處理中..." : "確認加入"}
               </button>
               <button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>重新設定時間</button>
+              <div className="divider" />
+              <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} /></div>
+          <div className="col"><PtList list={pts} absent={absent} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -1109,20 +1225,44 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
           <div className="grid-3">
             <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
-            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
-            <div className="col"><PtList list={pts} /></div>
+            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
+            <div className="col"><PtList list={pts} absent={absent} /></div>
           </div>
         </div>
         <Footer />
       </div>
     );
   }
+
+  if (phase==="absent") return (
+    <div>
+      {AP}
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
+      <div className="page fade-up">
+        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+        <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <div className="grid-3">
+          <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+          <div className="col">
+            <div className="card" style={{textAlign:"center",padding:"40px 24px"}}>
+              <div style={{fontSize:"48px",marginBottom:"16px"}}>🙅</div>
+              <h2 style={{marginBottom:"8px",fontSize:"18px"}}>今天先不吃了</h2>
+              <p style={{marginBottom:"28px"}}>{form.name}・今日不參加抽獎</p>
+              <button onClick={doCancelAbsent} className="ghost">改變心意，我要參加！</button>
+            </div>
+          </div>
+          <div className="col"><PtList list={pts} absent={absent} /></div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
 
   if (phase==="drawing") return (
     <DrawAnimation drawnNumber={animResult?.drawnNumber} isDark={isDarkMode} onDone={()=>{ setResult(animResult); setAnimResult(null); setPhase("results"); }} />
@@ -1132,7 +1272,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
@@ -1151,7 +1291,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} />
+        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
