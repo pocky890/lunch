@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stats 模擬</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #000; --s1: #1C1C1E; --s2: #1C1C1E; --s3: #2C2C2E;
+    --b1: #38383A; --t1: #F5F5F7; --t2: #EBEBF5; --t3: rgba(235,235,245,0.6);
+    --a: #0A84FF; --amber: #FF9500; --r: 12px; --r2: 20px;
+  }
+  body { font-family: "Inter", sans-serif; background: var(--bg); color: var(--t1); padding: 24px; max-width: 960px; }
+  .card { background: linear-gradient(135deg,#2A2B30 0%,#1A1B20 100%); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--r2); padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); margin-bottom: 16px; }
+  .section-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; margin-bottom: 20px; }
+  .badge-gold { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(194,65,12,0.18); color: #FDBA74; border: 1px solid rgba(194,65,12,0.35); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+<script type="text/babel">
+const { useEffect, useRef } = React;
+
+// 模擬資料：12 家餐廳 × 多次，10 人有獨贏
+// drawnPool：用固定小池讓號碼重複，產生有意義的 Top 10
+const mockWeekly = {};
+const rests = ["正群川味牛肉麵館","南北福州干拌麵","麵家紅葉軒","一幸拉麵","爭鮮迴轉壽司","薩莉亞","愛上越南","麥當勞","三媽臭臭鍋","Q Burger","路易莎","大豐路走走"];
+const winners = ["小明","小華","阿志","阿玲","建國","淑芬","宗翰","佩儀","大毛","阿土"];
+const drawnPool = [7, 13, 21, 34, 42, 42, 55, 55, 55, 63, 63, 77, 77, 88, 88, 88, 11, 29, 46, 58, 72, 95, 33, 33, 68];
+// ↑ 刻意讓 42、55、88 等出現比較多次，模擬真實分佈
+
+let day = new Date("2025-11-01");
+for (let i = 0; i < 60; i++) {
+  if (day.getDay() !== 0 && day.getDay() !== 6) {
+    const ds = day.toISOString().slice(0,10);
+    const solo = Math.random() < 0.25;
+    mockWeekly[ds] = {
+      winner: winners[i % winners.length],
+      rest: rests[i % rests.length],
+      soloWin: solo,
+      drawnNumber: drawnPool[i % drawnPool.length]
+    };
+  }
+  day.setDate(day.getDate()+1);
+}
+
+const BAR_COLORS = ["#60A5FA","#34D399","#FBBF24","#818CF8","#F472B6","#A78BFA","#86EFAC","#FCA5A5","#67E8F9","#FCD34D","#A3E635","#FB923C"];
+const tickColor = "rgba(235,235,245,0.6)";
+const gridColor = "rgba(255,255,255,0.08)";
+
+function DrawnNumberChart() {
+  const numCounts = {};
+  Object.values(mockWeekly).forEach(rec => { if(rec?.drawnNumber) numCounts[rec.drawnNumber]=(numCounts[rec.drawnNumber]||0)+1; });
+  const maxCount = Math.max(0, ...Object.values(numCounts));
+  return (
+    <div className="card">
+      <div style={{display:"flex",alignItems:"center",marginBottom:"14px"}}>
+        <p className="section-label" style={{marginBottom:0,flex:1}}>開獎號碼分佈</p>
+        <span style={{fontSize:"10px",color:"var(--t3)"}}>深色 = 出現較多次</span>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:"3px"}}>
+        {Array.from({length:99},(_,i)=>i+1).map(n => {
+          const count = numCounts[n] || 0;
+          const intensity = count===0?0:maxCount<=1?0.3:0.18+(count/maxCount)*0.82;
+          return (
+            <div key={n} title={count>0?`#${n}：${count} 次`:`#${n}`}
+              style={{
+                aspectRatio:"1",borderRadius:"3px",userSelect:"none",
+                background:count===0?"rgba(255,255,255,0.06)":`rgba(96,165,250,${intensity.toFixed(2)})`,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                fontSize:"9px",fontWeight:count>0?"600":"400",
+                color:count>0?"#93C5FD":"rgba(235,235,245,0.3)"
+              }}>
+              {n}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RestChart() {
+  const chartRef = useRef(null); const chartInstanceRef = useRef(null);
+  const restCounts = {};
+  Object.values(mockWeekly).forEach(rec => { if(rec?.rest) restCounts[rec.rest]=(restCounts[rec.rest]||0)+1; });
+  const sortedRests = Object.entries(restCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  useEffect(() => {
+    if (!chartRef.current) return;
+    if (chartInstanceRef.current) chartInstanceRef.current.destroy();
+    chartInstanceRef.current = new Chart(chartRef.current, {
+      type: "bar",
+      data: { labels: sortedRests.map(([r])=>r), datasets: [{ data: sortedRests.map(([,c])=>c), backgroundColor: sortedRests.map((_,i)=>BAR_COLORS[i%BAR_COLORS.length]), borderWidth:0, borderRadius:4 }] },
+      options: { indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} 次`}}}, scales:{x:{beginAtZero:true,ticks:{stepSize:1,precision:0,color:tickColor},grid:{color:gridColor}},y:{ticks:{font:{size:13,weight:"500",family:"Inter"},color:tickColor},grid:{display:false}}}}
+    });
+    return () => { if(chartInstanceRef.current) chartInstanceRef.current.destroy(); };
+  }, []);
+  return (
+    <div className="card">
+      <p className="section-label">Top 10 店家中選次數</p>
+      <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}>
+        <canvas ref={chartRef} />
+      </div>
+    </div>
+  );
+}
+
+function SoloRecords() {
+  const allRecords = Object.entries(mockWeekly);
+  const soloMap = {};
+  allRecords.forEach(([date,rec]) => { if(rec?.soloWin&&rec.winner){ if(!soloMap[rec.winner])soloMap[rec.winner]=[]; soloMap[rec.winner].push(date); } });
+  const sortedSolo = Object.entries(soloMap).sort((a,b)=>b[1].length-a[1].length);
+  return (
+    <div className="card">
+      <p className="section-label">獨贏紀錄 (持續統計)</p>
+      {sortedSolo.map(([name,dates])=>(
+        <div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}>
+          <div style={{minWidth:"80px",flexShrink:0}}>
+            <div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div>
+            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div>
+          </div>
+          <div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>
+            {[...dates].sort().map(d=>{const[,mm,dd]=d.split("-");return<span key={d} className="badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>;})}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SimPage() {
+  return (
+    <div>
+      <div style={{marginBottom:"24px",paddingBottom:"16px",borderBottom:"1px solid var(--b1)"}}>
+        <div style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"4px"}}>模擬資料預覽</div>
+        <div style={{fontSize:"14px",color:"var(--t2)"}}>{Object.keys(mockWeekly).length} 天紀錄 · 12 家餐廳 · 10 位參賽者</div>
+      </div>
+      <div className="grid-2" style={{marginBottom:"16px"}}>
+        <DrawnNumberChart />
+        <RestChart />
+      </div>
+      <SoloRecords />
+    </div>
+  );
+}
+
+ReactDOM.render(<SimPage />, document.getElementById("root"));
+</script>
+</body>
+</html>
