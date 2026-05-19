@@ -504,7 +504,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
           winner: "測試人員", winnerNumber: 33, rest: "測試餐廳",
           drawnNumber: TEST_DRAWN_NUMBER, soloWin: soloWin ? 1 : 0,
           totalPeople: testPts.length,
-          participants: testPts.map(p=>`${p.name} #${p.number} (${p.rest})`).join(", "),
+          participants: testPts.map(p=>p.name).join(", "),
           absent: testAbsent.join(", ")
         })
       });
@@ -1054,7 +1054,7 @@ function App() {
           drawnNumber:  result.drawnNumber,
           soloWin:      result.soloWin ? 1 : 0,
           totalPeople:  pts.length,
-          participants: pts.map(p=>`${p.name} #${p.number} (${p.rest})`).join(", "),
+          participants: pts.map(p=>p.name).join(", "),
           absent:       absent.join(", ")
         })
       }).catch(() => {});
