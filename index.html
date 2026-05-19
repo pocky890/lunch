@@ -713,7 +713,7 @@ function DrawnNumberChart({ weekly, isDark }) {
     if (chartInstanceRef.current) chartInstanceRef.current.destroy();
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: "bar",
-      data: { labels: sorted.map(([n]) => `#${n}`), datasets: [{ data: sorted.map(([,c]) => c), backgroundColor: sorted.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4 }] },
+      data: { labels: sorted.map(([n]) => `#${n}`), datasets: [{ data: sorted.map(([,c]) => c), backgroundColor: sorted.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }] },
       options: { indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw} 次`}} }, scales:{ x:{beginAtZero:true,ticks:{stepSize:1,precision:0,color:tickColor},grid:{color:gridColor}}, y:{ticks:{font:{size:13,weight:"500",family:"Inter"},color:tickColor},grid:{display:false}} } }
     });
     return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
@@ -753,7 +753,7 @@ function StatsPanel({weekly, isDark}) {
     if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); }
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: "bar",
-      data: { labels: sortedRests.map(([r]) => r), datasets: [{ data: sortedRests.map(([,c]) => c), backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4 }] },
+      data: { labels: sortedRests.map(([r]) => r), datasets: [{ data: sortedRests.map(([,c]) => c), backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }] },
       options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 次` } } }, scales: { x: { beginAtZero: true, ticks: { stepSize:1, precision:0, color:tickColor }, grid: { color:gridColor } }, y: { ticks: { font:{size:13,weight:"500",family:"Inter"}, color:tickColor }, grid: { display:false } } } }
     });
     return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
