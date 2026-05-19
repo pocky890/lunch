@@ -703,17 +703,16 @@ function DrawnNumberChart({ weekly, isDark }) {
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
   const sorted = Object.entries(numCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
-  const BAR_COLORS = isDark
-    ? ["#60A5FA","#34D399","#FBBF24","#818CF8","#F472B6","#A78BFA","#86EFAC","#FCA5A5","#67E8F9","#FCD34D"]
-    : ["#0071E3","#34C759","#FF9500","#5AC8FA","#FF2D55","#AF52DE","#FFCC00","#FF3B30","#32ADE6","#30D158"];
+  const base = isDark ? "96,165,250" : "0,113,227";
   const tickColor = isDark ? "rgba(235,235,245,0.6)" : "#515154";
   const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+  const gradientColors = (arr) => arr.map((_,i) => `rgba(${base},${arr.length===1?1:(1-(i/(arr.length-1))*0.75).toFixed(2)})`);
   useEffect(() => {
     if (!chartRef.current || sorted.length === 0) return;
     if (chartInstanceRef.current) chartInstanceRef.current.destroy();
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: "bar",
-      data: { labels: sorted.map(([n]) => `#${n}`), datasets: [{ data: sorted.map(([,c]) => c), backgroundColor: sorted.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }] },
+      data: { labels: sorted.map(([n]) => `#${n}`), datasets: [{ data: sorted.map(([,c]) => c), backgroundColor: gradientColors(sorted), borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }] },
       options: { indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw} 次`}} }, scales:{ x:{beginAtZero:true,ticks:{stepSize:1,precision:0,color:tickColor},grid:{color:gridColor}}, y:{ticks:{font:{size:13,weight:"500",family:"Inter"},color:tickColor},grid:{display:false}} } }
     });
     return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
@@ -742,18 +741,17 @@ function StatsPanel({weekly, isDark}) {
   allRecords.forEach(([date, rec]) => { if (rec?.soloWin && rec.winner) { if (!soloMap[rec.winner]) soloMap[rec.winner] = []; soloMap[rec.winner].push(date); } });
   const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
 
-  const BAR_COLORS = isDark
-    ? ["#60A5FA","#34D399","#FBBF24","#818CF8","#F472B6","#A78BFA","#86EFAC","#FCA5A5"]
-    : ["#0071E3","#34C759","#FF9500","#5AC8FA","#FF2D55","#AF52DE","#FFCC00","#FF3B30"];
+  const base = isDark ? "96,165,250" : "0,113,227";
   const tickColor = isDark ? "rgba(235,235,245,0.6)" : "#515154";
   const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+  const gradientColors = (arr) => arr.map((_,i) => `rgba(${base},${arr.length===1?1:(1-(i/(arr.length-1))*0.75).toFixed(2)})`);
 
   useEffect(() => {
     if (!chartRef.current || sortedRests.length === 0) return;
     if (chartInstanceRef.current) { chartInstanceRef.current.destroy(); }
     chartInstanceRef.current = new Chart(chartRef.current, {
       type: "bar",
-      data: { labels: sortedRests.map(([r]) => r), datasets: [{ data: sortedRests.map(([,c]) => c), backgroundColor: sortedRests.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }] },
+      data: { labels: sortedRests.map(([r]) => r), datasets: [{ data: sortedRests.map(([,c]) => c), backgroundColor: gradientColors(sortedRests), borderWidth: 0, borderRadius: 4, maxBarThickness: 28 }] },
       options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 次` } } }, scales: { x: { beginAtZero: true, ticks: { stepSize:1, precision:0, color:tickColor }, grid: { color:gridColor } }, y: { ticks: { font:{size:13,weight:"500",family:"Inter"}, color:tickColor }, grid: { display:false } } } }
     });
     return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
