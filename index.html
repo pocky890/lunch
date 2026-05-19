@@ -698,6 +698,37 @@ function PasswordModal({ show, pw, setPw, err, onConfirm, onCancel, title="管�
   );
 }
 
+function DrawnNumberChart({ weekly, isDark }) {
+  const chartRef = useRef(null); const chartInstanceRef = useRef(null);
+  const numCounts = {};
+  Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
+  const sorted = Object.entries(numCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  const BAR_COLORS = isDark
+    ? ["#60A5FA","#34D399","#FBBF24","#818CF8","#F472B6","#A78BFA","#86EFAC","#FCA5A5","#67E8F9","#FCD34D"]
+    : ["#0071E3","#34C759","#FF9500","#5AC8FA","#FF2D55","#AF52DE","#FFCC00","#FF3B30","#32ADE6","#30D158"];
+  const tickColor = isDark ? "rgba(235,235,245,0.6)" : "#515154";
+  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+  useEffect(() => {
+    if (!chartRef.current || sorted.length === 0) return;
+    if (chartInstanceRef.current) chartInstanceRef.current.destroy();
+    chartInstanceRef.current = new Chart(chartRef.current, {
+      type: "bar",
+      data: { labels: sorted.map(([n]) => `#${n}`), datasets: [{ data: sorted.map(([,c]) => c), backgroundColor: sorted.map((_,i) => BAR_COLORS[i%BAR_COLORS.length]), borderWidth: 0, borderRadius: 4 }] },
+      options: { indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw} 次`}} }, scales:{ x:{beginAtZero:true,ticks:{stepSize:1,precision:0,color:tickColor},grid:{color:gridColor}}, y:{ticks:{font:{size:13,weight:"500",family:"Inter"},color:tickColor},grid:{display:false}} } }
+    });
+    return () => { if (chartInstanceRef.current) chartInstanceRef.current.destroy(); };
+  }, [JSON.stringify(sorted), isDark]);
+  return (
+    <div className="card">
+      <p className="section-label" style={{marginBottom:"20px"}}>Top 10 開獎號碼</p>
+      {sorted.length === 0
+        ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p>
+        : <div style={{height:`${Math.max(160, sorted.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>
+      }
+    </div>
+  );
+}
+
 function StatsPanel({weekly, isDark}) {
   const chartRef = useRef(null); const chartInstanceRef = useRef(null);
 
@@ -1192,7 +1223,12 @@ function App() {
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
         <div className="grid-3">
-          <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+          <div className="col">
+            <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
+            </div>
+          </div>
           <div className="col">
             <div className="card">
               <div className="form-title"><h2>加入遊戲</h2><p>選好店、押好幸運號碼</p></div>
@@ -1230,7 +1266,12 @@ function App() {
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
           <div className="grid-3">
-            <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+            <div className="col">
+              <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+                <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
+              </div>
+            </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
             <div className="col"><PtList list={pts} absent={absent} /></div>
           </div>
@@ -1248,7 +1289,12 @@ function App() {
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
         <div className="grid-3">
-          <div className="col"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+          <div className="col">
+            <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
+            </div>
+          </div>
           <div className="col">
             <div className="card" style={{textAlign:"center",padding:"40px 24px"}}>
               <div style={{fontSize:"48px",marginBottom:"16px"}}>🙅</div>
@@ -1275,7 +1321,7 @@ function App() {
         <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
-          <div className="layout-2"><div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
+          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
         </div>
         <Footer />
       </div>
@@ -1295,7 +1341,10 @@ function App() {
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
-            <div className="layout-side"><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+            <div className="layout-side">
+              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+            </div>
             <div className="layout-main">
               <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className="result-number">{drawnNumber}</div></div>
               {soloWin ? (
