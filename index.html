@@ -715,17 +715,17 @@ function DrawnNumberChart({ weekly, isDark }) {
         : <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:"3px"}}>
             {Array.from({length:99},(_,i)=>i+1).map(n => {
               const count = numCounts[n] || 0;
-              const intensity = count === 0 ? 0 : maxCount <= 1 ? 0.3 : 0.18 + (count/maxCount)*0.82;
+              const intensity = count === 0 ? 0 : maxCount <= 1 ? 0.55 : 0.3 + (count/maxCount)*0.7;
               return (
                 <div key={n} title={count > 0 ? `#${n}：${count} 次` : `#${n}`}
                   style={{
                     aspectRatio:"1",borderRadius:"3px",userSelect:"none",
                     background: count === 0
-                      ? (isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)")
+                      ? (isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)")
                       : `rgba(${base},${intensity.toFixed(2)})`,
                     display:"flex",alignItems:"center",justifyContent:"center",
-                    fontSize:"9px",fontWeight:count>0?"600":"400",
-                    color: count>0?(isDark?"#93C5FD":"#0058B0"):"var(--t3)"
+                    fontSize:"11px",fontWeight:"600",
+                    color: count>0?(isDark?"#BFDBFE":"#003580"):"var(--t3)"
                   }}>
                   {n}
                 </div>
