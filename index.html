@@ -1355,7 +1355,15 @@ function App() {
                   const dist = Math.abs(p.number - drawnNumber), isWinner = p.id === winner.id, ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];
                   const wr = isWinner ? (isDarkMode ? {bg:gc.bg,bd:gc.bd,tx:gc.h} : {bg:ramp.bg,bd:ramp.bd,tx:ramp.tx}) : null;
                   return (
-                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:isWinner?wr.bg:"transparent",border:isWinner?`1px solid ${wr.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"6px"}}><span style={{fontSize:"13px",fontWeight:"500",color:"var(--t3)",width:"24px",flexShrink:0}}>{i+1}</span><span style={{flex:1,fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)"}}>{p.name}</span><span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)",marginRight:"16px"}}>#{p.number}</span><span style={{fontSize:"13px",fontWeight:"500",color:isWinner?wr.tx:"var(--t3)",minWidth:"64px",textAlign:"right"}}>{dist===0?"命中":`差 ${dist}`}</span></div>
+                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:isWinner?wr.bg:"transparent",border:isWinner?`1px solid ${wr.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"6px"}}>
+                      <span style={{fontSize:"13px",fontWeight:"500",color:"var(--t3)",width:"24px",flexShrink:0}}>{i+1}</span>
+                      <div style={{flex:1,display:"flex",flexDirection:"column",gap:"2px",minWidth:0}}>
+                        <span style={{fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                        <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
+                      </div>
+                      <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)",marginRight:"16px",flexShrink:0}}>#{p.number}</span>
+                      <span style={{fontSize:"13px",fontWeight:"500",color:isWinner?wr.tx:"var(--t3)",minWidth:"64px",textAlign:"right",flexShrink:0}}>{dist===0?"命中":`差 ${dist}`}</span>
+                    </div>
                   );
                 })}
               </div>
