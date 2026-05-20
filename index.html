@@ -355,9 +355,9 @@ function getWeekDates() {
 function snapToArr(val) { return Object.values(val||{}).sort((a,b)=>a.joinedAt-b.joinedAt); }
 function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; } return m; }
 
-async function getOrDrawNumber(dateStr) {
+async function getOrDrawNumber(dateStr, numMax = 99) {
   let drawn = null;
-  await fRef(`drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = DB_PREFIX === "lunch_test" ? TEST_DRAWN_NUMBER : Math.floor(Math.random() * 99) + 1; return drawn; });
+  await fRef(`drawn/${dateStr}`).transaction(current => { if (current !== null) { drawn = current; return; } drawn = DB_PREFIX === "lunch_test" ? TEST_DRAWN_NUMBER : Math.floor(Math.random() * numMax) + 1; return drawn; });
   if (drawn === null) drawn = await fGet(`drawn/${dateStr}`);
   return drawn;
 }
@@ -388,7 +388,7 @@ function managedToRests(managed) {
 function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
 
 /* ── Help Modal ── */
-function HelpModal({ onClose }) {
+function HelpModal({ onClose, numMax = 99 }) {
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="card fade-up" style={{width:"440px",maxWidth:"95vw",maxHeight:"85vh",overflowY:"auto"}}>
@@ -399,7 +399,7 @@ function HelpModal({ onClose }) {
         <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🍜 基本玩法</div>
-            <div>每天截止時間前，每個人選一家想吃的餐廳，並押一個 1～99 的幸運號碼。時間到，系統自動抽出幸運號碼，決定今天吃哪裡！</div>
+            <div>每天截止時間前，每個人選一家想吃的餐廳，並押一個 1～{numMax} 的幸運號碼。時間到，系統自動抽出幸運號碼，決定今天吃哪裡！</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🏆 開獎規則</div>
@@ -457,7 +457,7 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
 }
 
 /* ── Admin Panel ── */
-function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, onAuth, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord }) {
+function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, sess, onAuth, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
   const [newRest, setNewRest] = React.useState("");
@@ -467,6 +467,8 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
   const [todayRest, setTodayRest] = React.useState("");
   const [saveMsg, setSaveMsg] = React.useState("");
   const [testMsg, setTestMsg] = React.useState("");
+  const [settingsNumMax, setSettingsNumMax] = React.useState(String(sess?.numMax || 99));
+  const [settingsMsg, setSettingsMsg] = React.useState("");
   const today = todayStr(), todayRec = weekly[today];
   if (!open) return null;
 
@@ -514,6 +516,12 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
       setTestMsg(`✗ 發送失敗：${e.message}`); setTimeout(()=>setTestMsg(""),5000);
     }
   }
+  async function handleSaveSettings() {
+    const n = parseInt(settingsNumMax);
+    if (!n || n < 10) { setSettingsMsg("請輸入 10 以上的數字"); return; }
+    await onUpdateNumMax(n);
+    setSettingsMsg("已儲存 ✓"); setTimeout(() => setSettingsMsg(""), 2000);
+  }
 
   const tabBtn = (id,label) => (
     <button key={id} onClick={()=>{setTab(id);if(id==="record"&&todayRec){setTodayWinner(todayRec.winner||"");setTodayRest(todayRec.rest||"");}}}
@@ -535,6 +543,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
           {tabBtn("restaurants","🍜 餐廳管理")}
           {tabBtn("record","📋 今日紀錄")}
           {tabBtn("test","🔔 測試通知")}
+          {tabBtn("settings","⚙️ 設定")}
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="restaurants" && <>
@@ -594,6 +603,17 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
               </div>
               {testMsg && <p style={{marginTop:"12px",fontSize:"14px",color:"var(--a)",textAlign:"center"}}>{testMsg}</p>}
             </div>
+          )}
+          {tab==="settings" && (
+            !sess
+              ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>請先建立今日遊戲</div>
+              : <div>
+                  <label>號碼上限（目前：1 ～ {sess.numMax || 99}）</label>
+                  <input type="number" min="10" max="999" value={settingsNumMax} onChange={e=>setSettingsNumMax(e.target.value)} placeholder="99" />
+                  <p style={{fontSize:"13px",color:"var(--t3)",marginTop:"-12px",marginBottom:"16px"}}>修改後立即生效，影響本日抽號範圍</p>
+                  <button onClick={handleSaveSettings}>儲存設定</button>
+                  {settingsMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"-4px"}}>{settingsMsg}</p>}
+                </div>
           )}
           {tab==="record" && (
             !todayRec
@@ -698,7 +718,7 @@ function PasswordModal({ show, pw, setPw, err, onConfirm, onCancel, title="管�
   );
 }
 
-function DrawnNumberChart({ weekly, isDark }) {
+function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
   const maxCount = Math.max(0, ...Object.values(numCounts));
@@ -713,7 +733,7 @@ function DrawnNumberChart({ weekly, isDark }) {
       {!hasData
         ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p>
         : <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:"3px"}}>
-            {Array.from({length:99},(_,i)=>i+1).map(n => {
+            {Array.from({length:numMax},(_,i)=>i+1).map(n => {
               const count = numCounts[n] || 0;
               const intensity = count === 0 ? 0 : maxCount <= 1 ? 0.55 : 0.3 + (count/maxCount)*0.7;
               return (
@@ -750,6 +770,10 @@ function StatsPanel({weekly, isDark}) {
   allRecords.forEach(([date, rec]) => { if (rec?.soloWin && rec.winner) { if (!soloMap[rec.winner]) soloMap[rec.winner] = []; soloMap[rec.winner].push(date); } });
   const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
 
+  const winMap = {};
+  allRecords.forEach(([, rec]) => { if (rec?.winner) { if (!winMap[rec.winner]) winMap[rec.winner] = { wins: 0, soloWins: 0 }; winMap[rec.winner].wins++; if (rec.soloWin) winMap[rec.winner].soloWins++; } });
+  const sortedPersonal = Object.entries(winMap).sort((a,b) => b[1].wins - a[1].wins);
+
   const base = isDark ? "96,165,250" : "0,113,227";
   const tickColor = isDark ? "rgba(235,235,245,0.6)" : "#515154";
   const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
@@ -769,6 +793,7 @@ function StatsPanel({weekly, isDark}) {
   return (
     <div style={{marginTop:"24px",display:"flex",flexDirection:"column",gap:"16px"}}>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>Top 10 店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>個人戰績 (持續統計)</p>{sortedPersonal.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : sortedPersonal.map(([name, stat], i) => (<div key={name} style={{display:"flex",alignItems:"center",padding:"10px 12px",borderRadius:"var(--r)",border:"1px solid var(--b1)",background:"var(--s3)",marginBottom:"6px"}}><span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span><span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px"}}>{name}</span><span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)"}}>{stat.wins} 勝</span>{stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px"}}>🎯 獨贏 {stat.soloWins}</span>}</div>))}</div>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>獨贏紀錄 (持續統計)</p>{sortedSolo.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無獨贏紀錄</p> : sortedSolo.map(([name, dates]) => (<div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}><div style={{minWidth:"80px",flexShrink:0}}><div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div><div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div></div><div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>{[...dates].sort().map(d => { const [,mm,dd] = d.split("-"); return <span key={d} className="badge badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>; })}</div></div>))}</div>
     </div>
   );
@@ -940,7 +965,7 @@ function App() {
   const [form, setForm] = useState(() => {
     let savedName = "";
     try { savedName = localStorage.getItem("lunch_name") || ""; } catch(e) {}
-    return { name: savedName, category:"", rest:"", cust:"", number:"", deadline:"11:50" };
+    return { name: savedName, category:"", rest:"", cust:"", number:"", deadline:"11:50", numMax: "99" };
   });
   
   const [result, setResult] = useState(null);
@@ -976,6 +1001,7 @@ function App() {
   async function adminDeleteRest(cat, name) { await fRef(`restaurants_managed/${cat}/${name}`).remove(); }
   async function adminRenameRest(cat, oldName, newName) { if (oldName===newName) return; await fRef(`restaurants_managed/${cat}/${newName}`).set(true); await fRef(`restaurants_managed/${cat}/${oldName}`).remove(); }
   async function adminSaveTodayRecord(winner, rest) { const today=todayStr(); if (!weekly[today]) return; await fRef(`weekly/${today}`).update({winner, rest}); }
+  async function adminUpdateNumMax(n) { await fRef("session").update({ numMax: n }); setSess(prev => ({...prev, numMax: n})); }
 
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
 
@@ -1034,7 +1060,7 @@ function App() {
       const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
       setSess(s); setPts(p); setAbsent(absentNames);
       if (isDeadlinePassed(s.deadline)) {
-        const drawn = await getOrDrawNumber(today); const res = determineResult(p, drawn);
+        const drawn = await getOrDrawNumber(today, s?.numMax || 99); const res = determineResult(p, drawn);
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
       } else {
@@ -1067,7 +1093,7 @@ function App() {
       setCd(calcCountdown(dl));
       if (isDeadlinePassed(dl)) {
         clearInterval(timerRef.current);
-        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), drawn = await getOrDrawNumber(todayStr()), res = determineResult(finalPts, drawn);
+        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), drawn = await getOrDrawNumber(todayStr(), sessRef.current?.numMax || 99), res = determineResult(finalPts, drawn);
         const rd = res ? {...res,drawnNumber:drawn} : {drawnNumber:drawn,winner:null,soloWin:false,sorted:finalPts};
         setPts(finalPts); setAnimResult(rd); setPhase("drawing");
       }
@@ -1105,7 +1131,7 @@ function App() {
     
     setIsLoading(true);
     try {
-      const s = {deadline:form.deadline, date:todayStr()};
+      const s = {deadline:form.deadline, date:todayStr(), numMax: parseInt(form.numMax) || 99};
       await fSet("session", s); await fSet("participants", null);
       setSess(s); setPts([]); setResult(null); setPhase("join");
     } catch (e) {
@@ -1122,7 +1148,7 @@ function App() {
     const rest = form.rest==="cust" ? form.cust.trim() : form.rest;
     if (!rest) return showToast("請選擇或輸入店家");
     const num = parseInt(form.number);
-    if (!num || num < 1 || num > 99) return showToast("請輸入 1 到 99 之間的整數");
+    if (!num || num < 1 || num > numMax) return showToast(`請輸入 1 到 ${numMax} 之間的整數`);
     
     setIsLoading(true);
     try {
@@ -1189,12 +1215,13 @@ function App() {
 
   async function confirmReset() { if (resetPw !== ADMIN_PASSWORD) { setResetErr("密碼錯誤"); return; } setResetModal(false); await doReset(); }
 
+  const numMax = sess?.numMax || 99;
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
   const AP = <>
-    {showHelp && <HelpModal onClose={()=>setShowHelp(false)} />}
+    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
-    <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} pts={pts} absent={absent} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} />
+    <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} />
   </>;
 
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
@@ -1210,6 +1237,8 @@ function App() {
           <div className="card">
             <label>開獎時間</label>
             <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
+            <label>號碼上限（預設 99）</label>
+            <input type="number" min="10" max="999" value={form.numMax} onChange={e=>setForm({...form,numMax:e.target.value})} placeholder="99" />
             <button onClick={doSetup} disabled={isLoading} style={{marginTop:"8px"}}>
               {isLoading ? "處理中..." : "建立遊戲"}
             </button>
@@ -1232,7 +1261,7 @@ function App() {
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
               <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
             </div>
           </div>
@@ -1243,7 +1272,7 @@ function App() {
               <label>餐廳類型</label>
               <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
               {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
-              <label>選一個號碼（1 ~ 99）</label><div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={2} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,2);setForm({...form,number:v});setNumWarn("");}} placeholder="1 ~ 99" style={{marginBottom:"8px"}} /></div>
+              <label>選一個號碼（1 ~ {numMax}）</label><div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
               {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
               {takenNums.length>0 && (<div style={{marginBottom:"20px",marginTop:"8px"}}><p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"8px",fontWeight:"500"}}>已被選走</p><div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>{takenNums.map(({num,name})=>(<span key={num} className="num-chip taken">{num} <span style={{opacity:0.7,fontWeight:"400"}}>({name})</span></span>))}</div></div>)}
               <div className="divider" />
@@ -1275,7 +1304,7 @@ function App() {
           <div className="grid-3">
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-                <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+                <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
                 <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
               </div>
             </div>
@@ -1298,7 +1327,7 @@ function App() {
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
               <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
             </div>
           </div>
@@ -1328,7 +1357,7 @@ function App() {
         <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
-          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
+          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
         </div>
         <Footer />
       </div>
@@ -1349,7 +1378,7 @@ function App() {
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
             <div className="layout-side">
-              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} />
+              <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
               <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
             </div>
             <div className="layout-main">
