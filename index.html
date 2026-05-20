@@ -1131,7 +1131,7 @@ function App() {
     
     setIsLoading(true);
     try {
-      const s = {deadline:form.deadline, date:todayStr(), numMax: parseInt(form.numMax) || 99};
+      const s = {deadline:form.deadline, date:todayStr(), numMax: 99};
       await fSet("session", s); await fSet("participants", null);
       setSess(s); setPts([]); setResult(null); setPhase("join");
     } catch (e) {
@@ -1237,8 +1237,6 @@ function App() {
           <div className="card">
             <label>開獎時間</label>
             <input type="time" value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})} />
-            <label>號碼上限（預設 99）</label>
-            <input type="number" min="10" max="999" value={form.numMax} onChange={e=>setForm({...form,numMax:e.target.value})} placeholder="99" />
             <button onClick={doSetup} disabled={isLoading} style={{marginTop:"8px"}}>
               {isLoading ? "處理中..." : "建立遊戲"}
             </button>
