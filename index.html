@@ -1400,7 +1400,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?"完全命中！":"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
+        <SiteHeader title={soloWin?"完全命中！":streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <div className="layout-2">
