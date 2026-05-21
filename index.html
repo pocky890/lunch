@@ -1105,29 +1105,31 @@ function App() {
     if (phase!=="results"||!result?.winner||savedRef.current) return;
     savedRef.current = true; const today = todayStr();
     const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber};
-    let didWrite = false;
-    await fRef(`weekly/${today}`).transaction(current => {
-      if (current !== null) return; // 已有紀錄，放棄寫入
-      didWrite = true;
-      return rec;
-    });
-    setWeekly(prev => ({...prev, [today]: rec}));
-    if (didWrite) {
-      fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          winner:       result.winner.name,
-          winnerNumber: result.winner.number,
-          rest:         result.winner.rest,
-          drawnNumber:  result.drawnNumber,
-          soloWin:      result.soloWin ? 1 : 0,
-          totalPeople:  pts.length,
-          participants: pts.map(p=>p.name).join(", "),
-          absent:       absent.join(", ")
-        })
-      }).catch(() => {});
-    }
+    (async () => {
+      let didWrite = false;
+      await fRef(`weekly/${today}`).transaction(current => {
+        if (current !== null) return; // 已有紀錄，放棄寫入
+        didWrite = true;
+        return rec;
+      });
+      setWeekly(prev => ({...prev, [today]: rec}));
+      if (didWrite) {
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            winner:       result.winner.name,
+            winnerNumber: result.winner.number,
+            rest:         result.winner.rest,
+            drawnNumber:  result.drawnNumber,
+            soloWin:      result.soloWin ? 1 : 0,
+            totalPeople:  pts.length,
+            participants: pts.map(p=>p.name).join(", "),
+            absent:       absent.join(", ")
+          })
+        }).catch(() => {});
+      }
+    })();
   }, [phase, result]);
 
   async function doSetup() {
