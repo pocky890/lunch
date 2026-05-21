@@ -29,6 +29,17 @@ function isDeadlinePassed(deadline) {
   return tw.getUTCHours() > h || (tw.getUTCHours() === h && tw.getUTCMinutes() >= m);
 }
 
+function computeStreak(weekly, winnerName, today) {
+  if (!winnerName) return 0;
+  const pastDates = Object.keys(weekly || {}).filter(d => d < today).sort().reverse();
+  let streak = 1;
+  for (const date of pastDates) {
+    const rec = weekly[date];
+    if (rec && rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
+  }
+  return streak;
+}
+
 function determineResult(pts, drawnNumber) {
   if (!pts || pts.length === 0) return null;
   const exact = pts.find(p => p.number === drawnNumber);
@@ -78,8 +89,10 @@ async function main() {
   const doubleCheck = await fbGet(`weekly/${today}`);
   if (doubleCheck) { console.log("Browser just wrote the result, skip"); return; }
 
-  // 7. 寫入 weekly
-  const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber };
+  // 7. 計算連勝並寫入 weekly
+  const weeklyAll = await fbGet("weekly");
+  const streak = result.soloWin ? 0 : computeStreak(weeklyAll, result.winner.name, today);
+  const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber, streak };
   await fbSet(`weekly/${today}`, rec);
   console.log(`Written weekly/${today}:`, rec);
 
@@ -100,6 +113,8 @@ async function main() {
       totalPeople:  pts.length,
       participants: pts.map(p => p.name).join(", "),
       absent:       absentNames.join(", "),
+      streak,
+      treatAmount:  streak >= 3 ? streak * 10 : 0,
     }),
   });
   console.log(`Webhook sent: ${res.status}`);

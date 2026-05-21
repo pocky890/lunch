@@ -379,6 +379,17 @@ function determineResult(pts, drawnNumber) {
   return { winner: finalWinner, soloWin: false, sorted: finalSorted };
 }
 
+function computeStreak(weekly, winnerName, today) {
+  if (!winnerName) return 0;
+  const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
+  let streak = 1; // 今天算第 1 勝
+  for (const date of pastDates) {
+    const rec = weekly[date];
+    if (rec && rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
+  }
+  return streak;
+}
+
 function managedToRests(managed) {
   const m = {};
   for (const cat of CATEGORIES) { m[cat] = Object.keys(managed?.[cat] || {}).sort(); }
@@ -416,6 +427,10 @@ function HelpModal({ onClose, numMax = 99 }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>✏️ 修改 / 取消</div>
             <div>截止前可以隨時修改餐廳和號碼，或直接取消參加、標記今日不參加。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客</div>
+            <div>非獨贏的情況下，若同一人連續 3 次選中最接近，所有參加者每人補助 <strong style={{color:"var(--t1)"}}>30 元</strong>；連續 4 次補助 40 元，以此類推（N 連勝 × 10 元）。</div>
           </div>
         </div>
       </div>
@@ -861,6 +876,7 @@ function HistoryModal({ weekly, onClose }) {
                       <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",lineHeight:1.4,display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
                         <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.winner:rec.rest}</span>
                         {rec.soloWin&&<span className="badge badge-gold" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0}}>獨贏</span>}
+                        {!rec.soloWin&&rec.streak>=3&&<span className="badge badge-gold" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0}}>🔥{rec.streak}連</span>}
                       </div>
                       <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</div>
                     </div>
@@ -926,6 +942,7 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
                   <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",lineHeight:1.4,display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
                     <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.winner:rec.rest}</span>
                     {rec.soloWin && <span className="badge badge-gold" style={{flexShrink:0}}>獨贏</span>}
+                    {!rec.soloWin && rec.streak >= 3 && <span className="badge badge-gold" style={{flexShrink:0}}>🔥{rec.streak}連</span>}
                   </div>
                   <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</div>
                 </div>
@@ -1104,7 +1121,8 @@ function App() {
   useEffect(() => {
     if (phase!=="results"||!result?.winner||savedRef.current) return;
     savedRef.current = true; const today = todayStr();
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber};
+    const streak = result.soloWin ? 0 : computeStreak(weekly, result.winner.name, today);
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
@@ -1125,7 +1143,9 @@ function App() {
             soloWin:      result.soloWin ? 1 : 0,
             totalPeople:  pts.length,
             participants: pts.map(p=>p.name).join(", "),
-            absent:       absent.join(", ")
+            absent:       absent.join(", "),
+            streak,
+            treatAmount:  streak >= 3 ? streak * 10 : 0
           })
         }).catch(() => {});
       }
@@ -1368,6 +1388,8 @@ function App() {
       </div>
     );
     const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts, maxTotal = (pts.length-1)*50;
+    const streak = soloWin ? 0 : computeStreak(weekly, winner.name, todayStr());
+    const treatAmount = streak >= 3 ? streak * 10 : 0;
     // 深色模式下 winner 卡片 & 排名列替代色
     const gc = isDarkMode
       ? {bg:"rgba(34,197,94,0.10)",bd:"rgba(34,197,94,0.25)",top:"#22C55E",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
@@ -1391,7 +1413,7 @@ function App() {
               {soloWin ? (
                 <div style={{background:oc.bg,border:`1px solid ${oc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:oc.top}} /><span className="badge badge-gold" style={{marginBottom:"16px",display:"inline-flex"}}>完全命中 · 獨贏</span><div style={{fontSize:"32px",fontWeight:"700",color:oc.h,marginBottom:"8px"}}>{winner.name}</div><div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px"}}>{winner.rest}</div><div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} /><p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · 每人最多 <strong style={{color:oc.str}}>50 元</strong> · 共 {pts.length-1} 人，上限 {maxTotal} 元</p></div>
               ) : (
-                <div style={{background:gc.bg,border:`1px solid ${gc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:gc.top}} /><span className="badge badge-green" style={{marginBottom:"16px",display:"inline-flex"}}>最接近 · 各自付帳</span><div style={{fontSize:"28px",fontWeight:"700",color:gc.h,marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:gc.sub}}>由 <strong style={{color:gc.str,fontWeight:"600"}}>{winner.name}</strong> 推薦</div></div>
+                <div style={{background:gc.bg,border:`1px solid ${gc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:gc.top}} /><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px",flexWrap:"wrap"}}><span className="badge badge-green" style={{display:"inline-flex"}}>最接近{streak>=3?` · 請客 ${treatAmount}元/人`:" · 各自付帳"}</span>{streak>=3&&<span className="badge badge-gold" style={{display:"inline-flex"}}>🔥 {streak} 連勝</span>}</div><div style={{fontSize:"28px",fontWeight:"700",color:gc.h,marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:gc.sub}}>由 <strong style={{color:gc.str,fontWeight:"600"}}>{winner.name}</strong> 推薦</div>{streak>=3&&<p style={{marginTop:"16px",fontSize:"14px",color:gc.sub}}>連續 {streak} 次最接近！每位參加者補助 <strong style={{color:gc.str}}>{treatAmount} 元</strong></p>}</div>
               )}
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
