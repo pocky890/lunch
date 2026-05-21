@@ -1132,8 +1132,8 @@ function App() {
     setIsLoading(true);
     try {
       const s = {deadline:form.deadline, date:todayStr(), numMax: 99};
-      await fSet("session", s); await fSet("participants", null);
-      setSess(s); setPts([]); setResult(null); setPhase("join");
+      await fSet("session", s); await fSet("participants", null); await fSet("absent", null);
+      setSess(s); setPts([]); setResult(null); setAbsent([]); setPhase("join");
     } catch (e) {
       showToast("連線錯誤，請重試");
     } finally {
