@@ -1104,10 +1104,15 @@ function App() {
   useEffect(() => {
     if (phase!=="results"||!result?.winner||savedRef.current) return;
     savedRef.current = true; const today = todayStr();
-    fGet("weekly").then(async w => {
-      if ((w||{})[today]) { setWeekly(w); return; }
-      const nw = {...(w||{}), [today]: {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber}};
-      await fSet("weekly", nw); setWeekly(nw);
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber};
+    let didWrite = false;
+    await fRef(`weekly/${today}`).transaction(current => {
+      if (current !== null) return; // 已有紀錄，放棄寫入
+      didWrite = true;
+      return rec;
+    });
+    setWeekly(prev => ({...prev, [today]: rec}));
+    if (didWrite) {
       fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1122,7 +1127,7 @@ function App() {
           absent:       absent.join(", ")
         })
       }).catch(() => {});
-    });
+    }
   }, [phase, result]);
 
   async function doSetup() {
