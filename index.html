@@ -686,7 +686,7 @@ function StatCards({deadline, ptsCount, cd}) {
   );
 }
 
-function PtList({list, absent = []}) {
+function PtList({list, absent = [], hideNumbers = false}) {
   const empty = (!list || list.length === 0) && absent.length === 0;
   if (empty) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
   return (
@@ -701,7 +701,7 @@ function PtList({list, absent = []}) {
             <div style={{width:"24px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
             <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"8px"}}>{p.name}</span>
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.rest}</span>
-            <span className="pt-num" style={{color:ramp.tx}}>#{p.number}</span>
+            <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
           </div>
         );
       })}
@@ -1309,7 +1309,7 @@ function App() {
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={true} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -1334,7 +1334,7 @@ function App() {
               </div>
             </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
-            <div className="col"><PtList list={pts} absent={absent} /></div>
+            <div className="col"><PtList list={pts} absent={absent} hideNumbers={true} /></div>
           </div>
         </div>
         <Footer />
@@ -1364,7 +1364,7 @@ function App() {
               <button onClick={doCancelAbsent} className="ghost">改變心意，我要參加！</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={true} /></div>
         </div>
       </div>
       <Footer />
