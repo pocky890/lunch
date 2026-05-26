@@ -379,13 +379,16 @@ function determineResult(pts, drawnNumber) {
   return { winner: finalWinner, soloWin: false, sorted: finalSorted };
 }
 
-function computeStreak(weekly, winnerName, today) {
+function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
+  if (todayPtsCount < 4) return 0; // 人數不足，今日不計入連勝
   const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
   let streak = 1; // 今天算第 1 勝
   for (const date of pastDates) {
     const rec = weekly[date];
-    if (rec && rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
+    if (!rec) break;
+    if (rec.skipStreak) continue; // 人數不足的日子跳過，不累計也不中斷
+    if (rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
   }
   return streak;
 }
@@ -431,6 +434,7 @@ function HelpModal({ onClose, numMax = 99 }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客</div>
             <div>非獨贏的情況下，若同一人連續 3 次選中最接近，所有參加者每人補助 <strong style={{color:"var(--t1)"}}>30 元</strong>；連續 4 次補助 40 元，以此類推（N 連勝 × 10 元）。</div>
+            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
           </div>
         </div>
       </div>
@@ -1121,8 +1125,9 @@ function App() {
   useEffect(() => {
     if (phase!=="results"||!result?.winner||savedRef.current) return;
     savedRef.current = true; const today = todayStr();
-    const streak = result.soloWin ? 0 : computeStreak(weekly, result.winner.name, today);
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak};
+    const skipStreak = pts.length < 4;
+    const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weekly, result.winner.name, today, pts.length);
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(skipStreak && {skipStreak: true})};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
@@ -1387,7 +1392,7 @@ function App() {
       </div>
     );
     const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts, maxTotal = (pts.length-1)*50;
-    const streak = soloWin ? 0 : computeStreak(weekly, winner.name, todayStr());
+    const streak = soloWin ? 0 : computeStreak(weekly, winner.name, todayStr(), pts.length);
     const treatAmount = streak >= 3 ? streak * 10 : 0;
     // 深色模式下 winner 卡片 & 排名列替代色
     const gc = isDarkMode

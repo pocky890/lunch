@@ -29,13 +29,16 @@ function isDeadlinePassed(deadline) {
   return tw.getUTCHours() > h || (tw.getUTCHours() === h && tw.getUTCMinutes() >= m);
 }
 
-function computeStreak(weekly, winnerName, today) {
+function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
+  if (todayPtsCount < 4) return 0; // 人數不足，今日不計入連勝
   const pastDates = Object.keys(weekly || {}).filter(d => d < today).sort().reverse();
   let streak = 1;
   for (const date of pastDates) {
     const rec = weekly[date];
-    if (rec && rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
+    if (!rec) break;
+    if (rec.skipStreak) continue; // 人數不足的日子跳過，不累計也不中斷
+    if (rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
   }
   return streak;
 }
@@ -91,8 +94,9 @@ async function main() {
 
   // 7. 計算連勝並寫入 weekly
   const weeklyAll = await fbGet("weekly");
-  const streak = result.soloWin ? 0 : computeStreak(weeklyAll, result.winner.name, today);
-  const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber, streak };
+  const skipStreak = pts.length < 4;
+  const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weeklyAll, result.winner.name, today, pts.length);
+  const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber, streak, ...(skipStreak && { skipStreak: true }) };
   await fbSet(`weekly/${today}`, rec);
   console.log(`Written weekly/${today}:`, rec);
 
