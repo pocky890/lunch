@@ -490,6 +490,12 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
   const [todayRest, setTodayRest] = React.useState("");
   const [saveMsg, setSaveMsg] = React.useState("");
   const [testMsg, setTestMsg] = React.useState("");
+  const [testPeople, setTestPeople] = React.useState(() => pts.length > 0 ? pts.map(p=>({name:p.name,rest:p.rest,number:p.number})) : [{name:"小明",number:42,rest:"牛肉麵"},{name:"小華",number:55,rest:"拉麵"}]);
+  const [testWinnerIdx, setTestWinnerIdx] = React.useState(0);
+  const [testStreak, setTestStreak] = React.useState("0");
+  const [testNewName, setTestNewName] = React.useState("");
+  const [testNewRest, setTestNewRest] = React.useState("");
+  const [testNewNum, setTestNewNum] = React.useState("");
   const [settingsNumMax, setSettingsNumMax] = React.useState(String(sess?.numMax || 99));
   const [settingsMsg, setSettingsMsg] = React.useState("");
   const today = todayStr(), todayRec = weekly[today];
@@ -518,19 +524,29 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
     setSaveMsg("已儲存 ✓"); setTimeout(()=>setSaveMsg(""),2000);
   }
   async function handleTestNotify(soloWin) {
+    if (testPeople.length === 0) return;
     setTestMsg("發送中…");
     try {
-      const testPts = pts.length > 0 ? pts : [{name:"小明",number:42,rest:"牛肉麵"},{name:"小華",number:55,rest:"拉麵"}];
-      const testAbsent = absent.length > 0 ? absent : ["阿土","大毛"];
+      const winner = testPeople[Math.min(testWinnerIdx, testPeople.length-1)];
+      const streakNum = parseInt(testStreak) || 0;
+      const soloTreatPerPerson = soloWin ? Math.max(50, streakNum >= 3 ? streakNum * 10 : 0) : 50;
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          winner: "測試人員", winnerNumber: 33, rest: "測試餐廳",
-          drawnNumber: TEST_DRAWN_NUMBER, soloWin: soloWin ? 1 : 0,
-          totalPeople: testPts.length,
-          participants: testPts.map(p=>p.name).join(", "),
-          absent: testAbsent.join(", ")
+          winner:             winner.name,
+          winnerNumber:       winner.number,
+          rest:               winner.rest,
+          drawnNumber:        TEST_DRAWN_NUMBER,
+          soloWin:            soloWin ? 1 : 0,
+          totalPeople:        testPeople.length,
+          participants:       testPeople.map(p=>p.name).join(", "),
+          absent:             "",
+          streak:             soloWin ? 0 : streakNum,
+          treatAmount:        (!soloWin && streakNum >= 3) ? streakNum * 10 : 0,
+          skipStreak:         0,
+          preservedStreak:    soloWin ? streakNum : 0,
+          soloTreatPerPerson,
         })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -610,19 +626,52 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
           </>}
           {tab==="test" && (
             <div style={{padding:"16px 0"}}>
-              <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"20px",lineHeight:1.6,textAlign:"center"}}>送出假資料到 n8n webhook<br/>不影響 Firebase 任何紀錄</p>
-              <div style={{background:"var(--s3)",borderRadius:"var(--r)",padding:"14px 16px",marginBottom:"20px",fontSize:"13px",color:"var(--t2)",lineHeight:1.8}}>
-                <div>中獎者：<strong style={{color:"var(--t1)"}}>測試人員</strong></div>
-                <div>餐廳：<strong style={{color:"var(--t1)"}}>測試餐廳</strong></div>
-                <div>號碼：<strong style={{color:"var(--t1)"}}>#{TEST_DRAWN_NUMBER}</strong></div>
-                <div>人數：<strong style={{color:"var(--t1)"}}>{pts.length > 0 ? pts.length : 2} 人</strong></div>
-                <div>參加：<strong style={{color:"var(--t1)"}}>{pts.length > 0 ? pts.map(p=>p.name).join("、") : "小明、小華"}</strong></div>
-                {(absent.length > 0) && <div>不參加：<strong style={{color:"var(--t1)"}}>{absent.join("、")}</strong></div>}
-                {(absent.length === 0) && <div style={{color:"var(--t3)"}}>不參加（範例）：<strong>阿土、大毛</strong></div>}
+              <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"16px",lineHeight:1.6,textAlign:"center"}}>送出假資料到 n8n webhook · 不影響 Firebase 任何紀錄<br/>幸運號碼固定為 #{TEST_DRAWN_NUMBER}</p>
+
+              {/* 參加者列表 */}
+              <label>參加者（{testPeople.length} 人）</label>
+              {testPeople.length > 0 && (
+                <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",overflow:"hidden",marginBottom:"10px"}}>
+                  {testPeople.map((p,i) => (
+                    <div key={i} style={{display:"flex",alignItems:"center",padding:"8px 12px",gap:"8px",background:i===testWinnerIdx?"var(--abg)":"transparent",borderBottom:i<testPeople.length-1?"1px solid var(--b1)":"none"}}>
+                      {i===testWinnerIdx && <span style={{fontSize:"11px",color:"var(--a)",fontWeight:"700",flexShrink:0}}>中獎</span>}
+                      <span style={{flex:1,fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{p.name}</span>
+                      <span style={{fontSize:"12px",color:"var(--t3)"}}>{p.rest}</span>
+                      <span style={{fontSize:"12px",fontWeight:"600",color:"var(--a)",minWidth:"36px",textAlign:"right"}}>#{p.number}</span>
+                      <button onClick={()=>{setTestPeople(prev=>prev.filter((_,j)=>j!==i));setTestWinnerIdx(w=>Math.max(0,w-(w>i?1:0)));}} className="ghost btn-danger" style={{width:"22px",height:"22px",padding:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"6px",marginBottom:0,fontSize:"11px",flexShrink:0}}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 新增參加者 */}
+              <div style={{display:"flex",gap:"6px",marginBottom:"16px"}}>
+                <input value={testNewName} onChange={e=>setTestNewName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){const n=testNewName.trim(),r=testNewRest.trim(),num=parseInt(testNewNum);if(n&&r&&num){setTestPeople(prev=>[...prev,{name:n,rest:r,number:num}]);setTestNewName("");setTestNewRest("");setTestNewNum("");}}} } placeholder="姓名" style={{flex:2,marginBottom:0,fontSize:"13px",padding:"8px 10px"}} />
+                <input value={testNewRest} onChange={e=>setTestNewRest(e.target.value)} placeholder="餐廳" style={{flex:2,marginBottom:0,fontSize:"13px",padding:"8px 10px"}} />
+                <input value={testNewNum} onChange={e=>setTestNewNum(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder="#" inputMode="numeric" style={{flex:1,marginBottom:0,fontSize:"13px",padding:"8px 10px"}} />
+                <button onClick={()=>{const n=testNewName.trim(),r=testNewRest.trim(),num=parseInt(testNewNum);if(!n||!r||!num)return;setTestPeople(prev=>[...prev,{name:n,rest:r,number:num}]);setTestNewName("");setTestNewRest("");setTestNewNum("");}} style={{width:"auto",padding:"8px 12px",marginBottom:0,flexShrink:0,fontSize:"13px"}}>+ 加</button>
               </div>
+
+              {/* 中獎者 + 連勝 */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"16px"}}>
+                <div>
+                  <label>中獎者</label>
+                  <select value={testWinnerIdx} onChange={e=>setTestWinnerIdx(Number(e.target.value))} style={{marginBottom:0}}>
+                    {testPeople.length === 0
+                      ? <option value={0}>先加入參加者</option>
+                      : testPeople.map((p,i)=><option key={i} value={i}>{p.name}</option>)
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label>連勝次數</label>
+                  <input type="number" min="0" max="99" value={testStreak} onChange={e=>setTestStreak(e.target.value)} placeholder="0" style={{marginBottom:0}} />
+                </div>
+              </div>
+
               <div style={{display:"flex",gap:"8px"}}>
-                <button onClick={()=>handleTestNotify(false)} style={{flex:1,padding:"12px",marginBottom:0}}>📍 測試「最接近」</button>
-                <button onClick={()=>handleTestNotify(true)} style={{flex:1,padding:"12px",marginBottom:0}}>🎯 測試「獨贏」</button>
+                <button onClick={()=>handleTestNotify(false)} disabled={testPeople.length===0} style={{flex:1,padding:"12px",marginBottom:0}}>📍 測試「最接近」</button>
+                <button onClick={()=>handleTestNotify(true)} disabled={testPeople.length===0} style={{flex:1,padding:"12px",marginBottom:0}}>🎯 測試「獨贏」</button>
               </div>
               {testMsg && <p style={{marginTop:"12px",fontSize:"14px",color:"var(--a)",textAlign:"center"}}>{testMsg}</p>}
             </div>
