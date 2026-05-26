@@ -1299,7 +1299,6 @@ function App() {
               {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
               <label>選一個號碼（1 ~ {numMax}）</label><div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
               {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
-              {takenNums.length>0 && (<div style={{marginBottom:"20px",marginTop:"8px"}}><p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"8px",fontWeight:"500"}}>已被選走</p><div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>{takenNums.map(({num,name})=>(<span key={num} className="num-chip taken">{num} <span style={{opacity:0.7,fontWeight:"400"}}>({name})</span></span>))}</div></div>)}
               <div className="divider" />
               <button onClick={doJoin} disabled={isLoading}>
                 {isLoading ? "處理中..." : "確認加入"}
