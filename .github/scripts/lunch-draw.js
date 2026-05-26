@@ -96,6 +96,17 @@ async function main() {
   const weeklyAll = await fbGet("weekly");
   const skipStreak = pts.length < 4;
   const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weeklyAll, result.winner.name, today, pts.length);
+  // 人數不足時，往前算保留中的連勝數（供通知顯示用）
+  let preservedStreak = 0;
+  if (skipStreak && !result.soloWin) {
+    const pastDates = Object.keys(weeklyAll || {}).filter(d => d < today).sort().reverse();
+    for (const date of pastDates) {
+      const rec = weeklyAll[date];
+      if (!rec) break;
+      if (rec.skipStreak) continue;
+      if (rec.winner === result.winner.name && !rec.soloWin) { preservedStreak++; } else { break; }
+    }
+  }
   const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber, streak, ...(skipStreak && { skipStreak: true }) };
   await fbSet(`weekly/${today}`, rec);
   console.log(`Written weekly/${today}:`, rec);
@@ -118,7 +129,9 @@ async function main() {
       participants: pts.map(p => p.name).join(", "),
       absent:       absentNames.join(", "),
       streak,
-      treatAmount:  streak >= 3 ? streak * 10 : 0,
+      treatAmount:     streak >= 3 ? streak * 10 : 0,
+      skipStreak:      skipStreak ? 1 : 0,
+      preservedStreak,
     }),
   });
   console.log(`Webhook sent: ${res.status}`);

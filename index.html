@@ -1127,6 +1127,17 @@ function App() {
     savedRef.current = true; const today = todayStr();
     const skipStreak = pts.length < 4;
     const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weekly, result.winner.name, today, pts.length);
+    // 人數不足時，往前算保留中的連勝數（供通知顯示用）
+    let preservedStreak = 0;
+    if (skipStreak && !result.soloWin) {
+      const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
+      for (const date of pastDates) {
+        const rec = weekly[date];
+        if (!rec) break;
+        if (rec.skipStreak) continue;
+        if (rec.winner === result.winner.name && !rec.soloWin) { preservedStreak++; } else { break; }
+      }
+    }
     const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(skipStreak && {skipStreak: true})};
     (async () => {
       let didWrite = false;
@@ -1141,16 +1152,18 @@ function App() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            winner:       result.winner.name,
-            winnerNumber: result.winner.number,
-            rest:         result.winner.rest,
-            drawnNumber:  result.drawnNumber,
-            soloWin:      result.soloWin ? 1 : 0,
-            totalPeople:  pts.length,
-            participants: pts.map(p=>p.name).join(", "),
-            absent:       absent.join(", "),
+            winner:          result.winner.name,
+            winnerNumber:    result.winner.number,
+            rest:            result.winner.rest,
+            drawnNumber:     result.drawnNumber,
+            soloWin:         result.soloWin ? 1 : 0,
+            totalPeople:     pts.length,
+            participants:    pts.map(p=>p.name).join(", "),
+            absent:          absent.join(", "),
             streak,
-            treatAmount:  streak >= 3 ? streak * 10 : 0
+            treatAmount:     streak >= 3 ? streak * 10 : 0,
+            skipStreak:      skipStreak ? 1 : 0,
+            preservedStreak,
           })
         }).catch(() => {});
       }
