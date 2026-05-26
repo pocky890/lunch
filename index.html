@@ -422,7 +422,7 @@ function HelpModal({ onClose, numMax = 99 }) {
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎯 獨贏（完全命中）</div>
-            <div>如果有人選的號碼<strong style={{color:"var(--t1)"}}>完全等於</strong>幸運號碼，就是「獨贏」！其他人每人最多補助 <strong style={{color:"var(--t1)"}}>50 元</strong>，讓他吃他選的店。</div>
+            <div>如果有人選的號碼<strong style={{color:"var(--t1)"}}>完全等於</strong>幸運號碼，就是「獨贏」！其他人每人最多補助 <strong style={{color:"var(--t1)"}}>50 元</strong>，讓他吃他選的店。若該人同時有連勝紀錄且連勝金額（N × 10 元）超過 50 元，則以<strong style={{color:"var(--t1)"}}>連勝金額為主</strong>。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🤝 同分決勝</div>
@@ -435,7 +435,10 @@ function HelpModal({ onClose, numMax = 99 }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客</div>
             <div>非獨贏的情況下，若同一人連續 3 次選中最接近，所有參加者每人補助 <strong style={{color:"var(--t1)"}}>30 元</strong>；連續 4 次補助 40 元，以此類推（N 連勝 × 10 元）。</div>
-            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
+            <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"6px"}}>
+              <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
+              <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
+            </div>
           </div>
         </div>
       </div>
