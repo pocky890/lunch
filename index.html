@@ -529,6 +529,10 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
     try {
       const winner = testPeople[Math.min(testWinnerIdx, testPeople.length-1)];
       const streakNum = parseInt(testStreak) || 0;
+      const skipStreak = testPeople.length < 4;
+      const streak = (soloWin || skipStreak) ? 0 : streakNum;
+      const treatAmount = (!soloWin && !skipStreak && streakNum >= 3) ? streakNum * 10 : 0;
+      const preservedStreak = (soloWin || skipStreak) ? streakNum : 0;
       const soloTreatPerPerson = soloWin ? Math.max(50, streakNum >= 3 ? streakNum * 10 : 0) : 50;
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
@@ -542,10 +546,10 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
           totalPeople:        testPeople.length,
           participants:       testPeople.map(p=>p.name).join(", "),
           absent:             "",
-          streak:             soloWin ? 0 : streakNum,
-          treatAmount:        (!soloWin && streakNum >= 3) ? streakNum * 10 : 0,
-          skipStreak:         0,
-          preservedStreak:    soloWin ? streakNum : 0,
+          streak,
+          treatAmount,
+          skipStreak:         skipStreak ? 1 : 0,
+          preservedStreak,
           soloTreatPerPerson,
         })
       });
