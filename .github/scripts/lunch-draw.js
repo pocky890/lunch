@@ -38,6 +38,7 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
     const rec = weekly[date];
     if (!rec) break;
     if (rec.skipStreak) continue; // 人數不足的日子跳過，不累計也不中斷
+    if (rec.winner === winnerName && rec.soloWin) continue; // 同一人獨贏，跳過但不中斷連勝
     if (rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
   }
   return streak;
@@ -96,17 +97,18 @@ async function main() {
   const weeklyAll = await fbGet("weekly");
   const skipStreak = pts.length < 4;
   const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weeklyAll, result.winner.name, today, pts.length);
-  // 人數不足時，往前算保留中的連勝數（供通知顯示用）
+  // 人數不足或獨贏時，往前算保留中的連勝數（供通知顯示用）
   let preservedStreak = 0;
-  if (skipStreak && !result.soloWin) {
+  if (skipStreak || result.soloWin) {
     const pastDates = Object.keys(weeklyAll || {}).filter(d => d < today).sort().reverse();
     for (const date of pastDates) {
       const rec = weeklyAll[date];
       if (!rec) break;
-      if (rec.skipStreak) continue;
+      if (rec.skipStreak || (rec.winner === result.winner.name && rec.soloWin)) continue;
       if (rec.winner === result.winner.name && !rec.soloWin) { preservedStreak++; } else { break; }
     }
   }
+  const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) : 50;
   const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber, streak, ...(skipStreak && { skipStreak: true }) };
   await fbSet(`weekly/${today}`, rec);
   console.log(`Written weekly/${today}:`, rec);
@@ -130,8 +132,9 @@ async function main() {
       absent:       absentNames.join(", "),
       streak,
       treatAmount:     streak >= 3 ? streak * 10 : 0,
-      skipStreak:      skipStreak ? 1 : 0,
+      skipStreak:         skipStreak ? 1 : 0,
       preservedStreak,
+      soloTreatPerPerson: result.soloWin ? soloTreatPerPerson : 50,
     }),
   });
   console.log(`Webhook sent: ${res.status}`);
