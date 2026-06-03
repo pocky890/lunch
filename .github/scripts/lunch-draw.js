@@ -69,10 +69,19 @@ async function main() {
   const existing = await fbGet(`weekly/${today}`);
   if (existing) { console.log("Result already exists, skip"); return; }
 
-  // 3. 讀取參加者
+  // 3. 讀取參加者 & 不參加名單
   const ptsObj = await fbGet("participants");
   const pts = Object.values(ptsObj || {}).sort((a, b) => a.joinedAt - b.joinedAt);
-  if (pts.length < 2) { console.log(`Only ${pts.length} participant(s), skip`); return; }
+  if (pts.length < 2) {
+    console.log(`Only ${pts.length} participant(s), sending no-participants notification`);
+    const absentObj0 = await fbGet("absent");
+    const absentNames0 = Object.values(absentObj0 || {}).map(v => typeof v === "object" ? v.name : v);
+    await fetch(WEBHOOK_URL, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ noParticipants: 1, totalPeople: pts.length, absent: absentNames0.join(", ") }),
+    });
+    return;
+  }
 
   // 4. 抽號（已有就沿用）
   const numMax = session.numMax || 99;

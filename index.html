@@ -1180,8 +1180,16 @@ function App() {
   }, [phase, sess]);
 
   useEffect(() => {
-    if (phase!=="results"||!result?.winner||savedRef.current) return;
+    if (phase!=="results"||savedRef.current) return;
     savedRef.current = true; const today = todayStr();
+    // 無人或人數不足，發「無人參加」通知後結束
+    if (!result?.winner || pts.length < 2) {
+      fetch(WEBHOOK_URL, {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ noParticipants: 1, totalPeople: pts.length, absent: absent.join(", ") })
+      }).catch(() => {});
+      return;
+    }
     const skipStreak = pts.length < 4;
     const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weekly, result.winner.name, today, pts.length);
     // 人數不足或獨贏時，往前算保留中的連勝數（供通知顯示用）
