@@ -74,6 +74,9 @@ async function main() {
   const pts = Object.values(ptsObj || {}).sort((a, b) => a.joinedAt - b.joinedAt);
   if (pts.length < 2) {
     console.log(`Only ${pts.length} participant(s), sending no-participants notification`);
+    const alreadySent = await fbGet(`weekly/${today}`);
+    if (alreadySent) { console.log("No-participants notification already sent, skip"); return; }
+    await fbSet(`weekly/${today}`, { noParticipants: true });
     const absentObj0 = await fbGet("absent");
     const absentNames0 = Object.values(absentObj0 || {}).map(v => typeof v === "object" ? v.name : v);
     await fetch(WEBHOOK_URL, {

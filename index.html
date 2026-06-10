@@ -1184,10 +1184,20 @@ function App() {
     savedRef.current = true; const today = todayStr();
     // 無人或人數不足，發「無人參加」通知後結束
     if (!result?.winner || pts.length < 2) {
-      fetch(WEBHOOK_URL, {
-        method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ noParticipants: 1, totalPeople: pts.length, absent: absent.join(", ") })
-      }).catch(() => {});
+      (async () => {
+        let didWrite = false;
+        await fRef(`weekly/${today}`).transaction(current => {
+          if (current !== null) return;
+          didWrite = true;
+          return { noParticipants: true };
+        });
+        if (didWrite) {
+          fetch(WEBHOOK_URL, {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ noParticipants: 1, totalPeople: pts.length, absent: absent.join(", ") })
+          }).catch(() => {});
+        }
+      })();
       return;
     }
     const skipStreak = pts.length < 4;
