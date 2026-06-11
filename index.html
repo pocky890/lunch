@@ -1458,7 +1458,17 @@ function App() {
               <label>餐廳類型</label>
               <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
               {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
-              <label>選一個號碼（1 ~ {numMax}）</label><div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
+              <label>選一個號碼（1 ~ {numMax}）</label>
+              <div style={{display:"flex",gap:"8px",alignItems:"flex-start"}}>
+                <div className="num-input-wrap" style={{flex:1}}><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
+                <button className="ghost" title="隨機選號" style={{padding:"10px 12px",fontSize:"18px",marginBottom:"8px"}} onClick={()=>{
+                  const taken = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
+                  const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
+                  if (available.length===0) return;
+                  const pick = available[Math.floor(Math.random()*available.length)];
+                  setForm(f=>({...f,number:String(pick)})); setNumWarn("");
+                }}>🎲</button>
+              </div>
               {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
               <div className="divider" />
               <button onClick={doJoin} disabled={isLoading}>
