@@ -295,6 +295,7 @@
   const ADMIN_PASSWORD = "7788";
   const DB_PREFIX         = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
   const TEST_DRAWN_NUMBER = 78; // 測試模式固定開獎號碼
+  const TEST_MOCK_DATE    = "2026-12-25"; // 測試模式模擬日期（節日橫幅用）
   const WEBHOOK_URL  = DB_PREFIX === "lunch_test"
     ? "https://epf-agent.perfectcorp.com/webhook/747f6aca-3a7d-476a-a271-7a80c71363f9"
     : "https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7";
@@ -393,7 +394,7 @@ const SOLAR_TERM_MSGS = {
 };
 
 function getTodayHoliday() {
-  const today = todayStr();
+  const today = (DB_PREFIX === "lunch_test") ? TEST_MOCK_DATE : todayStr();
   const [year, month, day] = today.split('-').map(Number);
   // 1. 固定國曆節日
   const fixed = SOLAR_HOLIDAYS.find(h => h.m === month && h.d === day);
@@ -877,6 +878,11 @@ function HolidayBanner() {
 }
 
 function StreakWarning({ pts, weekly }) {
+  if (DB_PREFIX === "lunch_test") return (
+    <div style={{textAlign:"center",padding:"10px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#92400E"}}>
+      ⚠️ <strong>Pocky</strong> 再贏一次就 3 連勝，要請客 <strong>30 元</strong>！
+    </div>
+  );
   if (!pts || pts.length < 4) return null;
   const today = todayStr();
   const warnings = pts
