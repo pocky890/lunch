@@ -304,6 +304,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <div id="root"></div>
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
@@ -338,6 +339,84 @@ const RAMPS = [
   {bg:"#F0FDF4",bd:"#BBF7D0",tx:"#14532D"}, {bg:"#FEF2F2",bd:"#FECACA",tx:"#7F1D1D"}
 ];
 const WDAYS = ["週一","週二","週三","週四","週五"];
+
+const SOLAR_HOLIDAYS = [
+  {m:1,  d:1,  name:"元旦",       msg:"新年快樂！今天選什麼，就是新的一年第一餐 🎆"},
+  {m:2,  d:14, name:"情人節",     msg:"情人節！有情人的去約會，沒有的來抽午餐 💘"},
+  {m:2,  d:28, name:"和平紀念日", msg:"今天是和平紀念日，午餐和平選，和平吃 🕊️"},
+  {m:3,  d:14, name:"白色情人節", msg:"白色情人節，今天選白色系食物？🤍"},
+  {m:4,  d:1,  name:"愚人節",     msg:"愚人節！今天的開獎結果是真的，不是騙你 🃏"},
+  {m:4,  d:4,  name:"兒童節",     msg:"今天兒童節，童心未泯選個兒時最愛吃的吧 🎈"},
+  {m:4,  d:5,  name:"清明節",     msg:"清明時節，記得掃墓，午餐後再說 🌧️"},
+  {m:5,  d:1,  name:"勞動節",     msg:"勞動節快樂！辛苦了，今天認真挑一頓好的 💪"},
+  {m:8,  d:8,  name:"父親節",     msg:"父親節快樂！88 = 爸爸，今天爸爸請客？👨"},
+  {m:10, d:10, name:"國慶日",     msg:"雙十國慶！今天的午餐也要慶祝一下 🎉"},
+  {m:10, d:31, name:"萬聖節",     msg:"萬聖節！今天選店別太靠近墓地 🎃"},
+  {m:12, d:24, name:"聖誕夜",     msg:"聖誕夜！今晚有大餐，午餐省一點？🎄"},
+  {m:12, d:25, name:"聖誕節",     msg:"聖誕節快樂！Ho Ho Ho，今天的幸運號碼由聖誕老人決定 🎅"},
+  {m:12, d:31, name:"跨年夜",     msg:"今晚跨年，午餐吃飽才有體力倒數 🎆"},
+];
+const LUNAR_HOLIDAY_MSGS = {
+  "春節":   "新春快樂！開工第一餐要吃好料 🧨",
+  "元宵節": "今天元宵，吃湯圓還是去餐廳？🏮",
+  "端午節": "今天端午，吃粽子還是去餐廳二選一？🎋",
+  "七夕":   "今天七夕，一個人吃飯沒關係，有大家陪 💝",
+  "中元節": "中元節，好兄弟也在排隊看你選哪家 👻",
+  "中秋節": "中秋節！烤肉就算了，午餐先選個好的 🥮",
+  "重陽節": "重陽節，今天要孝敬長輩，午餐你請？🍂",
+  "除夕":   "今晚要圍爐，午餐先墊個胃吧 🧧",
+};
+const SOLAR_TERM_MSGS = {
+  "立春":"立春了！春天的第一頓午餐，選個清爽的 🌱",
+  "雨水":"雨水時節，今天記得帶傘，吃熱食暖身 ☔",
+  "驚蟄":"驚蟄！萬物甦醒，你的食慾也醒了嗎？🐛",
+  "春分":"春分，白天黑夜各一半，午餐也要均衡一點 ⚖️",
+  "穀雨":"穀雨，春雨貴如油，今天選個滋補的 🌾",
+  "立夏":"立夏了！天熱了，選個涼快的店 ☀️",
+  "小滿":"小滿，麥穗飽滿，你的肚子也要飽滿 🌾",
+  "芒種":"芒種，農忙季節，你的午餐選好了嗎？🌿",
+  "夏至":"夏至！今天是一年最長的一天，午餐吃飽點撐過去 🌞",
+  "小暑":"小暑，天氣開始熱了，吃點消暑的吧 🌡️",
+  "大暑":"大暑！一年最熱的時候，冷氣店家優先 🥵",
+  "立秋":"立秋，秋天要到了，但還是很熱 😅",
+  "處暑":"處暑，熱意消退中，來碗熱湯也不錯了 🍲",
+  "白露":"白露，早晚涼了，午餐加個湯暖暖 🌫️",
+  "秋分":"秋分，農作豐收時節，來頓豐盛的 🍁",
+  "寒露":"寒露，天涼好個秋，火鍋季開始了嗎？🍂",
+  "霜降":"霜降，這週末可能下霜，今天吃火鍋暖身？❄️",
+  "立冬":"立冬！冬天正式到，今天一定要吃熱食 🧥",
+  "小雪":"小雪，補冬的季節到了，好好吃一頓 ❄️",
+  "大雪":"大雪，北方在下雪，台灣繼續吃好料 ☃️",
+  "冬至":"冬至！今天一定要吃湯圓，吃完再決定去哪 🥟",
+  "小寒":"小寒，一年最冷開始了，火鍋時間到 🥶",
+  "大寒":"大寒！全年最冷，今天選暖胃的店 🧣",
+};
+
+function getTodayHoliday() {
+  const today = todayStr();
+  const [year, month, day] = today.split('-').map(Number);
+  // 1. 固定國曆節日
+  const fixed = SOLAR_HOLIDAYS.find(h => h.m === month && h.d === day);
+  if (fixed) return { name: fixed.name, msg: fixed.msg };
+  // 2. 母親節（5月第二個週日）
+  if (month === 5) {
+    const dow = new Date(year, 4, 1).getDay();
+    const secondSun = (dow === 0 ? 1 : 8 - dow) + 7;
+    if (day === secondSun) return { name: "母親節", msg: "母親節快樂！媽媽辛苦了，今天有沒有帶媽媽吃飯？🌸" };
+  }
+  // 3. 農曆節日 & 節氣（需 lunar-javascript）
+  if (typeof Solar === 'undefined') return null;
+  try {
+    const lunar = Solar.fromYmd(year, month, day).getLunar();
+    const jieqi = lunar.getJieQi();
+    if (jieqi && SOLAR_TERM_MSGS[jieqi]) return { name: jieqi, msg: SOLAR_TERM_MSGS[jieqi] };
+    for (const f of lunar.getFestivals()) {
+      const name = f.split('(')[0];
+      if (LUNAR_HOLIDAY_MSGS[name]) return { name, msg: LUNAR_HOLIDAY_MSGS[name] };
+    }
+  } catch(e) {}
+  return null;
+}
 
 /* ── Pure logic ── */
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
@@ -783,6 +862,16 @@ function WeatherBar({ weather }) {
       <span style={{color:"var(--t3)",fontSize:"12px"}}>新店 12–14時</span>
       {weather.temp !== null && <span>🌡️ <strong style={{color:"var(--t1)"}}>{weather.temp}°C</strong></span>}
       {pop !== null && <span style={{color:popColor}}>{popIcon} 降雨 <strong>{pop}%</strong></span>}
+    </div>
+  );
+}
+
+function HolidayBanner() {
+  const h = getTodayHoliday();
+  if (!h) return null;
+  return (
+    <div style={{textAlign:"center",padding:"10px 16px",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#166534"}}>
+      🎉 <strong>{h.name}</strong>｜{h.msg}
     </div>
   );
 }
@@ -1459,6 +1548,7 @@ function App() {
       <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+        <HolidayBanner />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
           <div className="card">
@@ -1483,6 +1573,7 @@ function App() {
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <HolidayBanner />
         <StreakWarning pts={pts} weekly={weekly} />
         <div className="grid-3">
           <div className="col">
@@ -1536,7 +1627,8 @@ function App() {
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-          <StreakWarning pts={pts} weekly={weekly} />
+          <HolidayBanner />
+        <StreakWarning pts={pts} weekly={weekly} />
           <div className="grid-3">
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -1560,6 +1652,7 @@ function App() {
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <HolidayBanner />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -1593,6 +1686,7 @@ function App() {
         <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+          <HolidayBanner />
           <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
         </div>
         <Footer />
@@ -1629,6 +1723,7 @@ function App() {
         <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+          <HolidayBanner />
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
