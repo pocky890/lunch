@@ -298,6 +298,7 @@
   const WEBHOOK_URL  = DB_PREFIX === "lunch_test"
     ? "https://epf-agent.perfectcorp.com/webhook/747f6aca-3a7d-476a-a271-7a80c71363f9"
     : "https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7";
+  const CWA_API_KEY = "CWA-C4D8DB72-C4BF-4D05-A34F-E9C7FE178D38";
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -747,6 +748,20 @@ function StatCards({deadline, ptsCount, cd}) {
   );
 }
 
+function WeatherBar({ weather }) {
+  if (!weather || weather.loading || weather.error || (weather.temp === null && weather.pop === null)) return null;
+  const pop = weather.pop;
+  const popIcon = pop >= 70 ? "🌧️" : pop >= 40 ? "🌦️" : "☀️";
+  const popColor = pop >= 70 ? "var(--red)" : pop >= 40 ? "#f59e0b" : "var(--t2)";
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"8px 14px",background:"var(--card)",borderRadius:"10px",fontSize:"13px",color:"var(--t2)",marginBottom:"12px",border:"1px solid var(--border)",flexWrap:"wrap"}}>
+      <span style={{color:"var(--t3)",fontSize:"12px"}}>新店 12–14時</span>
+      {weather.temp !== null && <span>🌡️ <strong style={{color:"var(--t1)"}}>{weather.temp}°C</strong></span>}
+      {pop !== null && <span style={{color:popColor}}>{popIcon} 降雨 <strong>{pop}%</strong></span>}
+    </div>
+  );
+}
+
 function PtList({list, absent = [], hideNumbers = false}) {
   const empty = (!list || list.length === 0) && absent.length === 0;
   if (empty) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
@@ -1072,6 +1087,45 @@ function App() {
   const [adminPw, setAdminPw] = useState("");
   const [adminPwErr, setAdminPwErr] = useState("");
 
+  const [weather, setWeather] = useState({ loading: true, temp: null, pop: null, error: false });
+  useEffect(() => {
+    (async () => {
+      try {
+        const today = todayStr();
+        const res = await fetch(`https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-069?Authorization=${CWA_API_KEY}&locationName=新店區&elementName=T,PoP6h`);
+        const data = await res.json();
+        const location = data?.records?.Locations?.[0]?.Location?.[0];
+        if (!location) { setWeather({ loading: false, error: true, temp: null, pop: null }); return; }
+        const elements = location.WeatherElement || [];
+        // 溫度：取 12:00 與 13:00 平均
+        const tempEl = elements.find(e => e.ElementName === "溫度");
+        const temps = [];
+        if (tempEl) {
+          for (const t of tempEl.Time || []) {
+            const dt = t.DataTime || "";
+            if (!dt.startsWith(today)) continue;
+            const h = parseInt(dt.slice(11, 13));
+            if (h === 12 || h === 13) temps.push(parseInt(t.ElementValue?.[0]?.Temperature));
+          }
+        }
+        const temp = temps.length > 0 ? Math.round(temps.reduce((a,b)=>a+b,0)/temps.length) : null;
+        // 降雨機率：取 12:00 開始的 3 小時區間
+        const popEl = elements.find(e => e.ElementName && e.ElementName.includes("降雨"));
+        let pop = null;
+        if (popEl) {
+          for (const t of popEl.Time || []) {
+            const start = t.StartTime || "";
+            if (!start.startsWith(today)) continue;
+            if (parseInt(start.slice(11, 13)) === 12) { pop = parseInt(t.ElementValue?.[0]?.ProbabilityOfPrecipitation); break; }
+          }
+        }
+        setWeather({ loading: false, error: false, temp, pop });
+      } catch(e) {
+        setWeather({ loading: false, error: true, temp: null, pop: null });
+      }
+    })();
+  }, []);
+
   function openAdmin() { setAdminOpen(true); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
   function closeAdmin() { setAdminOpen(false); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
   function handleAdminAuth(pw) { if (pw===ADMIN_PASSWORD) { setAdminAuth(true); setAdminPwErr(""); } else { setAdminPwErr("密碼錯誤"); } }
@@ -1378,6 +1432,7 @@ function App() {
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <WeatherBar weather={weather} />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -1420,6 +1475,7 @@ function App() {
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <WeatherBar weather={weather} />
           <div className="grid-3">
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -1443,6 +1499,7 @@ function App() {
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <WeatherBar weather={weather} />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
