@@ -211,6 +211,9 @@ async function main() {
       skipStreak:         skipStreak ? 1 : 0,
       preservedStreak,
       soloTreatPerPerson: result.soloWin ? soloTreatPerPerson : 50,
+      followRestUser:  result.followRestUser || "",
+      cardsUsed:       pts.filter(p => p.cardUsed).map(p => `${p.name} ${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
+      cardsAwarded:    awardedCards.map(w => `${w.name} ${CARD_TYPES[w.type]?.name}`).join(", "),
     }),
   });
   console.log(`Webhook sent: ${res.status}`);

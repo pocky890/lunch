@@ -1675,6 +1675,9 @@ function App() {
             skipStreak:         skipStreak ? 1 : 0,
             preservedStreak,
             soloTreatPerPerson: result.soloWin ? soloTreatPerPerson : 50,
+            followRestUser:  result.followRestUser || "",
+            cardsUsed:       pts.filter(p=>p.cardUsed).map(p=>`${p.name} ${CARD_TYPES[p.cardUsed]?.emoji}${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
+            cardsAwarded:    won.map(w=>`${w.name} ${CARD_TYPES[w.type]?.emoji}${CARD_TYPES[w.type]?.name}`).join(", "),
           })
         }).catch(() => {});
       }
