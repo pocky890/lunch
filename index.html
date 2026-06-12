@@ -1050,21 +1050,32 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   const today = todayStr();
   const usable = (cards||[]).filter(c => c.type !== "streak_protect" && c.expiresAt >= today);
   if (usable.length === 0) return null;
+  // Group by type, sort each group by nearest expiry first
+  const grouped = {};
+  for (const c of usable) {
+    if (!grouped[c.type]) grouped[c.type] = [];
+    grouped[c.type].push(c);
+  }
+  for (const type of Object.keys(grouped)) {
+    grouped[type].sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
+  }
   return (
     <div style={{border:"1px solid var(--abd)",borderRadius:"var(--r)",padding:"12px 14px",marginBottom:"16px",background:"var(--abg)"}}>
       <div style={{fontSize:"12px",fontWeight:"600",color:"var(--a)",marginBottom:"8px"}}>🃏 你的手牌（點擊使用）</div>
-      {usable.map(c => {
-        const ct = CARD_TYPES[c.type];
-        const active = cardToUse === c.id;
-        const days = Math.ceil((new Date(c.expiresAt)-new Date(today))/86400000);
+      {Object.keys(CARD_TYPES).filter(type => grouped[type]).map(type => {
+        const ct = CARD_TYPES[type];
+        const group = grouped[type];
+        const nearest = group[0]; // use nearest-expiry card first
+        const active = group.some(c => c.id === cardToUse);
+        const days = Math.ceil((new Date(nearest.expiresAt)-new Date(today))/86400000);
         return (
-          <div key={c.id} onClick={() => onSelectCard(active ? "" : c.id)}
+          <div key={type} onClick={() => onSelectCard(active ? "" : nearest.id)}
             style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:"pointer",marginBottom:"4px",
               background:active?"var(--a)":"var(--s1)",border:`1px solid ${active?"var(--a)":"var(--b1)"}`,
               color:active?"#fff":"var(--t1)",transition:"all 0.15s"}}>
             <span style={{fontSize:"16px"}}>{ct.emoji}</span>
             <div style={{flex:1}}>
-              <div style={{fontSize:"13px",fontWeight:"600"}}>{ct.name}</div>
+              <div style={{fontSize:"13px",fontWeight:"600"}}>{ct.name}{group.length > 1 ? ` ×${group.length}` : ""}</div>
               <div style={{fontSize:"11px",opacity:0.75}}>{ct.desc}</div>
             </div>
             <span style={{fontSize:"11px",opacity:0.6}}>剩 {days}d</span>
