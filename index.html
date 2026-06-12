@@ -1240,7 +1240,7 @@ function App() {
         const today = todayStr();
         const res = await fetch(`https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-069?Authorization=${CWA_API_KEY}&locationName=新店區&elementName=T,PoP6h`);
         const data = await res.json();
-        const location = data?.records?.Locations?.[0]?.Location?.[0];
+        const location = data?.records?.Locations?.[0]?.Location?.find(l => l.LocationName === "新店區");
         if (!location) { setWeather({ loading: false, error: true, temp: null, pop: null }); return; }
         const elements = location.WeatherElement || [];
         // 溫度：取 12:00 與 13:00 平均
