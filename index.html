@@ -652,7 +652,7 @@ function CardHelpModal({ onClose }) {
           {[
             { emoji:"🍽️", name:"跟著我吃卡", limit:"5 張 · 30 天", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
             { emoji:"➕", name:"加號卡",       limit:"5 張 · 30 天", desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
-            { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"開獎後才宣告啟動。當日本來會中斷連勝時，可以強制保留，今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
+            { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"被動卡，無需手動操作。開獎後若你的連勝即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
             { emoji:"👁️", name:"公開卡",      limit:"5 張 · 60 天", desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
           ].map(c => (
             <div key={c.name}>
@@ -1433,8 +1433,6 @@ function App() {
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
-  const [streakProtectable, setStreakProtectable] = useState(false);
-  const [streakProtectCardId, setStreakProtectCardId] = useState(null);
 
   const [weather, setWeather] = useState({ loading: true, temp: null, pop: null, error: false });
   useEffect(() => {
@@ -1506,17 +1504,31 @@ function App() {
     return () => ref.off("value", handler);
   }, [form.name]);
 
-  // 結果頁：確認是否能用連勝保護卡
+  // 結果頁：連勝保護卡自動觸發（被動卡）
   useEffect(() => {
-    if (phase !== "results" || !result) return;
+    if (phase !== "results" || !result) { streakAutoProtectedRef.current = false; return; }
+    if (streakAutoProtectedRef.current) return;
     const myName = form.name.trim();
-    if (!myName || result.winner?.name === myName) { setStreakProtectable(false); return; }
+    if (!myName || result.winner?.name === myName) return;
     const today = todayStr();
-    if (getPreviousStreak(weekly, myName, today) < 1) { setStreakProtectable(false); return; }
+    if (weekly[today]?.skipStreak) return; // 已保護或人數不足，不需觸發
+    if (getPreviousStreak(weekly, myName, today) < 1) return;
     const card = myCards.find(c => c.type === "streak_protect" && c.expiresAt >= today);
-    if (card) { setStreakProtectable(true); setStreakProtectCardId(card.id); }
-    else { setStreakProtectable(false); setStreakProtectCardId(null); }
-  }, [phase, result, myCards]);
+    if (!card) return;
+    streakAutoProtectedRef.current = true;
+    (async () => {
+      try {
+        await fRef(`weekly/${today}`).update({ skipStreak: true });
+        await returnCardToPool(myName, card.id);
+        const newWeekly = await fGet("weekly");
+        setWeekly(newWeekly || {});
+        showToast("🛡️ 連勝保護卡自動啟動！連勝保留中");
+      } catch(e) {
+        streakAutoProtectedRef.current = false;
+        showToast("連勝保護卡啟動失敗，請重試");
+      }
+    })();
+  }, [phase, result, myCards, weekly]);
 
   function openAdmin() { setAdminOpen(true); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
   function closeAdmin() { setAdminOpen(false); setAdminAuth(false); setAdminPw(""); setAdminPwErr(""); }
@@ -1528,6 +1540,7 @@ function App() {
   async function adminUpdateNumMax(n) { await fRef("session").update({ numMax: n }); setSess(prev => ({...prev, numMax: n})); }
 
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
+  const streakAutoProtectedRef = useRef(false);
 
   function showToast(msg) {
     setToastMsg(msg);
@@ -1831,21 +1844,6 @@ function App() {
 
   async function confirmReset() { if (resetPw !== ADMIN_PASSWORD) { setResetErr("密碼錯誤"); return; } setResetModal(false); await doReset(); }
 
-  async function activateStreakProtect() {
-    const myName = form.name.trim();
-    if (!streakProtectCardId || !myName) return;
-    setIsLoading(true);
-    try {
-      const today = todayStr();
-      await fRef(`weekly/${today}`).update({ skipStreak: true });
-      await returnCardToPool(myName, streakProtectCardId);
-      setStreakProtectable(false); setStreakProtectCardId(null);
-      const newWeekly = await fGet("weekly");
-      setWeekly(newWeekly || {});
-      showToast("連勝保護卡已使用！今日連勝保留 🛡️");
-    } catch(e) { showToast("使用失敗，請重試"); }
-    finally { setIsLoading(false); }
-  }
 
   const numMax = sess?.numMax || 99;
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
@@ -2077,17 +2075,6 @@ function App() {
                   {awardedCards.map((aw,i) => (
                     <div key={i}>🃏 <strong>{aw.name}</strong> 獲得了 <strong>{CARD_TYPES[aw.type]?.emoji} {CARD_TYPES[aw.type]?.name}</strong>！</div>
                   ))}
-                </div>
-              )}
-              {streakProtectable && (
-                <div style={{padding:"12px 16px",background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:"10px",marginBottom:"16px"}}>
-                  <div style={{fontSize:"14px",color:"#4C1D95",marginBottom:"10px",fontWeight:"500"}}>
-                    🛡️ 你的連勝即將中斷！現在可以使用連勝保護卡強制保留。
-                  </div>
-                  <button onClick={activateStreakProtect} disabled={isLoading}
-                    style={{width:"auto",padding:"8px 18px",background:"#7C3AED",color:"#fff",border:"none",borderRadius:"8px",fontSize:"13px",fontWeight:"600",cursor:"pointer",marginBottom:0}}>
-                    {isLoading ? "處理中..." : "使用連勝保護卡 🛡️"}
-                  </button>
                 </div>
               )}
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
