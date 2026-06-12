@@ -35,7 +35,7 @@ async function fbPost(path, value) {
 
 async function checkAndAwardCard(name, number, today) {
   const entry = await fbGet(`dailyCards/${today}/${number}`);
-  if (!entry || entry.pickedBy !== null) return null;
+  if (!entry || entry.pickedBy != null) return null;
   // Non-transactional claim — backup script is single-instance, low collision risk
   await fbSet(`dailyCards/${today}/${number}/pickedBy`, name);
   const type = entry.type;
