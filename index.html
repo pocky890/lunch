@@ -649,10 +649,10 @@ function CardHelpModal({ onClose }) {
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
           <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
-            每天系統會將 <strong style={{color:"var(--t1)"}}>15 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
+            每天系統會將 <strong style={{color:"var(--t1)"}}>22 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
           </div>
           {[
-            { emoji:"🍽️", name:"跟著我吃卡", limit:"5 張 · 30 天", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
+            { emoji:"🍽️", name:"跟著我吃卡", limit:"3 張 · 30 天", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
             { emoji:"➕", name:"加號卡",       limit:"5 張 · 30 天", desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
             { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"被動卡，無需手動操作。開獎後若你的連勝即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
             { emoji:"👁️", name:"公開卡",      limit:"5 張 · 60 天", desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
