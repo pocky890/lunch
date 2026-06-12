@@ -632,6 +632,42 @@ function HelpModal({ onClose, numMax = 99 }) {
   );
 }
 
+/* ── Card Help Modal ── */
+function CardHelpModal({ onClose }) {
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="card fade-up" style={{width:"460px",maxWidth:"95vw",maxHeight:"85vh",overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:"20px",flexShrink:0}}>
+          <h2 style={{flex:1,fontSize:"18px"}}>🃏 卡牌說明</h2>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
+          <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
+            每天系統會將 <strong style={{color:"var(--t1)"}}>15 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
+          </div>
+          {[
+            { emoji:"🍽️", name:"跟著我吃卡", limit:"5 張 · 30 天", desc:"加入時宣告使用。不論開獎號碼是誰，當天統一去你選的餐廳。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝、獨贏機制照常計算。" },
+            { emoji:"➕", name:"加號卡",       limit:"5 張 · 30 天", desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
+            { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"開獎後才宣告啟動。當日本來會中斷連勝時，可以強制保留，今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
+          ].map(c => (
+            <div key={c.name}>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
+                <span style={{fontSize:"18px"}}>{c.emoji}</span>
+                <span>{c.name}</span>
+                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{c.limit}</span>
+              </div>
+              <div>{c.desc}</div>
+            </div>
+          ))}
+          <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
+            💡 卡牌池總量有限，用完就沒了。使用後卡牌歸還牌池，下次還有機會再抽到。未被領取的卡隔天重新分配位置。
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Draw Animation ── */
 function DrawAnimation({ drawnNumber, onDone, isDark }) {
   const [num, setNum] = React.useState(Math.floor(Math.random()*99)+1);
@@ -896,7 +932,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
 }
 
 /* ── UI Components ── */
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, weather}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   return (
     <div className="site-header">
@@ -915,6 +951,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, weather}) 
         </div>
         <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
           {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
+          <button className="ghost theme-toggle" onClick={onCardHelp} title="卡牌說明">🃏</button>
           <button className="ghost theme-toggle" onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
           <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>
           <button className="ghost theme-toggle" onClick={toggleDark} title="切換深淺色模式">
@@ -995,7 +1032,7 @@ function CardPoolDisplay({ cardPool }) {
   if (!cardPool || Object.keys(cardPool).length === 0) return null;
   const total = Object.values(cardPool).reduce((s,n) => s+(n||0), 0);
   return (
-    <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:"12px",fontSize:"13px"}}>
+    <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",display:"flex",alignItems:"center",justifyContent:"center",flexWrap:"wrap",gap:"12px",fontSize:"13px"}}>
       <span style={{fontWeight:"600",color:"var(--t3)",flexShrink:0}}>🃏 卡牌池 ×{total}</span>
       {Object.entries(CARD_TYPES).map(([type, ct]) => {
         const cnt = (cardPool[type]||0);
@@ -1356,6 +1393,7 @@ function App() {
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showCardHelp, setShowCardHelp] = useState(false);
   const [animResult, setAnimResult] = useState(null);
   const [absent, setAbsent] = useState([]);
 
@@ -1781,6 +1819,7 @@ function App() {
 
   const AP = <>
     {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
+    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} />
   </>;
@@ -1790,7 +1829,7 @@ function App() {
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <HolidayBanner />
@@ -1814,7 +1853,7 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -1887,7 +1926,7 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -1912,7 +1951,7 @@ function App() {
   if (phase==="absent") return (
     <div>
       {AP}
-      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -1947,7 +1986,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <HolidayBanner />
@@ -1984,7 +2023,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} weather={weather} />
+        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <HolidayBanner />
