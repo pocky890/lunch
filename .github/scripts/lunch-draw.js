@@ -4,6 +4,14 @@
 const FIREBASE_BASE = "https://launch-fdd3a-default-rtdb.firebaseio.com/lunch";
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
+const CARD_TYPES = {
+  follow_restaurant: { name:"跟著我吃卡", expireDays:30 },
+  extra_number:      { name:"加號卡",     expireDays:30 },
+  streak_protect:    { name:"連勝保護卡", expireDays:90 },
+};
+
+function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
+
 async function fbGet(path) {
   const res = await fetch(`${FIREBASE_BASE}/${path}.json`);
   return res.json();
@@ -15,6 +23,29 @@ async function fbSet(path, value) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(value),
   });
+}
+
+async function fbPost(path, value) {
+  await fetch(`${FIREBASE_BASE}/${path}.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(value),
+  });
+}
+
+async function checkAndAwardCard(name, number, today) {
+  const entry = await fbGet(`dailyCards/${today}/${number}`);
+  if (!entry || entry.pickedBy !== null) return null;
+  // Non-transactional claim — backup script is single-instance, low collision risk
+  await fbSet(`dailyCards/${today}/${number}/pickedBy`, name);
+  const type = entry.type;
+  const expDays = CARD_TYPES[type]?.expireDays || 30;
+  const exp = new Date(Date.now() + expDays * 86400000);
+  const expiresAt = `${exp.getUTCFullYear()}-${String(exp.getUTCMonth()+1).padStart(2,"0")}-${String(exp.getUTCDate()).padStart(2,"0")}`;
+  await fbPost(`userCards/${sanitizeKey(name)}`, { type, expiresAt, obtainedAt: today });
+  const poolCount = await fbGet(`cardPool/${type}`);
+  await fbSet(`cardPool/${type}`, Math.max(0, (poolCount || 0) - 1));
+  return type;
 }
 
 function todayStr() {
@@ -97,9 +128,25 @@ async function main() {
     console.log(`Using existing drawn number: ${drawnNumber}`);
   }
 
-  // 5. 計算結果
-  const result = determineResult(pts, drawnNumber);
-  if (!result) { console.log("No result, skip"); return; }
+  // 5. 計算結果（含卡牌效果）
+  const effective = pts.map(p => {
+    if (p.cardUsed === "extra_number" && p.number2) {
+      if (p.number === drawnNumber || p.number2 === drawnNumber) return { ...p, number: drawnNumber };
+      const d1 = Math.abs(p.number - drawnNumber), d2 = Math.abs(p.number2 - drawnNumber);
+      return { ...p, number: d1 <= d2 ? p.number : p.number2 };
+    }
+    return p;
+  });
+  const baseResult = determineResult(effective, drawnNumber);
+  if (!baseResult) { console.log("No result, skip"); return; }
+
+  const fwUsers = effective.filter(p => p.cardUsed === "follow_restaurant");
+  let result = baseResult;
+  if (fwUsers.length > 0) {
+    fwUsers.sort((a, b) => Math.abs(a.number - drawnNumber) - Math.abs(b.number - drawnNumber));
+    const fw = fwUsers[0];
+    result = { ...baseResult, winner: { ...baseResult.winner, rest: fw.rest }, followRestUser: fw.name };
+  }
 
   // 6. 再次確認 weekly 沒被瀏覽器搶先寫入
   const doubleCheck = await fbGet(`weekly/${today}`);
@@ -121,15 +168,32 @@ async function main() {
     }
   }
   const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) : 50;
-  const rec = { winner: result.winner.name, rest: result.winner.rest, soloWin: result.soloWin, drawnNumber, streak, ...(skipStreak && { skipStreak: true }) };
+  const rec = {
+    winner: result.winner.name, rest: result.winner.rest,
+    soloWin: result.soloWin, drawnNumber, streak,
+    ...(skipStreak && { skipStreak: true }),
+    ...(result.followRestUser && { followRestUser: result.followRestUser }),
+  };
   await fbSet(`weekly/${today}`, rec);
   console.log(`Written weekly/${today}:`, rec);
 
-  // 8. 讀取不參加名單
+  // 8. 發卡牌（每位參加者的號碼都檢查）
+  const awardedCards = [];
+  for (const p of pts) {
+    const numbers = [p.number];
+    if (p.cardUsed === "extra_number" && p.number2) numbers.push(p.number2);
+    for (const n of numbers) {
+      const cardType = await checkAndAwardCard(p.name, n, today);
+      if (cardType) { awardedCards.push({ name: p.name, type: cardType }); break; }
+    }
+  }
+  if (awardedCards.length > 0) console.log("Cards awarded:", awardedCards);
+
+  // 9. 讀取不參加名單
   const absentObj = await fbGet("absent");
   const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
 
-  // 9. 送通知
+  // 10. 送通知
   const res = await fetch(WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
