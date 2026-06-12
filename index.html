@@ -579,11 +579,14 @@ function determineResultWithCards(pts, drawnNumber) {
   });
   const res = determineResult(effective, drawnNumber);
   if (!res) return null;
-  const fwUsers = effective.filter(p => p.cardUsed === "follow_restaurant");
-  if (fwUsers.length > 0) {
-    fwUsers.sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
-    const fw = fwUsers[0];
-    return { ...res, winner: { ...res.winner, rest: fw.rest }, followRestUser: fw.name };
+  // 獨贏最大，soloWin 時跟著我吃卡無效
+  if (!res.soloWin) {
+    const fwUsers = effective.filter(p => p.cardUsed === "follow_restaurant");
+    if (fwUsers.length > 0) {
+      fwUsers.sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
+      const fw = fwUsers[0];
+      return { ...res, winner: { ...res.winner, rest: fw.rest }, followRestUser: fw.name };
+    }
   }
   return res;
 }

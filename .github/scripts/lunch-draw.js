@@ -140,12 +140,15 @@ async function main() {
   const baseResult = determineResult(effective, drawnNumber);
   if (!baseResult) { console.log("No result, skip"); return; }
 
-  const fwUsers = effective.filter(p => p.cardUsed === "follow_restaurant");
+  // 獨贏最大，soloWin 時跟著我吃卡無效
   let result = baseResult;
-  if (fwUsers.length > 0) {
-    fwUsers.sort((a, b) => Math.abs(a.number - drawnNumber) - Math.abs(b.number - drawnNumber));
-    const fw = fwUsers[0];
-    result = { ...baseResult, winner: { ...baseResult.winner, rest: fw.rest }, followRestUser: fw.name };
+  if (!baseResult.soloWin) {
+    const fwUsers = effective.filter(p => p.cardUsed === "follow_restaurant");
+    if (fwUsers.length > 0) {
+      fwUsers.sort((a, b) => Math.abs(a.number - drawnNumber) - Math.abs(b.number - drawnNumber));
+      const fw = fwUsers[0];
+      result = { ...baseResult, winner: { ...baseResult.winner, rest: fw.rest }, followRestUser: fw.name };
+    }
   }
 
   // 6. 再次確認 weekly 沒被瀏覽器搶先寫入
