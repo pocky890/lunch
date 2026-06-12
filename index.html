@@ -301,7 +301,7 @@
     : "https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7";
   const CWA_API_KEY = "CWA-C4D8DB72-C4BF-4D05-A34F-E9C7FE178D38";
   const CARD_TYPES = {
-    follow_restaurant: { name:"跟著我吃卡", emoji:"🍽️", desc:"當日餐廳由你決定，無視開獎結果", expireDays:30, total:5 },
+    follow_restaurant: { name:"跟著我吃卡", emoji:"🍽️", desc:"當日餐廳由你決定，無視開獎結果", expireDays:30, total:3 },
     extra_number:      { name:"加號卡",     emoji:"➕",  desc:"多選一個號碼，取最接近者",     expireDays:30, total:5 },
     streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄", expireDays:90, total:5 },
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼", expireDays:60, total:5 },
@@ -507,7 +507,7 @@ function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
 /* ── Card System ── */
 async function initCardSystem() {
   const pool = await fGet("cardPool");
-  if (!pool) await fSet("cardPool", { follow_restaurant:5, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 });
+  if (!pool) await fSet("cardPool", { follow_restaurant:3, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 });
 }
 
 async function ensureDailyCards(today) {
