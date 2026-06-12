@@ -305,6 +305,8 @@
     extra_number:      { name:"加號卡",     emoji:"➕",  desc:"多選一個號碼，取最接近者",     expireDays:30, total:5 },
     streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄", expireDays:90, total:5 },
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼", expireDays:60, total:5 },
+    steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌",         expireDays:30, total:3 },
+    cheapskate_card:   { name:"小氣卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額",        expireDays:60, total:1 },
   };
 </script>
 
@@ -505,7 +507,7 @@ function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
 /* ── Card System ── */
 async function initCardSystem() {
   const pool = await fGet("cardPool");
-  if (!pool) await fSet("cardPool", { follow_restaurant:5, extra_number:5, streak_protect:5, reveal_numbers:5 });
+  if (!pool) await fSet("cardPool", { follow_restaurant:5, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 });
 }
 
 async function ensureDailyCards(today) {
@@ -654,6 +656,8 @@ function CardHelpModal({ onClose }) {
             { emoji:"➕", name:"加號卡",       limit:"5 張 · 30 天", desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
             { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"被動卡，無需手動操作。開獎後若你的連勝即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
             { emoji:"👁️", name:"公開卡",      limit:"5 張 · 60 天", desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
+            { emoji:"🎭", name:"盜牌卡",      limit:"3 張 · 30 天", desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
+            { emoji:"🤑", name:"小氣卡",      limit:"1 張 · 60 天", desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
           ].map(c => (
             <div key={c.name}>
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
@@ -1053,7 +1057,7 @@ function CardPoolDisplay({ cardPool }) {
 
 function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   const today = todayStr();
-  const usable = (cards||[]).filter(c => c.type !== "streak_protect" && c.expiresAt >= today);
+  const usable = (cards||[]).filter(c => !["streak_protect","cheapskate_card"].includes(c.type) && c.expiresAt >= today);
   if (usable.length === 0) return null;
   // Group by type, sort each group by nearest expiry first
   const grouped = {};
@@ -1433,6 +1437,7 @@ function App() {
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
+  const [cheapskateUsers, setCheapskateUsers] = useState([]);
 
   const [weather, setWeather] = useState({ loading: true, temp: null, pop: null, error: false });
   useEffect(() => {
@@ -1490,6 +1495,15 @@ function App() {
     return () => ref.off("value", handler);
   }, []);
 
+  // 小氣卡使用者即時監聽
+  useEffect(() => {
+    const today = todayStr();
+    const ref = fRef(`cheapskateUsers/${today}`);
+    const handler = snap => setCheapskateUsers(Object.values(snap.val() || {}));
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
   // 我的手牌即時監聽（依 name）
   useEffect(() => {
     const name = form.name.trim();
@@ -1503,6 +1517,28 @@ function App() {
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, [form.name]);
+
+  // 結果頁：小氣卡自動觸發（被動卡，連勝請客時免付）
+  useEffect(() => {
+    if (phase !== "results" || !result) { cheapskateAutoUsedRef.current = false; return; }
+    if (cheapskateAutoUsedRef.current) return;
+    if (result.soloWin) return; // 對獨贏無效
+    const today = todayStr();
+    const streak = weekly[today]?.streak || 0;
+    if (streak < 3) return;
+    const myName = form.name.trim();
+    if (!myName || result.winner?.name === myName) return;
+    const card = myCards.find(c => c.type === "cheapskate_card" && c.expiresAt >= today);
+    if (!card) return;
+    cheapskateAutoUsedRef.current = true;
+    (async () => {
+      try {
+        await fRef(`cheapskateUsers/${today}/${sanitizeKey(myName)}`).set(myName);
+        await returnCardToPool(myName, card.id);
+        showToast("🤑 小氣卡自動啟動！免除本次連勝請客費");
+      } catch(e) { cheapskateAutoUsedRef.current = false; }
+    })();
+  }, [phase, result, myCards, weekly]);
 
   // 結果頁：連勝保護卡自動觸發（被動卡）
   useEffect(() => {
@@ -1541,6 +1577,7 @@ function App() {
 
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
   const streakAutoProtectedRef = useRef(false);
+  const cheapskateAutoUsedRef = useRef(false);
 
   function showToast(msg) {
     setToastMsg(msg);
@@ -1771,7 +1808,8 @@ function App() {
           return showToast(`數字 ${num2} 已被選走，請換一個`);
       }
 
-      const cardExtra = activeCard && activeCard.type !== "streak_protect"
+      const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
+      const cardExtra = activeCard && !PASSIVE_TYPES.includes(activeCard.type)
         ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}) }
         : {};
 
@@ -1783,14 +1821,37 @@ function App() {
       }
       if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
 
-      // 消耗卡牌
-      if (activeCard && activeCard.type !== "streak_protect") {
+      // 消耗卡牌（被動卡不在此消耗）
+      if (activeCard && !PASSIVE_TYPES.includes(activeCard.type)) {
         await returnCardToPool(name, activeCard.id);
         setCardToUse(""); setNumber2("");
       }
       // 公開卡：所有人號碼立即公開
       if (activeCard?.type === "reveal_numbers") {
         await fSet(`revealNumbers/${todayStr()}`, true);
+      }
+      // 盜牌卡：隨機偷取其他參加者的一張卡
+      if (activeCard?.type === "steal_card") {
+        const today = todayStr();
+        const otherPts = pts.filter(p => p.name !== name);
+        const victims = [];
+        for (const p of otherPts) {
+          const cards = await fGet(`userCards/${sanitizeKey(p.name)}`);
+          if (cards) {
+            const valid = Object.entries(cards).filter(([,c]) => c.expiresAt >= today);
+            if (valid.length > 0) victims.push({ name: p.name, cards: valid });
+          }
+        }
+        if (victims.length > 0) {
+          const victim = victims[Math.floor(Math.random() * victims.length)];
+          const [cardId, cardData] = victim.cards[Math.floor(Math.random() * victim.cards.length)];
+          await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).remove();
+          const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
+          await newRef.set(cardData);
+          showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[cardData.type]?.emoji}${CARD_TYPES[cardData.type]?.name}！`);
+        } else {
+          showToast("🎭 沒有人有卡可以偷 😅");
+        }
       }
 
       try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
@@ -2074,6 +2135,13 @@ function App() {
                 <div style={{padding:"12px 16px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#92400E"}}>
                   {awardedCards.map((aw,i) => (
                     <div key={i}>🃏 <strong>{aw.name}</strong> 獲得了 <strong>{CARD_TYPES[aw.type]?.emoji} {CARD_TYPES[aw.type]?.name}</strong>！</div>
+                  ))}
+                </div>
+              )}
+              {cheapskateUsers.length > 0 && (
+                <div style={{padding:"12px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#9A3412"}}>
+                  {cheapskateUsers.map((n,i) => (
+                    <div key={i}>🤑 <strong>{n}</strong> 使用了小氣卡，免除本次請客費</div>
                   ))}
                 </div>
               )}
