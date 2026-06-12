@@ -304,6 +304,7 @@
     follow_restaurant: { name:"跟著我吃卡", emoji:"🍽️", desc:"當日餐廳由你決定，無視開獎結果", expireDays:30, total:5 },
     extra_number:      { name:"加號卡",     emoji:"➕",  desc:"多選一個號碼，取最接近者",     expireDays:30, total:5 },
     streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄", expireDays:90, total:5 },
+    reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼", expireDays:60, total:5 },
   };
 </script>
 
@@ -504,7 +505,7 @@ function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
 /* ── Card System ── */
 async function initCardSystem() {
   const pool = await fGet("cardPool");
-  if (!pool) await fSet("cardPool", { follow_restaurant:5, extra_number:5, streak_protect:5 });
+  if (!pool) await fSet("cardPool", { follow_restaurant:5, extra_number:5, streak_protect:5, reveal_numbers:5 });
 }
 
 async function ensureDailyCards(today) {
@@ -652,6 +653,7 @@ function CardHelpModal({ onClose }) {
             { emoji:"🍽️", name:"跟著我吃卡", limit:"5 張 · 30 天", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
             { emoji:"➕", name:"加號卡",       limit:"5 張 · 30 天", desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
             { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"開獎後才宣告啟動。當日本來會中斷連勝時，可以強制保留，今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
+            { emoji:"👁️", name:"公開卡",      limit:"5 張 · 60 天", desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
           ].map(c => (
             <div key={c.name}>
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
@@ -1427,6 +1429,7 @@ function App() {
 
   const [cardPool, setCardPool] = useState({});
   const [myCards, setMyCards] = useState([]);
+  const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
@@ -1476,6 +1479,15 @@ function App() {
   useEffect(() => {
     const ref = fRef("cardPool");
     const handler = snap => setCardPool(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  // 公開卡旗標監聽
+  useEffect(() => {
+    const today = todayStr();
+    const ref = fRef(`revealNumbers/${today}`);
+    const handler = snap => setNumbersRevealed(!!snap.val());
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
@@ -1763,6 +1775,10 @@ function App() {
         await returnCardToPool(name, activeCard.id);
         setCardToUse(""); setNumber2("");
       }
+      // 公開卡：所有人號碼立即公開
+      if (activeCard?.type === "reveal_numbers") {
+        await fSet(`revealNumbers/${todayStr()}`, true);
+      }
 
       try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
       setPhase("joined");
@@ -1930,7 +1946,7 @@ function App() {
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={true} weekly={weekly} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -1957,7 +1973,7 @@ function App() {
               </div>
             </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
-            <div className="col"><PtList list={pts} absent={absent} hideNumbers={true} weekly={weekly} /></div>
+            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
           </div>
         </div>
         <Footer />
@@ -1988,7 +2004,7 @@ function App() {
               <button onClick={doCancelAbsent} className="ghost">改變心意，我要參加！</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={true} weekly={weekly} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
         </div>
       </div>
       <Footer />

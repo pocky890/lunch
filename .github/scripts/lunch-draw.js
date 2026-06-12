@@ -8,6 +8,7 @@ const CARD_TYPES = {
   follow_restaurant: { name:"跟著我吃卡", expireDays:30 },
   extra_number:      { name:"加號卡",     expireDays:30 },
   streak_protect:    { name:"連勝保護卡", expireDays:90 },
+  reveal_numbers:    { name:"公開卡",     expireDays:60 },
 };
 
 function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
