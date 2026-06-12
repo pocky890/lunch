@@ -10,7 +10,7 @@ const CARD_TYPES = {
   streak_protect:    { name:"連勝保護卡", expireDays:90 },
   reveal_numbers:    { name:"公開卡",     expireDays:60 },
   steal_card:        { name:"盜牌卡",     expireDays:30 },
-  cheapskate_card:   { name:"小氣卡",     expireDays:60 },
+  cheapskate_card:   { name:"免付卡",     expireDays:60 },
 };
 
 function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }

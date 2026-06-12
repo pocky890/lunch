@@ -306,7 +306,7 @@
     streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄", expireDays:90, total:5 },
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼", expireDays:60, total:5 },
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌",         expireDays:30, total:3 },
-    cheapskate_card:   { name:"小氣卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額",        expireDays:60, total:1 },
+    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額",        expireDays:60, total:1 },
   };
 </script>
 
@@ -657,7 +657,7 @@ function CardHelpModal({ onClose }) {
             { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"被動卡，無需手動操作。開獎後若你的連勝即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
             { emoji:"👁️", name:"公開卡",      limit:"5 張 · 60 天", desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
             { emoji:"🎭", name:"盜牌卡",      limit:"3 張 · 30 天", desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
-            { emoji:"🤑", name:"小氣卡",      limit:"1 張 · 60 天", desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
+            { emoji:"🤑", name:"免付卡",      limit:"1 張 · 60 天", desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
           ].map(c => (
             <div key={c.name}>
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
@@ -1495,7 +1495,7 @@ function App() {
     return () => ref.off("value", handler);
   }, []);
 
-  // 小氣卡使用者即時監聽
+  // 免付卡使用者即時監聽
   useEffect(() => {
     const today = todayStr();
     const ref = fRef(`cheapskateUsers/${today}`);
@@ -1518,7 +1518,7 @@ function App() {
     return () => ref.off("value", handler);
   }, [form.name]);
 
-  // 結果頁：小氣卡自動觸發（被動卡，連勝請客時免付）
+  // 結果頁：免付卡自動觸發（被動卡，連勝請客時免付）
   useEffect(() => {
     if (phase !== "results" || !result) { cheapskateAutoUsedRef.current = false; return; }
     if (cheapskateAutoUsedRef.current) return;
@@ -1535,7 +1535,7 @@ function App() {
       try {
         await fRef(`cheapskateUsers/${today}/${sanitizeKey(myName)}`).set(myName);
         await returnCardToPool(myName, card.id);
-        showToast("🤑 小氣卡自動啟動！免除本次連勝請客費");
+        showToast("🤑 免付卡自動啟動！免除本次連勝請客費");
       } catch(e) { cheapskateAutoUsedRef.current = false; }
     })();
   }, [phase, result, myCards, weekly]);
@@ -2129,7 +2129,7 @@ function App() {
               {soloWin ? (
                 <div style={{background:oc.bg,border:`1px solid ${oc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:oc.top}} /><span className="badge badge-gold" style={{marginBottom:"16px",display:"inline-flex"}}>完全命中 · 獨贏</span><div style={{fontSize:"32px",fontWeight:"700",color:oc.h,marginBottom:"8px"}}>{winner.name}</div><div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px"}}>{winner.rest}</div><div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} />{soloPreservedStreak>=3&&soloPreservedStreak*10>50?(<p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {soloPreservedStreak} 連勝加成</span>每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {pts.length-1} 人，合計 {maxTotal} 元</p>):(<p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · 每人最多 <strong style={{color:oc.str}}>50 元</strong> · 共 {pts.length-1} 人，上限 {maxTotal} 元</p>)}</div>
               ) : (
-                <div style={{background:gc.bg,border:`1px solid ${gc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:gc.top}} /><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px",flexWrap:"wrap"}}><span className="badge badge-green" style={{display:"inline-flex"}}>最接近{streak>=3?` · 請客 ${treatAmount}元/人`:" · 各自付帳"}</span>{streak>=3&&<span className="badge badge-gold" style={{display:"inline-flex"}}>🔥 {streak} 連勝</span>}</div><div style={{fontSize:"28px",fontWeight:"700",color:gc.h,marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:gc.sub}}>{result.followRestUser ? <>🍽️ <strong style={{color:gc.str,fontWeight:"600"}}>{result.followRestUser}</strong> 的跟著我吃卡</> : <>由 <strong style={{color:gc.str,fontWeight:"600"}}>{winner.name}</strong> 推薦</>}</div>{streak>=3&&<p style={{marginTop:"16px",fontSize:"14px",color:gc.sub}}>連續 {streak} 次最接近！每人補助 <strong style={{color:gc.str}}>{treatAmount} 元</strong> · 共 {pts.length-1-cheapskateUsers.length} 人付，合計 {treatAmount*(pts.length-1-cheapskateUsers.length)} 元{cheapskateUsers.length>0?`（${cheapskateUsers.length} 人小氣卡免付）`:""}</p>}</div>
+                <div style={{background:gc.bg,border:`1px solid ${gc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:gc.top}} /><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px",flexWrap:"wrap"}}><span className="badge badge-green" style={{display:"inline-flex"}}>最接近{streak>=3?` · 請客 ${treatAmount}元/人`:" · 各自付帳"}</span>{streak>=3&&<span className="badge badge-gold" style={{display:"inline-flex"}}>🔥 {streak} 連勝</span>}</div><div style={{fontSize:"28px",fontWeight:"700",color:gc.h,marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:gc.sub}}>{result.followRestUser ? <>🍽️ <strong style={{color:gc.str,fontWeight:"600"}}>{result.followRestUser}</strong> 的跟著我吃卡</> : <>由 <strong style={{color:gc.str,fontWeight:"600"}}>{winner.name}</strong> 推薦</>}</div>{streak>=3&&<p style={{marginTop:"16px",fontSize:"14px",color:gc.sub}}>連續 {streak} 次最接近！每人補助 <strong style={{color:gc.str}}>{treatAmount} 元</strong> · 共 {pts.length-1-cheapskateUsers.length} 人付，合計 {treatAmount*(pts.length-1-cheapskateUsers.length)} 元{cheapskateUsers.length>0?`（${cheapskateUsers.length} 人免付卡免付）`:""}</p>}</div>
               )}
               {awardedCards.length > 0 && (
                 <div style={{padding:"12px 16px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#92400E"}}>
@@ -2141,7 +2141,7 @@ function App() {
               {cheapskateUsers.length > 0 && (
                 <div style={{padding:"12px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#9A3412"}}>
                   {cheapskateUsers.map((n,i) => (
-                    <div key={i}>🤑 <strong>{n}</strong> 使用了小氣卡，免除本次請客費</div>
+                    <div key={i}>🤑 <strong>{n}</strong> 使用了免付卡，免除本次請客費</div>
                   ))}
                 </div>
               )}
