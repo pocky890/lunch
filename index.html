@@ -738,6 +738,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [testNewNum, setTestNewNum] = React.useState("");
   const [settingsNumMax, setSettingsNumMax] = React.useState(String(sess?.numMax || 99));
   const [settingsMsg, setSettingsMsg] = React.useState("");
+  const [resetCardMsg, setResetCardMsg] = React.useState("");
   const today = todayStr(), todayRec = weekly[today];
   if (!open) return null;
 
@@ -920,26 +921,16 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
               </>}
               <label>卡牌池</label>
               <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"16px"}}>將卡牌池重置為說明書的標準數量（不影響玩家手上已持有的卡）</p>
-              {(() => {
-                const DEFAULTS = { follow_restaurant:3, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 };
-                const [resetCardMsg, setResetCardMsg] = React.useState("");
-                async function handleResetPool() {
-                  await fSet("cardPool", DEFAULTS);
-                  setResetCardMsg("已重置 ✓"); setTimeout(()=>setResetCardMsg(""),2000);
-                }
-                return <>
-                  <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",padding:"12px 16px",marginBottom:"12px",fontSize:"13px",color:"var(--t2)"}}>
-                    {Object.entries(DEFAULTS).map(([type,cnt]) => (
-                      <div key={type} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}>
-                        <span>{CARD_TYPES[type]?.emoji} {CARD_TYPES[type]?.name}</span>
-                        <strong>{cnt} 張</strong>
-                      </div>
-                    ))}
+              <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",padding:"12px 16px",marginBottom:"12px",fontSize:"13px",color:"var(--t2)"}}>
+                {Object.entries({follow_restaurant:3,extra_number:5,streak_protect:5,reveal_numbers:5,steal_card:3,cheapskate_card:1}).map(([type,cnt]) => (
+                  <div key={type} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}>
+                    <span>{CARD_TYPES[type]?.emoji} {CARD_TYPES[type]?.name}</span>
+                    <strong>{cnt} 張</strong>
                   </div>
-                  <button className="ghost btn-danger" onClick={handleResetPool} style={{width:"100%",marginBottom:0}}>重置卡牌池</button>
-                  {resetCardMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"8px"}}>{resetCardMsg}</p>}
-                </>;
-              })()}
+                ))}
+              </div>
+              <button className="ghost btn-danger" onClick={async()=>{await fSet("cardPool",{follow_restaurant:3,extra_number:5,streak_protect:5,reveal_numbers:5,steal_card:3,cheapskate_card:1});setResetCardMsg("已重置 ✓");setTimeout(()=>setResetCardMsg(""),2000);}} style={{width:"100%",marginBottom:0}}>重置卡牌池</button>
+              {resetCardMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"8px"}}>{resetCardMsg}</p>}
             </div>
           )}
           {tab==="record" && (
