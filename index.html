@@ -2306,11 +2306,21 @@ function App() {
         }
         if (victims.length > 0) {
           const victim = victims[Math.floor(Math.random() * victims.length)];
-          const [cardId, cardData] = victim.cards[Math.floor(Math.random() * victim.cards.length)];
-          await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).remove();
-          const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
-          await newRef.set(cardData);
-          showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[cardData.type]?.emoji}${CARD_TYPES[cardData.type]?.name}！`);
+          const [cardId] = victim.cards[Math.floor(Math.random() * victim.cards.length)];
+          // 原子取卡：僅當該卡仍在對方手牌時才偷走，避免與「對方剛好使用該卡」競態造成複製
+          let stolen = null;
+          await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => {
+            if (cur === null) return; // 已被使用或偷走，放棄
+            stolen = cur;
+            return null;              // 原子移除
+          });
+          if (stolen) {
+            const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
+            await newRef.set(stolen);
+            showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`);
+          } else {
+            showToast("🎭 想偷的卡剛好被用掉了，撲了個空 😅");
+          }
         } else {
           showToast("🎭 沒有人有卡可以偷 😅");
         }
