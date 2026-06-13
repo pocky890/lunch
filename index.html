@@ -1547,7 +1547,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
               {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
             </div>
-            {unlocked.length > 0 && (
+            {isMe && unlocked.length > 0 && (
               <div style={{marginTop:"8px",marginLeft:"30px",display:"flex",flexWrap:"wrap",gap:"4px"}}>
                 {unlocked.map(key => {
                   const a = ACHIEVEMENTS.find(x => x.key === key);
