@@ -454,7 +454,7 @@ function getTodayHoliday() {
 /* ── Pure logic ── */
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function isDeadlinePassed(dl) { const now = new Date(), [h,m] = dl.split(":").map(Number); return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m); }
-function isDoubleDay(dateStr) { if (!dateStr && new URLSearchParams(location.search).has("specialday")) return true; const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
+function isDoubleDay(dateStr) { if (!dateStr && TEST_MODE && new URLSearchParams(location.search).has("specialday")) return true; const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
 function calcCountdown(dl) {
   const now = new Date(), [h,m] = dl.split(":").map(Number);
   const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
@@ -2382,7 +2382,7 @@ function App() {
   const numMax = sess?.numMax || 99;
   const effectiveNumMax = isDoubleDay() ? Math.floor(numMax / 2) : numMax;
   const isBirthday = todayBirthdays.some(b => b.name === boundName)
-    || new URLSearchParams(location.search).has("birthday");
+    || (TEST_MODE && new URLSearchParams(location.search).has("birthday"));
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
   if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
