@@ -799,10 +799,28 @@ function MembersTab() {
       await fRef(`userStatus/${uid}`).remove();
     } else {
       await fSet(`userStatus/${uid}`, "resigned");
+      // 回收未過期卡牌至卡池
+      const member = members.find(m => m.uid === uid);
+      if (member) {
+        const today = new Date().toISOString().slice(0,10);
+        const cards = await fGet(`userCards/${sanitizeKey(member.name)}`);
+        if (cards) {
+          const poolUpdates = {};
+          for (const [cardId, card] of Object.entries(cards)) {
+            if (card.expiresAt >= today) {
+              poolUpdates[card.type] = (poolUpdates[card.type] || 0) + 1;
+              await fRef(`userCards/${sanitizeKey(member.name)}/${cardId}`).remove();
+            }
+          }
+          for (const [type, count] of Object.entries(poolUpdates)) {
+            await fRef(`cardPool/${type}`).transaction(n => (n || 0) + count);
+          }
+        }
+      }
     }
     setMembers(prev => prev.map(m => m.uid === uid ? {...m, resigned: !currentlyResigned} : m));
-    setMsg(currentlyResigned ? "已恢復在職 ✓" : "已標記離職 ✓");
-    setTimeout(() => setMsg(""), 2000);
+    setMsg(currentlyResigned ? "已恢復在職 ✓" : "已標記離職，卡牌已回收 ✓");
+    setTimeout(() => setMsg(""), 3000);
   }
 
   return (
