@@ -2634,6 +2634,11 @@ function App() {
                   🥤 <strong>{p.name}</strong> 使用了口渴卡！所有人要請他喝飲料（上限 100 元）
                 </div>
               ))}
+              {pts.filter(p=>p.cardUsed==="extra_number" && p.number2 && !p.birthdayNumbers?.length).map((p,i) => (
+                <div key={i} style={{padding:"12px 16px",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#166534"}}>
+                  ➕ <strong>{p.name}</strong> 使用了加號卡，本局選了 2 個號碼：#{p.number}、#{p.number2}
+                </div>
+              ))}
               {pts.filter(p=>p.birthdayNumbers?.length>0).map((p,i) => (
                 <div key={i} style={{padding:"12px 16px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#9D174D"}}>
                   🎂 <strong>{p.name}</strong> 今天生日，本局選了 {1+(p.birthdayNumbers?.length||0)+(p.number2?1:0)} 個號碼：{[p.number,...(p.birthdayNumbers||[]),...(p.number2?[p.number2]:[])].map(n=>`#${n}`).join("、")}
