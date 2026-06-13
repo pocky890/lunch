@@ -510,8 +510,13 @@ function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
 
 /* ── Card System ── */
 async function initCardSystem() {
-  const pool = await fGet("cardPool");
-  if (!pool) await fSet("cardPool", { follow_restaurant:3, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 });
+  const pool = await fGet("cardPool") || {};
+  const defaults = { follow_restaurant:3, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 };
+  const updates = {};
+  for (const [type, count] of Object.entries(defaults)) {
+    if (pool[type] === undefined) updates[type] = count;
+  }
+  if (Object.keys(updates).length > 0) await fRef("cardPool").update(updates);
 }
 
 async function ensureDailyCards(today) {
