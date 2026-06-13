@@ -560,7 +560,7 @@ async function initCardSystem() {
   if (Object.keys(poolUpdates).length > 0) await fRef("cardPool").update(poolUpdates);
 }
 
-async function ensureDailyCards(today) {
+async function ensureDailyCards(today, maxNum = 99) {
   const existing = await fGet(`dailyCards/${today}`);
   if (existing) return existing;
   const pool = await fGet("cardPool") || {};
@@ -572,9 +572,10 @@ async function ensureDailyCards(today) {
   if (cards.length === 0) { await fSet(`dailyCards/${today}`, {}); return {}; }
   const positions = {};
   const used = new Set();
+  // 卡牌只藏在使用者可選範圍內（Lucky Day 號碼池減半時，避免卡牌落在無法選取的號碼）
   for (const type of cards.sort(() => Math.random()-0.5)) {
     let n, tries = 0;
-    do { n = Math.floor(Math.random()*99)+1; tries++; } while (used.has(n) && tries < 300);
+    do { n = Math.floor(Math.random()*maxNum)+1; tries++; } while (used.has(n) && tries < 300);
     if (!used.has(n)) { used.add(n); positions[n] = { type, pickedBy: null }; }
   }
   await fSet(`dailyCards/${today}`, positions);
@@ -814,7 +815,7 @@ function MembersTab() {
       // 回收未過期卡牌至卡池
       const member = members.find(m => m.uid === uid);
       if (member) {
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayStr();
         const cards = await fGet(`userCards/${sanitizeKey(member.name)}`);
         if (cards) {
           const poolUpdates = {};
@@ -1656,7 +1657,7 @@ function BirthdaySetModal({ uid, onClose }) {
     try {
       const mmdd = `${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
       await fSet(`userBirthdays/${uid}`, mmdd);
-      onClose();
+      onClose(mmdd);
     } catch(e) { setErr("儲存失敗，請重試"); }
     finally { setLoading(false); }
   }
@@ -2163,14 +2164,14 @@ function App() {
       setWeekly(prev => ({...prev, [today]: rec}));
 
       // 開獎後：偵測參加者號碼中是否藏有卡牌
-      await ensureDailyCards(today);
+      await ensureDailyCards(today, effectiveNumMax);
       const won = [];
       for (const p of pts) {
-        const t1 = await checkAndAwardCard(p.name, p.number, today);
-        if (t1) won.push({ name: p.name, type: t1 });
-        if (p.cardUsed === "extra_number" && p.number2) {
-          const t2 = await checkAndAwardCard(p.name, p.number2, today);
-          if (t2) won.push({ name: p.name, type: t2 });
+        // 每人每天最多得 1 張，依序檢查主號、生日號碼、加號卡第二號碼
+        const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
+        for (const n of numbers) {
+          const t = await checkAndAwardCard(p.name, n, today);
+          if (t) { won.push({ name: p.name, type: t }); break; }
         }
       }
       if (won.length > 0) setAwardedCards(won);
@@ -2211,7 +2212,7 @@ function App() {
       const s = {deadline:form.deadline, date:todayStr(), numMax: 99};
       await fSet("session", s); await fSet("participants", null); await fSet("absent", null);
       await initCardSystem();
-      await ensureDailyCards(todayStr());
+      await ensureDailyCards(todayStr(), effectiveNumMax);
       setSess(s); setPts([]); setResult(null); setAbsent([]); setPhase("join");
     } catch (e) {
       showToast("連線錯誤，請重試");
@@ -2387,7 +2388,14 @@ function App() {
   if (authState === "setname") return <SetNameScreen user={currentUser} isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
 
   const birthdayModal = showBirthdayModal && currentUser
-    ? <BirthdaySetModal uid={currentUser.uid} onClose={()=>setShowBirthdayModal(false)} />
+    ? <BirthdaySetModal uid={currentUser.uid} onClose={(savedMMDD)=>{
+        setShowBirthdayModal(false);
+        // 若剛填的生日就是今天，立即更新壽星狀態，免去重整
+        const today = todayStr();
+        if (savedMMDD && savedMMDD === `${today.slice(5,7)}-${today.slice(8,10)}` && boundName) {
+          setTodayBirthdays(prev => prev.some(b=>b.uid===currentUser.uid) ? prev : [...prev, {uid:currentUser.uid, name:boundName}]);
+        }
+      }} />
     : null;
 
   const AP = <>
@@ -2525,7 +2533,7 @@ function App() {
   );
 
   if (phase==="joined") {
-    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setCardToUse(""); setNumber2(""); setIsEditing(true); setPhase("join"); }
+    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setIsEditing(true); setPhase("join"); }
     return (
       <div>
         {AP}
