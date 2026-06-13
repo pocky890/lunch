@@ -2023,17 +2023,32 @@ function App() {
   useEffect(() => {
     // ?testresult：直接跳到開獎結果頁預覽，資料為假資料
     if (new URLSearchParams(location.search).has("testresult")) {
+      const today = todayStr();
+      // 假造過去3天連勝（winner = 最接近玩家）→ streak=4
+      const fakeWeekly = {};
+      for (let i = 3; i >= 1; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+        fakeWeekly[ds] = { winner:"最接近玩家", rest:"好友雞肉", soloWin:false };
+      }
       const fakePts = [
-        { id:"t1", name:"壽星測試", number:42, birthdayNumbers:[15,27,63,88], cardUsed:"extra_number", number2:5, rest:"一幸拉麵", category:"日式" },
-        { id:"t2", name:"加號卡玩家", number:30, cardUsed:"extra_number", number2:55, rest:"好友雞肉", category:"台式麵飯" },
-        { id:"t3", name:"一般玩家", number:17, rest:"速食店", category:"速食" },
+        { id:"t1", name:"最接近玩家",   number:48, rest:"好友雞肉",     category:"台式麵飯" },
+        { id:"t2", name:"跟著我吃玩家", number:52, cardUsed:"follow_restaurant", rest:"跟著我吃的店", category:"日式" },
+        { id:"t3", name:"加號卡玩家",   number:30, cardUsed:"extra_number", number2:75, rest:"速食店", category:"速食" },
+        { id:"t4", name:"口渴卡玩家",   number:20, cardUsed:"thirsty_card", rest:"飲料店", category:"其它" },
+        { id:"t5", name:"壽星玩家",     number:10, birthdayNumbers:[15,40,60,80], cardUsed:"extra_number", number2:5, rest:"拉麵店", category:"日式" },
+        { id:"t6", name:"一般玩家",     number:70, rest:"火鍋店", category:"火鍋" },
+        { id:"t7", name:"免付卡玩家",   number:63, rest:"便當店", category:"台式麵飯" },
       ];
-      const drawn = 42;
+      const drawn = 50;
       const res = determineResultWithCards(fakePts, drawn);
       setPts(fakePts);
-      setSess({ deadline:"11:50", date:todayStr(), numMax:99 });
-      setResult(res ? {...res, drawnNumber: drawn} : { drawnNumber: drawn, winner: fakePts[0], soloWin: true, sorted: fakePts });
-      setTodayBirthdays([{ uid:"fake", name:"壽星測試" }]);
+      setSess({ deadline:"11:50", date:today, numMax:99 });
+      setWeekly(fakeWeekly);
+      setResult(res ? {...res, drawnNumber: drawn} : { drawnNumber: drawn, winner: fakePts[0], soloWin: false, sorted: fakePts });
+      setTodayBirthdays([{ uid:"fake", name:"壽星玩家" }]);
+      setCheapskateUsers(["免付卡玩家"]);
+      setAwardedCards([{ name:"加號卡玩家", type:"extra_number" }, { name:"一般玩家", type:"streak_protect" }]);
       setPhase("results");
       return;
     }
