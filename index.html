@@ -614,12 +614,12 @@ function getPreviousStreak(weekly, name, today) {
 
 function determineResultWithCards(pts, drawnNumber) {
   const effective = pts.map(p => {
-    if (p.cardUsed === "extra_number" && p.number2) {
-      if (p.number === drawnNumber || p.number2 === drawnNumber) return { ...p, number: drawnNumber };
-      const d1 = Math.abs(p.number-drawnNumber), d2 = Math.abs(p.number2-drawnNumber);
-      return { ...p, number: d1<=d2 ? p.number : p.number2 };
-    }
-    return p;
+    // 收集此人所有有效號碼
+    const allNums = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
+    if (allNums.length === 1) return p;
+    if (allNums.includes(drawnNumber)) return { ...p, number: drawnNumber };
+    const best = allNums.reduce((a,b) => Math.abs(a-drawnNumber) <= Math.abs(b-drawnNumber) ? a : b);
+    return { ...p, number: best };
   });
   const res = determineResult(effective, drawnNumber);
   if (!res) return null;
@@ -762,6 +762,64 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
   );
 }
 
+/* ── Members Tab ── */
+function MembersTab() {
+  const [members, setMembers] = React.useState([]); // [{uid, name, birthday, resigned}]
+  const [msg, setMsg] = React.useState("");
+
+  React.useEffect(() => {
+    async function load() {
+      const [names, birthdays, statuses] = await Promise.all([
+        fGet("userNames") || {},
+        fGet("userBirthdays") || {},
+        fGet("userStatus") || {},
+      ]);
+      const list = Object.entries(names || {}).map(([uid, name]) => ({
+        uid, name,
+        birthday: birthdays[uid] || "－",
+        resigned: statuses[uid] === "resigned",
+      })).sort((a,b) => a.name.localeCompare(b.name, "zh-Hant"));
+      setMembers(list);
+    }
+    load();
+  }, []);
+
+  async function toggleResigned(uid, currentlyResigned) {
+    if (currentlyResigned) {
+      await fRef(`userStatus/${uid}`).remove();
+    } else {
+      await fSet(`userStatus/${uid}`, "resigned");
+    }
+    setMembers(prev => prev.map(m => m.uid === uid ? {...m, resigned: !currentlyResigned} : m));
+    setMsg(currentlyResigned ? "已恢復在職 ✓" : "已標記離職 ✓");
+    setTimeout(() => setMsg(""), 2000);
+  }
+
+  return (
+    <div>
+      <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"12px"}}>離職成員的生日不會觸發生日 Banner。</p>
+      {msg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginBottom:"8px"}}>{msg}</p>}
+      <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",overflow:"hidden"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"8px 12px",background:"var(--s3)",fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase"}}>
+          <span>姓名</span><span style={{textAlign:"center"}}>生日</span><span style={{textAlign:"center"}}>狀態</span>
+        </div>
+        {members.map(m => (
+          <div key={m.uid} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",alignItems:"center",borderTop:"1px solid var(--b1)",opacity:m.resigned?0.5:1}}>
+            <span style={{fontSize:"13px",color:"var(--t1)"}}>{m.name}</span>
+            <span style={{fontSize:"12px",color:"var(--t3)",textAlign:"center"}}>{m.birthday}</span>
+            <button className={`ghost btn-sm${m.resigned?" btn-danger":""}`}
+              style={{fontSize:"11px",padding:"3px 8px",margin:"0 auto"}}
+              onClick={() => toggleResigned(m.uid, m.resigned)}>
+              {m.resigned ? "恢復" : "離職"}
+            </button>
+          </div>
+        ))}
+        {members.length === 0 && <p style={{textAlign:"center",padding:"24px",color:"var(--t3)",fontSize:"14px"}}>尚無成員資料</p>}
+      </div>
+    </div>
+  );
+}
+
 /* ── Admin Panel ── */
 function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool }) {
   const [tab, setTab] = React.useState("restaurants");
@@ -868,6 +926,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
           {tabBtn("record","📋 今日紀錄")}
           {tabBtn("test","🔔 測試通知")}
           {tabBtn("settings","⚙️ 設定")}
+          {tabBtn("members","👥 成員")}
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="restaurants" && <>
@@ -1009,6 +1068,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
               {cardConfigMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"-4px"}}>{cardConfigMsg}</p>}
             </div>
           )}
+          {tab==="members" && <MembersTab />}
           {tab==="record" && (
             !todayRec
               ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>今天尚無開獎紀錄</div>
@@ -1104,6 +1164,15 @@ function HolidayBanner() {
   return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#166534"}}>
       🎉 <strong>{h.name}</strong>｜{h.msg}
+    </div>
+  );
+}
+
+function BirthdayBanner({ todayBirthdays }) {
+  if (!todayBirthdays || todayBirthdays.length === 0) return null;
+  return (
+    <div style={{textAlign:"center",padding:"10px 16px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#9D174D"}}>
+      🎂 <strong>{todayBirthdays.join("、")}</strong> 今天生日快樂！今日可選 5 個號碼🎉
     </div>
   );
 }
@@ -1529,6 +1598,8 @@ function LoginScreen({ isDark, toggleDark }) {
 function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
   const suggested = (user.displayName || "").split(" ")[0];
   const [name, setName] = React.useState(suggested);
+  const [bdMonth, setBdMonth] = React.useState("");
+  const [bdDay, setBdDay] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState("");
 
@@ -1536,6 +1607,8 @@ function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
     const n = name.trim();
     if (!n) { setErr("請輸入名稱"); return; }
     if (n.length > 20) { setErr("名稱最多 20 字"); return; }
+    const m = parseInt(bdMonth), d = parseInt(bdDay);
+    if (!m || !d || m < 1 || m > 12 || d < 1 || d > 31) { setErr("請輸入正確的生日（月／日）"); return; }
     setLoading(true); setErr("");
     try {
       const key = sanitizeKey(n);
@@ -1546,6 +1619,8 @@ function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
       }
       await fSet(`nameToUid/${key}`, user.uid);
       await fSet(`userNames/${user.uid}`, n);
+      const mmdd = `${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      await fSet(`userBirthdays/${user.uid}`, mmdd);
       onNameSet(n);
     } catch(e) {
       setErr("儲存失敗，請再試一次"); setLoading(false);
@@ -1570,9 +1645,15 @@ function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
           <input value={name} onChange={e=>{setName(e.target.value);setErr("");}}
             onKeyDown={e=>e.key==="Enter"&&handleConfirm()}
             placeholder="輸入名字" maxLength={20} autoFocus />
+          <label>生日（不填年份）</label>
+          <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
+            <input type="number" min="1" max="12" value={bdMonth} onChange={e=>setBdMonth(e.target.value)} placeholder="月" style={{marginBottom:0,flex:1,textAlign:"center"}} />
+            <span style={{lineHeight:"44px",color:"var(--t3)"}}>／</span>
+            <input type="number" min="1" max="31" value={bdDay} onChange={e=>setBdDay(e.target.value)} placeholder="日" style={{marginBottom:0,flex:1,textAlign:"center"}} />
+          </div>
           {err && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"-10px",marginBottom:"14px",fontWeight:"500"}}>{err}</p>}
           <button onClick={handleConfirm} disabled={loading}>
-            {loading ? "確認中…" : "確認名稱"}
+            {loading ? "確認中…" : "確認"}
           </button>
           <button className="ghost" onClick={()=>auth.signOut()} style={{fontSize:"13px",color:"var(--t3)"}}>登出，切換帳號</button>
         </div>
@@ -1607,6 +1688,7 @@ function App() {
   const [showCardHelp, setShowCardHelp] = useState(false);
   const [animResult, setAnimResult] = useState(null);
   const [absent, setAbsent] = useState([]);
+  const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
 
   // ✨ 確保 Loading 與 Toast 正常運作
   const [isLoading, setIsLoading] = useState(false);
@@ -1637,6 +1719,7 @@ function App() {
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
+  const [bdNumbers, setBdNumbers] = useState(["","","",""]); // birthday extra numbers [n2..n5]
   const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
   const [cheapskateUsers, setCheapskateUsers] = useState([]);
@@ -1694,6 +1777,28 @@ function App() {
     const handler = snap => setCardConfig(snap.val() || {});
     ref.on("value", handler);
     return () => ref.off("value", handler);
+  }, []);
+
+  // 生日資料載入（過濾離職者）
+  useEffect(() => {
+    async function loadBirthdays() {
+      const today = todayStr();
+      const [mm, dd] = [today.slice(5,7), today.slice(8,10)];
+      const todayMMDD = `${mm}-${dd}`;
+      const [birthdays, names, statuses] = await Promise.all([
+        fGet("userBirthdays") || {},
+        fGet("userNames") || {},
+        fGet("userStatus") || {},
+      ]);
+      const result = [];
+      for (const [uid, mmdd] of Object.entries(birthdays || {})) {
+        if (mmdd === todayMMDD && (statuses[uid] !== "resigned") && names[uid]) {
+          result.push({ uid, name: names[uid] });
+        }
+      }
+      setTodayBirthdays(result);
+    }
+    loadBirthdays();
   }, []);
 
   // 公開卡旗標監聽
@@ -2021,17 +2126,33 @@ function App() {
           return showToast(`數字 ${num2} 已被選走，請換一個`);
       }
 
+      // 驗證生日額外號碼
+      let bdNums = null;
+      if (isBirthday && !isEditing) {
+        const parsed = bdNumbers.map(v => parseInt(v));
+        if (parsed.some(n => !n || n < 1 || n > effectiveNumMax)) return showToast(`生日號碼請填入 1 到 ${effectiveNumMax} 之間的整數`);
+        const allNums = [num, ...parsed, ...(num2 ? [num2] : [])];
+        if (new Set(allNums).size !== allNums.length) return showToast("號碼不能重複");
+        const takenByOthers = existing.filter(p => p.id !== myEntry?.id);
+        for (const n of parsed) {
+          if (takenByOthers.some(p => p.number === n || (p.birthdayNumbers||[]).includes(n) || p.number2 === n))
+            return showToast(`數字 ${n} 已被選走，請換一個`);
+        }
+        bdNums = parsed;
+      }
+
       const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
       const cardExtra = activeCard && !PASSIVE_TYPES.includes(activeCard.type)
         ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}) }
         : {};
+      const bdExtra = bdNums ? { birthdayNumbers: bdNums } : {};
 
       if (myEntry) {
         await fRef(`participants/${myEntry.id}`).update({category:form.category, rest});
         setIsEditing(false);
       } else {
         const newRef = fRef("participants").push();
-        await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra});
+        await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
       }
       if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
 
@@ -2124,6 +2245,7 @@ function App() {
 
   const numMax = sess?.numMax || 99;
   const effectiveNumMax = isDoubleDay() ? Math.floor(numMax / 2) : numMax;
+  const isBirthday = todayBirthdays.some(b => b.name === boundName);
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
   const AP = <>
@@ -2145,7 +2267,7 @@ function App() {
       <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <HolidayBanner /><SpecialDayBanner />
+        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
           <div className="card">
@@ -2170,7 +2292,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-        <HolidayBanner /><SpecialDayBanner />
+        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <StreakWarning pts={pts} weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} />
         <div className="grid-3">
@@ -2228,6 +2350,21 @@ function App() {
                   );
                   return null;
                 })()}
+                {isBirthday && (
+                  <div style={{marginTop:"8px",padding:"12px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"var(--r)"}}>
+                    <div style={{fontSize:"13px",fontWeight:"600",color:"#9D174D",marginBottom:"8px"}}>🎂 今天是你的生日！再選 4 個號碼</div>
+                    {[0,1,2,3].map(i => (
+                      <div key={i} className="num-input-wrap" style={{marginBottom:"6px"}}>
+                        <span className="num-prefix">#</span>
+                        <input type="text" inputMode="numeric" maxLength={3}
+                          value={bdNumbers[i]}
+                          onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setBdNumbers(prev=>{const a=[...prev];a[i]=v;return a;});}}
+                          placeholder={`號碼 ${i+2}（1 ~ ${effectiveNumMax}）`}
+                          style={{marginBottom:0}} />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); }} />}
               </>)}
               <div className="divider" />
@@ -2256,7 +2393,7 @@ function App() {
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-          <HolidayBanner /><SpecialDayBanner />
+          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <StreakWarning pts={pts} weekly={weekly} />
           <div className="grid-3">
             <div className="col">
@@ -2281,7 +2418,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-        <HolidayBanner /><SpecialDayBanner />
+        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -2315,7 +2452,7 @@ function App() {
         <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner /><SpecialDayBanner />
+          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
           <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
@@ -2352,7 +2489,7 @@ function App() {
         <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner /><SpecialDayBanner />
+          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
@@ -2382,6 +2519,11 @@ function App() {
               {pts.filter(p=>p.cardUsed==="thirsty_card").map((p,i) => (
                 <div key={i} style={{padding:"12px 16px",background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#1E40AF"}}>
                   🥤 <strong>{p.name}</strong> 使用了口渴卡！所有人要請他喝飲料（上限 100 元）
+                </div>
+              ))}
+              {pts.filter(p=>p.birthdayNumbers?.length>0).map((p,i) => (
+                <div key={i} style={{padding:"12px 16px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#9D174D"}}>
+                  🎂 <strong>{p.name}</strong> 今天生日，本局選了 {1+(p.birthdayNumbers?.length||0)+(p.number2?1:0)} 個號碼：{[p.number,...(p.birthdayNumbers||[]),...(p.number2?[p.number2]:[])].map(n=>`#${n}`).join("、")}
                 </div>
               ))}
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>

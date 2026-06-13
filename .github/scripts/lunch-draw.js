@@ -11,6 +11,7 @@ const CARD_TYPES = {
   reveal_numbers:    { name:"公開卡" },
   steal_card:        { name:"盜牌卡" },
   cheapskate_card:   { name:"免付卡" },
+  thirsty_card:      { name:"口渴卡" },
 };
 const CARD_DEFAULTS = {
   follow_restaurant: { expireDays:30 },
@@ -19,6 +20,7 @@ const CARD_DEFAULTS = {
   reveal_numbers:    { expireDays:60 },
   steal_card:        { expireDays:30 },
   cheapskate_card:   { expireDays:60 },
+  thirsty_card:      { expireDays:10 },
 };
 
 function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
@@ -142,14 +144,13 @@ async function main() {
     console.log(`Using existing drawn number: ${drawnNumber}`);
   }
 
-  // 5. 計算結果（含卡牌效果）
+  // 5. 計算結果（含卡牌效果與生日號碼）
   const effective = pts.map(p => {
-    if (p.cardUsed === "extra_number" && p.number2) {
-      if (p.number === drawnNumber || p.number2 === drawnNumber) return { ...p, number: drawnNumber };
-      const d1 = Math.abs(p.number - drawnNumber), d2 = Math.abs(p.number2 - drawnNumber);
-      return { ...p, number: d1 <= d2 ? p.number : p.number2 };
-    }
-    return p;
+    const allNums = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
+    if (allNums.length === 1) return p;
+    if (allNums.includes(drawnNumber)) return { ...p, number: drawnNumber };
+    const best = allNums.reduce((a,b) => Math.abs(a-drawnNumber) <= Math.abs(b-drawnNumber) ? a : b);
+    return { ...p, number: best };
   });
   const baseResult = determineResult(effective, drawnNumber);
   if (!baseResult) { console.log("No result, skip"); return; }
@@ -199,8 +200,7 @@ async function main() {
   const cardConfig = await fbGet("cardConfig") || {};
   const awardedCards = [];
   for (const p of pts) {
-    const numbers = [p.number];
-    if (p.cardUsed === "extra_number" && p.number2) numbers.push(p.number2);
+    const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
     for (const n of numbers) {
       const cardType = await checkAndAwardCard(p.name, n, today, cardConfig);
       if (cardType) { awardedCards.push({ name: p.name, type: cardType }); break; }
