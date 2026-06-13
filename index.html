@@ -307,6 +307,7 @@
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼" },
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
     cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
+    thirsty_card:      { name:"口渴卡",     emoji:"🥤", desc:"使用後當天所有參加者要請你喝飲料，喝什麼由你決定（上限 100 元）" },
   };
   const CARD_DEFAULTS = {
     follow_restaurant: { total:3, expireDays:30 },
@@ -315,6 +316,7 @@
     reveal_numbers:    { total:5, expireDays:60 },
     steal_card:        { total:3, expireDays:30 },
     cheapskate_card:   { total:1, expireDays:60 },
+    thirsty_card:      { total:3, expireDays:10 },
   };
 </script>
 
@@ -685,6 +687,7 @@ function CardHelpModal({ onClose, cardConfig = {} }) {
     { type:"reveal_numbers",    desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
     { type:"steal_card",        desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
+    { type:"thirsty_card",      desc:"加入時宣告使用，並填入你想喝的飲料。開獎後當天所有參加者須各自請你喝一杯，飲料由你指定，上限 100 元。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
     Object.values(CARD_DEFAULTS).reduce((s, c) => s + c.total, 0);
@@ -1618,6 +1621,7 @@ function App() {
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
+  const [drinkOrder, setDrinkOrder] = useState(""); // drink for 口渴卡
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
   const [cheapskateUsers, setCheapskateUsers] = useState([]);
 
@@ -1998,9 +2002,13 @@ function App() {
           return showToast(`數字 ${num2} 已被選走，請換一個`);
       }
 
+      if (activeCard?.type === "thirsty_card") {
+        if (!drinkOrder.trim()) return showToast("請輸入你想喝什麼");
+      }
+
       const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
       const cardExtra = activeCard && !PASSIVE_TYPES.includes(activeCard.type)
-        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}) }
+        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(activeCard.type === "thirsty_card" ? { drinkOrder: drinkOrder.trim() } : {}) }
         : {};
 
       if (myEntry) {
@@ -2179,7 +2187,7 @@ function App() {
               {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
               {(() => {
                 const activeCard = myCards.find(c => c.id === cardToUse);
-                return activeCard?.type === "extra_number" ? (
+                if (activeCard?.type === "extra_number") return (
                   <div>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
                       <label style={{margin:0}}>第二個號碼（1 ~ {numMax}）</label>
@@ -2192,9 +2200,16 @@ function App() {
                     </div>
                     <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={number2} onChange={e=>setNumber2(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
                   </div>
-                ) : null;
+                );
+                if (activeCard?.type === "thirsty_card") return (
+                  <div>
+                    <label style={{marginBottom:"4px",display:"block"}}>你想喝什麼？（上限 100 元）</label>
+                    <input type="text" maxLength={30} value={drinkOrder} onChange={e=>setDrinkOrder(e.target.value)} placeholder="例：珍珠奶茶、美式咖啡..." style={{marginBottom:"8px"}} />
+                  </div>
+                );
+                return null;
               })()}
-              {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); }} />}
+              {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setDrinkOrder(""); }} />}
               <div className="divider" />
               <button onClick={doJoin} disabled={isLoading}>
                 {isLoading ? "處理中..." : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
@@ -2344,6 +2359,12 @@ function App() {
                   ))}
                 </div>
               )}
+              {pts.filter(p=>p.cardUsed==="thirsty_card").map((p,i) => (
+                <div key={i} style={{padding:"12px 16px",background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#1E40AF"}}>
+                  🥤 <strong>{p.name}</strong> 使用了口渴卡！所有人要請他喝飲料（上限 100 元）
+                  {p.drinkOrder && <> · 他想喝：<strong>{p.drinkOrder}</strong></>}
+                </div>
+              ))}
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
                   const dist = Math.abs(p.number - drawnNumber), isWinner = p.id === winner.id, ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];

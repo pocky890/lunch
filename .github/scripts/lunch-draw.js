@@ -227,7 +227,8 @@ async function main() {
       preservedStreak,
       soloTreatPerPerson: result.soloWin ? soloTreatPerPerson : 50,
       followRestUser:  result.followRestUser || "",
-      cardsUsed:       pts.filter(p => p.cardUsed).map(p => `${p.name} ${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
+      cardsUsed:       pts.filter(p => p.cardUsed).map(p => `${p.name} ${CARD_TYPES[p.cardUsed]?.name}${p.cardUsed==="thirsty_card"&&p.drinkOrder?`(${p.drinkOrder})`:"" }`).join(", "),
+      thirstyUsers:    pts.filter(p=>p.cardUsed==="thirsty_card").map(p=>`${p.name}${p.drinkOrder?` 想喝${p.drinkOrder}`:""}`).join(", "),
       cardsAwarded:    awardedCards.map(w => `${w.name} ${CARD_TYPES[w.type]?.name}`).join(", "),
     }),
   });
