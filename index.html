@@ -1770,6 +1770,7 @@ function App() {
   const [cd, setCd] = useState("--:--");
   const [numWarn, setNumWarn] = useState("");
   const [confirmModal, setConfirmModal] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -2553,12 +2554,16 @@ function App() {
 
   if (phase==="joined") {
     function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setIsEditing(true); setPhase("join"); }
+    const myJoinedEntry = pts.find(p=>p.name===form.name);
+    const usedCardName = myJoinedEntry?.cardUsed ? (CARD_TYPES[myJoinedEntry.cardUsed]?.name || "卡牌") : null;
+    function handleCancel() { if (usedCardName) setCancelConfirm(true); else doCancel(); }
     return (
       <div>
         {AP}
       <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
+          <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <StreakWarning pts={pts} weekly={weekly} />
@@ -2569,7 +2574,7 @@ function App() {
                 <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
               </div>
             </div>
-            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
+            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={handleCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
             <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
           </div>
         </div>
