@@ -444,7 +444,7 @@ function getTodayHoliday() {
 /* ── Pure logic ── */
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function isDeadlinePassed(dl) { const now = new Date(), [h,m] = dl.split(":").map(Number); return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m); }
-function isDoubleDay(dateStr) { const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
+function isDoubleDay(dateStr) { if (!dateStr && new URLSearchParams(location.search).has("specialday")) return true; const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
 function calcCountdown(dl) {
   const now = new Date(), [h,m] = dl.split(":").map(Number);
   const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
