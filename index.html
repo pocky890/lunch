@@ -2269,30 +2269,9 @@ function App() {
       }
 
       const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
-      const cardExtra = activeCard && !PASSIVE_TYPES.includes(activeCard.type)
-        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}) }
-        : {};
-      const bdExtra = bdNums ? { birthdayNumbers: bdNums } : {};
 
-      if (myEntry) {
-        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest});
-        setIsEditing(false);
-      } else {
-        const newRef = fRef("participants").push();
-        await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
-      }
-      if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
-
-      // 消耗卡牌（被動卡不在此消耗）
-      if (activeCard && !PASSIVE_TYPES.includes(activeCard.type)) {
-        await returnCardToPool(name, activeCard.id);
-        setCardToUse(""); setNumber2("");
-      }
-      // 公開卡：所有人號碼立即公開
-      if (activeCard?.type === "reveal_numbers") {
-        await fSet(`revealNumbers/${todayStr()}`, true);
-      }
-      // 盜牌卡：隨機偷取其他參加者的一張卡
+      // 盜牌卡：先嘗試偷取，決定是否真的算「使用」（撲空則保留卡牌）
+      let stealSucceeded = false;
       if (activeCard?.type === "steal_card") {
         const today = todayStr();
         const otherPts = pts.filter(p => p.name !== name);
@@ -2317,13 +2296,41 @@ function App() {
           if (stolen) {
             const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
             await newRef.set(stolen);
+            stealSucceeded = true;
             showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`);
           } else {
-            showToast("🎭 想偷的卡剛好被用掉了，撲了個空 😅");
+            showToast("🎭 想偷的卡剛好被用掉了，盜牌卡保留 😅");
           }
         } else {
-          showToast("🎭 沒有人有卡可以偷 😅");
+          showToast("🎭 目前沒有人有卡可偷，盜牌卡保留 😅");
         }
+      }
+
+      // 盜牌卡只有成功偷到才算使用；其餘主動卡照常消耗
+      const cardConsumed = activeCard && !PASSIVE_TYPES.includes(activeCard.type)
+        && (activeCard.type !== "steal_card" || stealSucceeded);
+      const cardExtra = cardConsumed
+        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}) }
+        : {};
+      const bdExtra = bdNums ? { birthdayNumbers: bdNums } : {};
+
+      if (myEntry) {
+        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest});
+        setIsEditing(false);
+      } else {
+        const newRef = fRef("participants").push();
+        await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
+      }
+      if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
+
+      // 消耗卡牌（被動卡與未成功的盜牌卡不消耗）
+      if (cardConsumed) {
+        await returnCardToPool(name, activeCard.id);
+        setCardToUse(""); setNumber2("");
+      }
+      // 公開卡：所有人號碼立即公開
+      if (activeCard?.type === "reveal_numbers") {
+        await fSet(`revealNumbers/${todayStr()}`, true);
       }
 
       try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
