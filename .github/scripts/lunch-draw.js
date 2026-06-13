@@ -65,6 +65,8 @@ function todayStr() {
   return `${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,"0")}-${String(tw.getUTCDate()).padStart(2,"0")}`;
 }
 
+function isDoubleDay(dateStr) { const d = new Date(dateStr + "T00:00:00"); return (d.getMonth()+1) === d.getDate(); }
+
 function isDeadlinePassed(deadline) {
   const tw = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const [h, m] = deadline.split(":").map(Number);
@@ -130,9 +132,10 @@ async function main() {
 
   // 4. 抽號（已有就沿用）
   const numMax = session.numMax || 99;
+  const effectiveNumMax = isDoubleDay(today) ? Math.floor(numMax / 2) : numMax;
   let drawnNumber = await fbGet(`drawn/${today}`);
   if (!drawnNumber) {
-    drawnNumber = Math.floor(Math.random() * numMax) + 1;
+    drawnNumber = Math.floor(Math.random() * effectiveNumMax) + 1;
     await fbSet(`drawn/${today}`, drawnNumber);
     console.log(`Drew number: ${drawnNumber}`);
   } else {
@@ -187,6 +190,7 @@ async function main() {
     soloWin: result.soloWin, drawnNumber, streak,
     ...(skipStreak && { skipStreak: true }),
     ...(result.followRestUser && { followRestUser: result.followRestUser }),
+    ...(isDoubleDay(today) && { specialDay: true }),
   };
   await fbSet(`weekly/${today}`, rec);
   console.log(`Written weekly/${today}:`, rec);

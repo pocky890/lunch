@@ -444,6 +444,7 @@ function getTodayHoliday() {
 /* ── Pure logic ── */
 function todayStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function isDeadlinePassed(dl) { const now = new Date(), [h,m] = dl.split(":").map(Number); return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m); }
+function isDoubleDay(dateStr) { const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
 function calcCountdown(dl) {
   const now = new Date(), [h,m] = dl.split(":").map(Number);
   const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
@@ -1103,6 +1104,17 @@ function HolidayBanner() {
   );
 }
 
+function SpecialDayBanner() {
+  if (!isDoubleDay()) return null;
+  const d = new Date();
+  const m = d.getMonth() + 1, day = d.getDate();
+  return (
+    <div style={{textAlign:"center",padding:"10px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#9A3412"}}>
+      🎰 <strong>特殊日 {m}/{day}</strong>｜今日號碼池減半，中獎機率加倍！
+    </div>
+  );
+}
+
 function StreakWarning({ pts, weekly }) {
   if (DB_PREFIX === "lunch_test") return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#92400E"}}>
@@ -1228,7 +1240,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}}) {
 
 function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
   const numCounts = {};
-  Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
+  Object.values(weekly).forEach(rec => { if (rec?.drawnNumber && !rec.specialDay) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
   const maxCount = Math.max(0, ...Object.values(numCounts));
   const hasData = Object.keys(numCounts).length > 0;
   const base = isDark ? "96,165,250" : "0,113,227";
@@ -1828,7 +1840,7 @@ function App() {
       const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
       setSess(s); setPts(p); setAbsent(absentNames);
       if (isDeadlinePassed(s.deadline)) {
-        const drawn = await getOrDrawNumber(today, s?.numMax || 99); const res = determineResultWithCards(p, drawn);
+        const drawn = await getOrDrawNumber(today, isDoubleDay(today) ? Math.floor((s?.numMax||99)/2) : (s?.numMax||99)); const res = determineResultWithCards(p, drawn);
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
       } else {
@@ -1861,7 +1873,7 @@ function App() {
       setCd(calcCountdown(dl));
       if (isDeadlinePassed(dl)) {
         clearInterval(timerRef.current);
-        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), drawn = await getOrDrawNumber(todayStr(), sessRef.current?.numMax || 99), res = determineResultWithCards(finalPts, drawn);
+        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), _today = todayStr(), _nm = sessRef.current?.numMax||99, drawn = await getOrDrawNumber(_today, isDoubleDay(_today) ? Math.floor(_nm/2) : _nm), res = determineResultWithCards(finalPts, drawn);
         const rd = res ? {...res,drawnNumber:drawn} : {drawnNumber:drawn,winner:null,soloWin:false,sorted:finalPts};
         setPts(finalPts); setAnimResult(rd); setPhase("drawing");
       }
@@ -1904,7 +1916,7 @@ function App() {
       }
     }
     const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) : 50;
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser})};
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true})};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
@@ -1979,7 +1991,7 @@ function App() {
     const rest = form.rest==="cust" ? form.cust.trim() : form.rest;
     if (!rest) return showToast("請選擇或輸入店家");
     const num = parseInt(form.number);
-    if (!num || num < 1 || num > numMax) return showToast(`請輸入 1 到 ${numMax} 之間的整數`);
+    if (!num || num < 1 || num > effectiveNumMax) return showToast(`請輸入 1 到 ${effectiveNumMax} 之間的整數`);
     
     setIsLoading(true);
     try {
@@ -1996,7 +2008,7 @@ function App() {
       const activeCard = myCards.find(c => c.id === cardToUse);
       if (activeCard?.type === "extra_number") {
         num2 = parseInt(number2);
-        if (!num2 || num2 < 1 || num2 > numMax) return showToast(`第二個號碼請輸入 1 到 ${numMax} 之間的整數`);
+        if (!num2 || num2 < 1 || num2 > effectiveNumMax) return showToast(`第二個號碼請輸入 1 到 ${effectiveNumMax} 之間的整數`);
         if (num2 === num) return showToast("兩個號碼不能相同");
         if (existing.some(p => p.id !== myEntry?.id && (p.number === num2 || p.number2 === num2)))
           return showToast(`數字 ${num2} 已被選走，請換一個`);
@@ -2104,6 +2116,7 @@ function App() {
 
 
   const numMax = sess?.numMax || 99;
+  const effectiveNumMax = isDoubleDay() ? Math.floor(numMax / 2) : numMax;
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
   const AP = <>
@@ -2125,7 +2138,7 @@ function App() {
       <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <HolidayBanner />
+        <HolidayBanner /><SpecialDayBanner />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
           <div className="card">
@@ -2150,7 +2163,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-        <HolidayBanner />
+        <HolidayBanner /><SpecialDayBanner />
         <StreakWarning pts={pts} weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} />
         <div className="grid-3">
@@ -2178,16 +2191,16 @@ function App() {
                 </div>
               ) : (<>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                  <label style={{margin:0}}>選一個號碼（1 ~ {numMax}）</label>
+                  <label style={{margin:0}}>選一個號碼（1 ~ {effectiveNumMax}）</label>
                   <button className="ghost btn-sm" title="隨機選號" onClick={()=>{
                     const taken = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
-                    const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
+                    const available = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!taken.has(n));
                     if (available.length===0) return;
                     const pick = available[Math.floor(Math.random()*available.length)];
                     setForm(f=>({...f,number:String(pick)})); setNumWarn("");
                   }}>🎲 隨機</button>
                 </div>
-                <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
+                <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${effectiveNumMax}`} style={{marginBottom:"8px"}} /></div>
                 {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
               <p style={{fontSize:"12px",color:"var(--t3)",marginTop:"-4px",marginBottom:"12px"}}>送出後號碼與卡牌無法修改</p>
                 {(() => {
@@ -2195,15 +2208,15 @@ function App() {
                   if (activeCard?.type === "extra_number") return (
                     <div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                        <label style={{margin:0}}>第二個號碼（1 ~ {numMax}）</label>
+                        <label style={{margin:0}}>第二個號碼（1 ~ {effectiveNumMax}）</label>
                         <button className="ghost btn-sm" onClick={()=>{
                           const taken = new Set([...takenNums.filter(x=>x.name!==form.name).map(x=>x.num), parseInt(form.number)].filter(Boolean));
-                          const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
+                          const available = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!taken.has(n));
                           if (available.length===0) return;
                           setNumber2(String(available[Math.floor(Math.random()*available.length)]));
                         }}>🎲 隨機</button>
                       </div>
-                      <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={number2} onChange={e=>setNumber2(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
+                      <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={number2} onChange={e=>setNumber2(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder={`1 ~ ${effectiveNumMax}`} style={{marginBottom:"8px"}} /></div>
                     </div>
                   );
                   return null;
@@ -2236,7 +2249,7 @@ function App() {
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-          <HolidayBanner />
+          <HolidayBanner /><SpecialDayBanner />
         <StreakWarning pts={pts} weekly={weekly} />
           <div className="grid-3">
             <div className="col">
@@ -2261,7 +2274,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
-        <HolidayBanner />
+        <HolidayBanner /><SpecialDayBanner />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -2295,7 +2308,7 @@ function App() {
         <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner />
+          <HolidayBanner /><SpecialDayBanner />
           <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
@@ -2332,7 +2345,7 @@ function App() {
         <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner />
+          <HolidayBanner /><SpecialDayBanner />
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
