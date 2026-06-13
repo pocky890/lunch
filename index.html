@@ -1594,6 +1594,44 @@ function LoginScreen({ isDark, toggleDark }) {
   );
 }
 
+/* ── Birthday Set Modal（補填生日） ── */
+function BirthdaySetModal({ uid, onClose }) {
+  const [bdMonth, setBdMonth] = React.useState("");
+  const [bdDay, setBdDay] = React.useState("");
+  const [err, setErr] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  async function confirm() {
+    const m = parseInt(bdMonth), d = parseInt(bdDay);
+    if (!m || !d || m < 1 || m > 12 || d < 1 || d > 31) { setErr("請輸入正確的月份與日期"); return; }
+    setLoading(true); setErr("");
+    try {
+      const mmdd = `${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      await fSet(`userBirthdays/${uid}`, mmdd);
+      onClose();
+    } catch(e) { setErr("儲存失敗，請重試"); }
+    finally { setLoading(false); }
+  }
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
+      <div className="card" style={{width:"320px",padding:"28px 24px",textAlign:"center"}}>
+        <div style={{fontSize:"36px",marginBottom:"12px"}}>🎂</div>
+        <h3 style={{marginBottom:"6px",fontSize:"17px"}}>設定你的生日</h3>
+        <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"20px"}}>生日當天可以選 5 個號碼，中獎機率加倍！</p>
+        <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
+          <input type="number" min="1" max="12" value={bdMonth} onChange={e=>setBdMonth(e.target.value)} placeholder="月" style={{flex:1,textAlign:"center",marginBottom:0}} />
+          <span style={{lineHeight:"44px",color:"var(--t3)"}}>／</span>
+          <input type="number" min="1" max="31" value={bdDay} onChange={e=>setBdDay(e.target.value)} placeholder="日" style={{flex:1,textAlign:"center",marginBottom:0}} />
+        </div>
+        {err && <p style={{color:"#ef4444",fontSize:"13px",marginBottom:"8px"}}>{err}</p>}
+        <button className="primary" style={{width:"100%",marginBottom:"8px"}} onClick={confirm} disabled={loading}>
+          {loading ? "儲存中…" : "確認"}
+        </button>
+        <button className="ghost" style={{width:"100%",fontSize:"13px"}} onClick={onClose}>略過</button>
+      </div>
+    </div>
+  );
+}
+
 /* ── Set Name Screen ── */
 function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
   const suggested = (user.displayName || "").split(" ")[0];
@@ -1689,6 +1727,7 @@ function App() {
   const [animResult, setAnimResult] = useState(null);
   const [absent, setAbsent] = useState([]);
   const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
+  const [showBirthdayModal, setShowBirthdayModal] = useState(false);
 
   // ✨ 確保 Loading 與 Toast 正常運作
   const [isLoading, setIsLoading] = useState(false);
@@ -1706,7 +1745,11 @@ function App() {
       setCurrentUser(user);
       const name = await fGet(`userNames/${user.uid}`);
       if (!name) { setAuthState("setname"); }
-      else { setBoundName(name); setForm(f => ({...f, name})); setAuthState("ready"); }
+      else {
+        setBoundName(name); setForm(f => ({...f, name})); setAuthState("ready");
+        const bd = await fGet(`userBirthdays/${user.uid}`);
+        if (!bd) setShowBirthdayModal(true);
+      }
     });
     return () => unsub();
   }, []);
@@ -2263,11 +2306,16 @@ function App() {
     {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
+    {birthdayModal}
   </>;
 
   if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
   if (authState === "login") return <LoginScreen isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} />;
   if (authState === "setname") return <SetNameScreen user={currentUser} isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
+
+  const birthdayModal = showBirthdayModal && currentUser
+    ? <BirthdaySetModal uid={currentUser.uid} onClose={()=>setShowBirthdayModal(false)} />
+    : null;
 
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
