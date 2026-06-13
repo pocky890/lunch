@@ -293,6 +293,7 @@
     appId:             "1:992662799993:web:3bc3c1c3fd78dd7f8fb6a8"
   };
   const ADMIN_PASSWORD = "7788";
+  const ADMIN_EMAIL    = "pocky890@gmail.com";
   const DB_PREFIX         = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
   const TEST_DRAWN_NUMBER = 78; // 測試模式固定開獎號碼
   const TEST_MOCK_DATE    = "2026-12-25"; // 測試模式模擬日期（節日橫幅用）
@@ -950,7 +951,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
 }
 
 /* ── UI Components ── */
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   return (
     <div className="site-header">
@@ -971,7 +972,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           {title && <div style={{textAlign:"right"}}><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
           <button className="ghost theme-toggle" onClick={onCardHelp} title="卡牌說明">🃏</button>
           <button className="ghost theme-toggle" onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
-          <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>
+          {isAdmin && <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>}
           <button className="ghost theme-toggle" onClick={toggleDark} title="切換深淺色模式">
             {isDark ? "☀️" : "🌙"}
           </button>
@@ -1330,34 +1331,29 @@ function HistoryModal({ weekly, onClose }) {
   );
 }
 
-function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory}) {
+function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory, isAdmin}) {
   const [showClearModal, setShowClearModal] = useState(false);
-  const [clearPw, setClearPw] = useState("");
-  const [clearErr, setClearErr] = useState("");
-  const [targetDate, setTargetDate] = useState(null); // ✨ 新增：記住要刪除哪一天
-  
+  const [targetDate, setTargetDate] = useState(null);
+
   const weekDates = getWeekDates(), today = todayStr();
 
-  // ✨ 點擊單日垃圾桶的處理函式
   function handleDeleteClick(date) {
     setTargetDate(date);
-    setShowClearModal(true); setClearPw(""); setClearErr("");
+    setShowClearModal(true);
   }
 
-  // ✨ 精準刪除指定日期，圖表自動同步
   async function confirmDelete() {
-    if (clearPw !== ADMIN_PASSWORD) { setClearErr("密碼錯誤"); return; }
     setShowClearModal(false);
     if (targetDate) {
-      await fRef(`weekly/${targetDate}`).remove(); 
-      setWeekly(prev => { const n={...prev}; delete n[targetDate]; return n; }); 
+      await fRef(`weekly/${targetDate}`).remove();
+      setWeekly(prev => { const n={...prev}; delete n[targetDate]; return n; });
       setTargetDate(null);
     }
   }
 
   return (
     <div className="card">
-      <PasswordModal show={showClearModal} pw={clearPw} setPw={setClearPw} err={clearErr} onConfirm={confirmDelete} onCancel={() => setShowClearModal(false)} desc={`輸入密碼才能刪除 ${targetDate} 的紀錄`} />
+      <ConfirmModal show={showClearModal} message={`確定要刪除 ${targetDate} 的紀錄？`} onConfirm={confirmDelete} onCancel={() => setShowClearModal(false)} />
       
       <div style={{display:"flex",alignItems:"center",marginBottom:"16px"}}>
         <p className="section-label" style={{flex:1,marginBottom:0}}>本週開獎結果</p>
@@ -1382,17 +1378,18 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
                 </div>
                 <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",marginLeft:"12px",minWidth:"40px",textAlign:"right",flexShrink:0}}>#{rec.drawnNumber}</div>
                 
-                {/* ✨ 單日的精準刪除按鈕 (垃圾桶) */}
-                <button 
-                  className="ghost btn-danger" 
-                  style={{width: "28px", height: "28px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", marginLeft: "12px", marginBottom: 0, flexShrink: 0, opacity: 0.6}} 
-                  onClick={() => handleDeleteClick(date)} 
-                  title="刪除此日紀錄"
-                  onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                  onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                </button>
+                {isAdmin && (
+                  <button
+                    className="ghost btn-danger"
+                    style={{width:"28px",height:"28px",padding:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"8px",marginLeft:"12px",marginBottom:0,flexShrink:0,opacity:0.6}}
+                    onClick={() => handleDeleteClick(date)}
+                    title="刪除此日紀錄"
+                    onMouseOver={e=>e.currentTarget.style.opacity=1}
+                    onMouseOut={e=>e.currentTarget.style.opacity=0.6}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                  </button>
+                )}
               </>
             ) : (
               <div style={{flex:1,marginLeft:"12px",fontSize:"14px",color:"var(--t3)"}}>—</div>
@@ -1401,6 +1398,21 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
         );
       })}
       {showStats && <StatsPanel weekly={weekly} isDark={isDark} />}
+    </div>
+  );
+}
+
+/* ── Confirm Modal（管理員操作確認，不需密碼）── */
+function ConfirmModal({ show, message, onConfirm, onCancel }) {
+  if (!show) return null;
+  return (
+    <div className="modal-bg">
+      <div className="card fade-up" style={{width:"340px",maxWidth:"90vw"}}>
+        <h2 style={{fontSize:"18px",marginBottom:"12px"}}>確認操作</h2>
+        <p style={{marginBottom:"24px",fontSize:"14px"}}>{message}</p>
+        <button onClick={onConfirm}>確認</button>
+        <button className="ghost" onClick={onCancel}>取消</button>
+      </div>
     </div>
   );
 }
@@ -1514,9 +1526,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [cd, setCd] = useState("--:--");
   const [numWarn, setNumWarn] = useState("");
-  const [resetModal, setResetModal] = useState(false);
-  const [resetPw, setResetPw] = useState("");
-  const [resetErr, setResetErr] = useState("");
+  const [confirmModal, setConfirmModal] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -2023,7 +2033,8 @@ function App() {
     setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"}); setPhase("setup");
   }
 
-  async function confirmReset() { if (resetPw !== ADMIN_PASSWORD) { setResetErr("密碼錯誤"); return; } setResetModal(false); await doReset(); }
+  const isAdmin = currentUser?.email === ADMIN_EMAIL;
+  async function confirmReset() { setConfirmModal(false); await doReset(); }
 
 
   const numMax = sess?.numMax || 99;
@@ -2045,9 +2056,9 @@ function App() {
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
       <div className="page fade-up">
-        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+        <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <HolidayBanner />
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
@@ -2058,7 +2069,7 @@ function App() {
               {isLoading ? "處理中..." : "建立遊戲"}
             </button>
           </div>
-          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -2069,9 +2080,9 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
       <div className="page fade-up">
-        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+        <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
         <HolidayBanner />
         <StreakWarning pts={pts} weekly={weekly} />
@@ -2080,7 +2091,7 @@ function App() {
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
             </div>
           </div>
           <div className="col">
@@ -2128,7 +2139,7 @@ function App() {
               <button onClick={doJoin} disabled={isLoading}>
                 {isLoading ? "處理中..." : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
               </button>
-              <button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>重新設定時間</button>
+              {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}}>重新設定時間</button>}
               <div className="divider" />
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
             </div>
@@ -2146,9 +2157,9 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
-          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+          <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
           <HolidayBanner />
         <StreakWarning pts={pts} weekly={weekly} />
@@ -2156,10 +2167,10 @@ function App() {
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
                 <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
+                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
               </div>
             </div>
-            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}}>管理員：清除今日遊戲</button></div></div>
+            <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={doCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
             <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
           </div>
         </div>
@@ -2171,16 +2182,16 @@ function App() {
   if (phase==="absent") return (
     <div>
       {AP}
-      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
       <div className="page fade-up">
-        <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+        <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
         <HolidayBanner />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
             </div>
           </div>
           <div className="col">
@@ -2206,11 +2217,11 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
-          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+          <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner />
-          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p><button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button></div></div>
+          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
       </div>
@@ -2243,14 +2254,14 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
+        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} isAdmin={isAdmin} />
         <div className="page fade-up">
-          <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
+          <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner />
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} /></div>
+              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div>
             </div>
             <div className="layout-main">
               <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className="result-number">{drawnNumber}</div></div>
@@ -2290,7 +2301,7 @@ function App() {
                   );
                 })}
               </div>
-              <button className="ghost" onClick={()=>{setResetModal(true);setResetPw("");setResetErr("");}} style={{width:"auto",padding:"12px 24px"}}>重新開始遊戲</button>
+              {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始遊戲</button>}
             </div>
           </div>
         </div>
