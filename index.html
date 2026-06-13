@@ -687,7 +687,7 @@ function CardHelpModal({ onClose, cardConfig = {} }) {
     { type:"reveal_numbers",    desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
     { type:"steal_card",        desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
-    { type:"thirsty_card",      desc:"加入時宣告使用，並填入你想喝的飲料。開獎後當天所有參加者須各自請你喝一杯，飲料由你指定，上限 100 元。" },
+    { type:"thirsty_card",      desc:"加入時宣告使用。開獎後當天所有參加者須各自請你喝一杯，上限 100 元。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
     Object.values(CARD_DEFAULTS).reduce((s, c) => s + c.total, 0);
