@@ -1850,7 +1850,10 @@ function App() {
       } else {
         let joinedDate = "", absentDate = "";
         try { joinedDate = localStorage.getItem("lunch_joined_date") || ""; absentDate = localStorage.getItem("lunch_absent_date") || ""; } catch(e) {}
-        const savedName = form.name;
+        // form.name 在 auth 完成前可能還是空的，直接從 Firebase 查綁定名稱
+        const uid = auth.currentUser?.uid;
+        const savedName = uid ? (await fGet(`userNames/${uid}`)) || "" : "";
+        if (savedName) { setForm(f => ({...f, name: savedName})); setBoundName(savedName); }
         if (absentDate === today && savedName && absentNames.includes(savedName)) {
           setPhase("absent");
         } else if (joinedDate === today && savedName && p.some(pt => pt.name === savedName)) {
