@@ -1217,7 +1217,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
 }
 
 /* ── UI Components ── */
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, onProfile}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   return (
     <div className="site-header">
@@ -1244,7 +1244,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           </button>
           {userName && (
             <div style={{display:"flex",alignItems:"center",gap:"8px",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
-              <span style={{fontSize:"13px",fontWeight:"500",color:"var(--t2)"}}>{userName}</span>
+              <button className="ghost btn-sm" onClick={onProfile} style={{marginBottom:0,fontSize:"13px",fontWeight:"600",color:"var(--t1)",padding:"4px 8px"}}>{userName}</button>
               <button className="ghost btn-sm" onClick={()=>auth.signOut()} style={{marginBottom:0,fontSize:"12px",color:"var(--t3)"}}>登出</button>
             </div>
           )}
@@ -1769,6 +1769,54 @@ function LoginScreen({ isDark, toggleDark }) {
   );
 }
 
+/* ── My Profile Modal ── */
+function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose }) {
+  const [participationCount, setParticipationCount] = React.useState(0);
+  React.useEffect(() => {
+    fGet(`participationCount/${sanitizeKey(boundName)}`).then(n => setParticipationCount(n || 0));
+  }, [boundName]);
+
+  const unlocked = new Set(computeAchievements(boundName, weekly, participationCount));
+  const chosenKey = userTitles[sanitizeKey(boundName)];
+
+  return (
+    <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="card fade-up" style={{width:"420px",maxWidth:"95vw"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:"20px"}}>
+          <h2 style={{flex:1,fontSize:"18px"}}>🏆 我的成就</h2>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+        <div style={{marginBottom:"16px",padding:"12px 14px",background:"var(--s3)",borderRadius:"var(--r)",border:"1px solid var(--b1)"}}>
+          <div style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",marginBottom:"6px"}}>目前稱號</div>
+          {chosenKey
+            ? (() => { const a = ACHIEVEMENTS.find(x => x.key === chosenKey); return <span style={{fontSize:"15px",fontWeight:"600",color:"var(--t1)"}}>{a.emoji} {a.name}</span>; })()
+            : <span style={{fontSize:"14px",color:"var(--t3)"}}>尚未選擇，點選下方成就來設定</span>
+          }
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+          {ACHIEVEMENTS.map(a => {
+            const isUnlocked = unlocked.has(a.key);
+            const isChosen = chosenKey === a.key;
+            return (
+              <div key={a.key} onClick={isUnlocked ? () => onTitleChange(isChosen ? null : a.key) : undefined}
+                style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"var(--a)":isUnlocked?"var(--b1)":"var(--b1)"}`,background:isChosen?"var(--a-dim,rgba(99,102,241,0.08))":isUnlocked?"var(--s3)":"transparent",opacity:isUnlocked?1:0.4,cursor:isUnlocked?"pointer":"default"}}>
+                <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{a.emoji}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"var(--a)":"var(--t1)"}}>{a.name}</div>
+                  <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{a.desc}</div>
+                </div>
+                {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"var(--a)",flexShrink:0}}>使用中</span>}
+                {!isUnlocked && <span style={{fontSize:"11px",color:"var(--t3)",flexShrink:0}}>🔒</span>}
+              </div>
+            );
+          })}
+        </div>
+        {participationCount > 0 && <div style={{marginTop:"12px",textAlign:"center",fontSize:"12px",color:"var(--t3)"}}>累積參與 {participationCount} 次</div>}
+      </div>
+    </div>
+  );
+}
+
 /* ── Birthday Set Modal（補填生日） ── */
 function BirthdaySetModal({ uid, onClose }) {
   const [bdMonth, setBdMonth] = React.useState("");
@@ -1911,6 +1959,7 @@ function App() {
   const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
   const [showBirthdayModal, setShowBirthdayModal] = useState(false);
   const [userTitles, setUserTitles] = useState({});
+  const [showProfile, setShowProfile] = useState(false);
 
   // ✨ 確保 Loading 與 Toast 正常運作
   const [isLoading, setIsLoading] = useState(false);
@@ -2588,6 +2637,7 @@ function App() {
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
     {birthdayModal}
+    {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} onClose={()=>setShowProfile(false)} />}
     <TestModeBanner />
   </>;
 
@@ -2596,7 +2646,7 @@ function App() {
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
@@ -2620,7 +2670,7 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -2724,7 +2774,7 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
@@ -2750,7 +2800,7 @@ function App() {
   if (phase==="absent") return (
     <div>
       {AP}
-      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} />
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -2785,7 +2835,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
@@ -2822,7 +2872,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} />
+        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
