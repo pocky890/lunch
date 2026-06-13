@@ -2120,6 +2120,8 @@ function App() {
 
   useEffect(() => {
     if (phase!=="results"||savedRef.current) return;
+    // 測試預覽（?testresult / ?testmode）：不寫入 weekly、不發卡、不送通知
+    if (TEST_MODE || new URLSearchParams(location.search).has("testresult")) { savedRef.current = true; return; }
     savedRef.current = true; const today = todayStr();
     // 無人或人數不足，發「無人參加」通知後結束
     if (!result?.winner || pts.length < 2) {
