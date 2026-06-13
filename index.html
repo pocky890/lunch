@@ -39,9 +39,16 @@
       --red:  #FF3B30;
       
       /* Border Radii */
-      --r:  12px; 
-      --r2: 20px; 
+      --r:  12px;
+      --r2: 20px;
       --r3: 24px;
+
+      /* Semantic notification card colors */
+      --c-green-bg: #F0FDF4; --c-green-bd: #BBF7D0; --c-green-tx: #166534;
+      --c-pink-bg:  #FDF2F8; --c-pink-bd:  #F9A8D4; --c-pink-tx:  #9D174D;
+      --c-blue-bg:  #EFF6FF; --c-blue-bd:  #BFDBFE; --c-blue-tx:  #1E40AF;
+      --c-orange-bg:#FFF7ED; --c-orange-bd:#FED7AA; --c-orange-tx:#92400E;
+      --c-amber-bg: #FFFBEB; --c-amber-bd: #FDE68A; --c-amber-tx: #92400E;
     }
     
     html { font-size: 14px; }
@@ -187,8 +194,8 @@
     .form-title { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--b1); }
     
     .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-    .badge-gold  { background: #FFF7ED; color: #C2410C; border: 1px solid #FED7AA; }
-    .badge-green { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+    .badge-gold  { background: var(--c-amber-bg);  color: var(--c-amber-tx);  border: 1px solid var(--c-amber-bd); }
+    .badge-green { background: var(--c-green-bg);  color: var(--c-green-tx);  border: 1px solid var(--c-green-bd); }
 
     .page-footer { border-top: 1px solid var(--b1); margin-top: 64px; padding: 32px 0; text-align: center; }
     
@@ -252,6 +259,12 @@
       --t1:   #F5F5F7;
       --t2:   #EBEBF5;
       --t3:   rgba(235, 235, 245, 0.6);
+
+      --c-green-bg: #052e16; --c-green-bd: #166534; --c-green-tx: #86efac;
+      --c-pink-bg:  #2d0a1e; --c-pink-bd:  #9d174d; --c-pink-tx:  #f9a8d4;
+      --c-blue-bg:  #0c1a4e; --c-blue-bd:  #1e40af; --c-blue-tx:  #93c5fd;
+      --c-orange-bg:#2c1a00; --c-orange-bd:#92400e; --c-orange-tx:#fed7aa;
+      --c-amber-bg: #2c1f00; --c-amber-bd: #b45309; --c-amber-tx: #fde68a;
     }
     
     body.dark-mode .card,
@@ -768,7 +781,7 @@ function HelpModal({ onClose, numMax = 99 }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎂 生日特權</div>
             <div>當天生日的成員可以額外多選 <strong style={{color:"var(--t1)"}}>4 個號碼</strong>（共 5 個），系統取最接近幸運號碼的那個計算。若同時持有加號卡，最多可選 <strong style={{color:"var(--t1)"}}>6 個號碼</strong>。</div>
-            <div style={{marginTop:"8px",padding:"10px 12px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"8px",fontSize:"13px",color:"#9D174D"}}>🎂 生日當天頁面頂端會出現祝賀 Banner，提醒所有人今天是誰的生日。</div>
+            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-pink-tx)"}}>🎂 生日當天頁面頂端會出現祝賀 Banner，提醒所有人今天是誰的生日。</div>
           </div>
 
         </div>
@@ -1293,7 +1306,7 @@ function HolidayBanner() {
   const h = getTodayHoliday();
   if (!h) return null;
   return (
-    <div style={{textAlign:"center",padding:"10px 16px",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#166534"}}>
+    <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-green-tx)"}}>
       🎉 <strong>{h.name}</strong>｜{h.msg}
     </div>
   );
@@ -1302,7 +1315,7 @@ function HolidayBanner() {
 function BirthdayBanner({ todayBirthdays }) {
   if (!todayBirthdays || todayBirthdays.length === 0) return null;
   return (
-    <div style={{textAlign:"center",padding:"10px 16px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#9D174D"}}>
+    <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-pink-tx)"}}>
       🎂 <strong>{todayBirthdays.join("、")}</strong> 今天生日快樂！今日可選 5 個號碼🎉
     </div>
   );
@@ -1330,7 +1343,7 @@ function SpecialDayBanner() {
 
 function StreakWarning({ pts, weekly }) {
   if (DB_PREFIX === "lunch_test") return (
-    <div style={{textAlign:"center",padding:"10px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#92400E"}}>
+    <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
       ⚠️ <strong>Pocky</strong> 再贏一次就 3 連勝，要請客 <strong>30 元</strong>！
     </div>
   );
@@ -1342,7 +1355,7 @@ function StreakWarning({ pts, weekly }) {
     .sort((a, b) => b.streak - a.streak);
   if (warnings.length === 0) return null;
   return (
-    <div style={{textAlign:"center",padding:"10px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#92400E"}}>
+    <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
       {warnings.map(w => (
         <div key={w.name}>⚠️ <strong>{w.name}</strong> 再贏一次就 {w.streak} 連勝，要請客 <strong>{w.streak * 10} 元</strong>！</div>
       ))}
@@ -2766,8 +2779,8 @@ function App() {
                   return null;
                 })()}
                 {isBirthday && (
-                  <div style={{marginTop:"8px",padding:"12px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"var(--r)"}}>
-                    <div style={{fontSize:"13px",fontWeight:"600",color:"#9D174D",marginBottom:"8px"}}>🎂 今天是你的生日！再選 4 個號碼</div>
+                  <div style={{marginTop:"8px",padding:"12px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"var(--r)"}}>
+                    <div style={{fontSize:"13px",fontWeight:"600",color:"var(--c-pink-tx)",marginBottom:"8px"}}>🎂 今天是你的生日！再選 4 個號碼</div>
                     {[0,1,2,3].map(i => (
                       <div key={i} className="num-input-wrap" style={{marginBottom:"6px"}}>
                         <span className="num-prefix">#</span>
@@ -2922,31 +2935,31 @@ function App() {
                 <div style={{background:gc.bg,border:`1px solid ${gc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:gc.top}} /><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px",flexWrap:"wrap"}}><span className="badge badge-green" style={{display:"inline-flex"}}>最接近{streak>=3?` · 請客 ${treatAmount}元/人`:" · 各自付帳"}</span>{streak>=3&&<span className="badge badge-gold" style={{display:"inline-flex"}}>🔥 {streak} 連勝</span>}</div><div style={{fontSize:"28px",fontWeight:"700",color:gc.h,marginBottom:"8px"}}>{winner.rest}</div><div style={{fontSize:"15px",color:gc.sub}}>{result.followRestUser ? <>🍽️ <strong style={{color:gc.str,fontWeight:"600"}}>{result.followRestUser}</strong> 的跟著我吃卡</> : <>由 <strong style={{color:gc.str,fontWeight:"600"}}>{winner.name}</strong> 推薦</>}</div>{streak>=3&&<p style={{marginTop:"16px",fontSize:"14px",color:gc.sub}}>連續 {streak} 次最接近！每人補助 <strong style={{color:gc.str}}>{treatAmount} 元</strong> · 共 {pts.length-1-cheapskateUsers.length} 人付，合計 {treatAmount*(pts.length-1-cheapskateUsers.length)} 元{cheapskateUsers.length>0?`（${cheapskateUsers.length} 人免付卡免付）`:""}</p>}</div>
               )}
               {awardedCards.length > 0 && (
-                <div style={{padding:"12px 16px",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#92400E"}}>
+                <div style={{padding:"12px 16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-amber-tx)"}}>
                   {awardedCards.map((aw,i) => (
                     <div key={i}>🃏 <strong>{aw.name}</strong> 獲得了 <strong>{CARD_TYPES[aw.type]?.emoji} {CARD_TYPES[aw.type]?.name}</strong>！</div>
                   ))}
                 </div>
               )}
               {cheapskateUsers.length > 0 && (
-                <div style={{padding:"12px 16px",background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#9A3412"}}>
+                <div style={{padding:"12px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
                   {cheapskateUsers.map((n,i) => (
                     <div key={i}>🤑 <strong>{n}</strong> 使用了免付卡，免除本次請客費</div>
                   ))}
                 </div>
               )}
               {pts.filter(p=>p.cardUsed==="thirsty_card").map((p,i) => (
-                <div key={i} style={{padding:"12px 16px",background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#1E40AF"}}>
+                <div key={i} style={{padding:"12px 16px",background:"var(--c-blue-bg)",border:"1px solid var(--c-blue-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-blue-tx)"}}>
                   🥤 <strong>{p.name}</strong> 使用了口渴卡！所有人要請他喝飲料（上限 100 元）
                 </div>
               ))}
               {pts.filter(p=>p.cardUsed==="extra_number" && p.number2 && !p.birthdayNumbers?.length).map((p,i) => (
-                <div key={i} style={{padding:"12px 16px",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#166534"}}>
+                <div key={i} style={{padding:"12px 16px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-green-tx)"}}>
                   ➕ <strong>{p.name}</strong> 使用了加號卡，本局選了 2 個號碼：#{p.number}、#{p.number2}
                 </div>
               ))}
               {pts.filter(p=>p.birthdayNumbers?.length>0).map((p,i) => (
-                <div key={i} style={{padding:"12px 16px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"#9D174D"}}>
+                <div key={i} style={{padding:"12px 16px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-pink-tx)"}}>
                   🎂 <strong>{p.name}</strong> 今天生日，本局選了 {1+(p.birthdayNumbers?.length||0)+(p.number2?1:0)} 個號碼：{[p.number,...(p.birthdayNumbers||[]),...(p.number2?[p.number2]:[])].map(n=>`#${n}`).join("、")}
                 </div>
               ))}
