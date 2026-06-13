@@ -2021,6 +2021,23 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // ?testresult：直接跳到開獎結果頁預覽，資料為假資料
+    if (new URLSearchParams(location.search).has("testresult")) {
+      const fakePts = [
+        { id:"t1", name:"壽星測試", number:42, birthdayNumbers:[15,27,63,88], cardUsed:"extra_number", number2:5, rest:"一幸拉麵", category:"日式" },
+        { id:"t2", name:"一般玩家", number:30, rest:"好友雞肉", category:"台式麵飯" },
+        { id:"t3", name:"另一位", number:17, rest:"速食店", category:"速食" },
+      ];
+      const drawn = 42;
+      const res = determineResultWithCards(fakePts, drawn);
+      setPts(fakePts);
+      setSess({ deadline:"11:50", date:todayStr(), numMax:99 });
+      setResult(res ? {...res, drawnNumber: drawn} : { drawnNumber: drawn, winner: fakePts[0], soloWin: true, sorted: fakePts });
+      setTodayBirthdays([{ uid:"fake", name:"壽星測試" }]);
+      setPhase("results");
+      return;
+    }
+
     Promise.all([fGet("session"),fGet("participants"),fGet("absent")]).then(async ([s,ptsObj,absentObj]) => {
       const today = todayStr();
       await initCardSystem(); // 補齊新增的卡種
