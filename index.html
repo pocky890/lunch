@@ -1542,7 +1542,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span>
               <span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
                 {name}
-                {chosenKey && (() => { const a = ACHIEVEMENTS.find(x => x.key === chosenKey); return a ? <span style={{fontSize:"10px",fontWeight:"500",color:"var(--t3)",background:"var(--b1)",borderRadius:"4px",padding:"1px 6px"}}>{a.emoji} {a.name}</span> : null; })()}
+                {chosenKey && (() => { const a = ACHIEVEMENTS.find(x => x.key === chosenKey); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
               {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
