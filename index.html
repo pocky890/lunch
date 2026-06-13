@@ -341,6 +341,22 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
+  const ACHIEVEMENTS = [
+    { key:"join50",   emoji:"🎮", name:"常客",           desc:"參與 50 次",              rarity:1 },
+    { key:"join100",  emoji:"🏅", name:"資深玩家",       desc:"參與 100 次",             rarity:2 },
+    { key:"join300",  emoji:"💎", name:"老鳥",           desc:"參與 300 次",             rarity:3 },
+    { key:"join1000", emoji:"🐉", name:"傳說",           desc:"參與 1000 次",            rarity:4 },
+    { key:"solo1",    emoji:"🎯", name:"命中",           desc:"累積 1 次獨贏",           rarity:1 },
+    { key:"solo3",    emoji:"✨", name:"天選之人",       desc:"累積 3 次獨贏",           rarity:2 },
+    { key:"solo10",   emoji:"👑", name:"神射手",         desc:"累積 10 次獨贏",          rarity:4 },
+    { key:"streak5",  emoji:"🔥", name:"連勝王",         desc:"達成 5 連勝",             rarity:3 },
+    { key:"streak10", emoji:"💥", name:"無敵",           desc:"達成 10 連勝",            rarity:4 },
+    { key:"lose30",   emoji:"💀", name:"冥燈",           desc:"連續 30 次未中獎",        rarity:3 },
+    { key:"lose50",   emoji:"👻", name:"幽靈",           desc:"連續 50 次未中獎",        rarity:4 },
+    { key:"lose100",  emoji:"🌑", name:"黑洞",           desc:"連續 100 次未中獎",       rarity:5 },
+    { key:"luckyDay", emoji:"🎰", name:"Lucky Day 英雄", desc:"在 Lucky Day 中獎",       rarity:2 },
+    { key:"birthday", emoji:"🎂", name:"生日禮物",       desc:"生日當天中獎",            rarity:3 },
+  ];
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -542,6 +558,36 @@ function computeLoserStreak(weekly, name, today) {
     count++;
   }
   return count;
+}
+
+function computeAchievements(name, weeklyData, participationCount) {
+  const recs = Object.entries(weeklyData || {}).sort(([a],[b]) => a < b ? -1 : 1).map(([,r]) => r).filter(Boolean);
+  const soloWins = recs.filter(r => r.winner === name && r.soloWin).length;
+  const maxStreak = recs.reduce((m, r) => r.winner === name && !r.soloWin && r.streak ? Math.max(m, r.streak) : m, 0);
+  let maxLose = 0, curLose = 0;
+  recs.forEach(r => {
+    if (r.noParticipants) return;
+    if (r.winner === name) { curLose = 0; } else { curLose++; maxLose = Math.max(maxLose, curLose); }
+  });
+  const luckyDay = recs.some(r => r.winner === name && r.specialDay);
+  const bdWin    = recs.some(r => r.birthdayWinner === name);
+  const pc = participationCount || 0;
+  const unlocked = [];
+  if (pc >= 50)        unlocked.push("join50");
+  if (pc >= 100)       unlocked.push("join100");
+  if (pc >= 300)       unlocked.push("join300");
+  if (pc >= 1000)      unlocked.push("join1000");
+  if (soloWins >= 1)   unlocked.push("solo1");
+  if (soloWins >= 3)   unlocked.push("solo3");
+  if (soloWins >= 10)  unlocked.push("solo10");
+  if (maxStreak >= 5)  unlocked.push("streak5");
+  if (maxStreak >= 10) unlocked.push("streak10");
+  if (maxLose >= 30)   unlocked.push("lose30");
+  if (maxLose >= 50)   unlocked.push("lose50");
+  if (maxLose >= 100)  unlocked.push("lose100");
+  if (luckyDay)        unlocked.push("luckyDay");
+  if (bdWin)           unlocked.push("birthday");
+  return unlocked;
 }
 
 function managedToRests(managed) {
@@ -1361,7 +1407,7 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   );
 }
 
-function PtList({list, absent = [], hideNumbers = false, weekly = {}}) {
+function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles = {}}) {
   const empty = (!list || list.length === 0) && absent.length === 0;
   if (empty) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
   return (
@@ -1374,7 +1420,10 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}}) {
         return (
           <div key={p.id||i} className="pt-row" style={{background:ramp.bg,borderColor:ramp.bd}}>
             <div style={{width:"24px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
-            <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"8px"}}>{p.name}</span>
+            <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"8px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+              {(() => { const a = ACHIEVEMENTS.find(x => x.key === userTitles[sanitizeKey(p.name)]); return a ? <span style={{fontSize:"10px",fontWeight:"500",opacity:0.8,flexShrink:0,background:"rgba(0,0,0,0.12)",borderRadius:"4px",padding:"1px 5px"}}>{a.emoji} {a.name}</span> : null; })()}
+            </span>
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.rest}</span>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
           </div>
@@ -1442,8 +1491,10 @@ function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
   );
 }
 
-function StatsPanel({weekly, isDark}) {
+function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleChange}) {
   const chartRef = useRef(null); const chartInstanceRef = useRef(null);
+  const [participationCounts, setParticipationCounts] = useState({});
+  useEffect(() => { fGet("participationCount").then(d => setParticipationCounts(d || {})); }, []);
 
   const allRecords = Object.entries(weekly);
 
@@ -1478,7 +1529,39 @@ function StatsPanel({weekly, isDark}) {
   return (
     <div style={{marginTop:"24px",display:"flex",flexDirection:"column",gap:"16px"}}>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>Top 10 店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
-      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>個人戰績 (持續統計)</p>{sortedPersonal.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : sortedPersonal.map(([name, stat], i) => (<div key={name} style={{display:"flex",alignItems:"center",padding:"10px 12px",borderRadius:"var(--r)",border:"1px solid var(--b1)",background:"var(--s3)",marginBottom:"6px"}}><span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span><span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px"}}>{name}</span><span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)"}}>{stat.wins} 勝</span>{stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px"}}>🎯 獨贏 {stat.soloWins}</span>}</div>))}</div>
+      <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>個人戰績 (持續統計)</p>{sortedPersonal.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : sortedPersonal.map(([name, stat], i) => {
+        const sKey = sanitizeKey(name);
+        const unlocked = computeAchievements(name, weekly, participationCounts[sKey] || 0);
+        const chosenKey = userTitles[sKey];
+        const isMe = name === boundName;
+        return (
+          <div key={name} style={{padding:"10px 12px",borderRadius:"var(--r)",border:"1px solid var(--b1)",background:"var(--s3)",marginBottom:"6px"}}>
+            <div style={{display:"flex",alignItems:"center"}}>
+              <span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span>
+              <span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
+                {name}
+                {chosenKey && (() => { const a = ACHIEVEMENTS.find(x => x.key === chosenKey); return a ? <span style={{fontSize:"10px",fontWeight:"500",color:"var(--t3)",background:"var(--b1)",borderRadius:"4px",padding:"1px 6px"}}>{a.emoji} {a.name}</span> : null; })()}
+              </span>
+              <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
+              {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
+            </div>
+            {unlocked.length > 0 && (
+              <div style={{marginTop:"8px",marginLeft:"30px",display:"flex",flexWrap:"wrap",gap:"4px"}}>
+                {unlocked.map(key => {
+                  const a = ACHIEVEMENTS.find(x => x.key === key);
+                  const isChosen = chosenKey === key;
+                  return <span key={key} title={`${a.desc}${isMe ? (isChosen ? "（點擊取消）" : "（點擊選為稱號）") : ""}`}
+                    onClick={isMe ? () => onTitleChange(isChosen ? null : key) : undefined}
+                    style={{fontSize:"10px",padding:"2px 7px",borderRadius:"4px",border:`1px solid ${isChosen?"var(--a)":"var(--b1)"}`,background:isChosen?"var(--a-dim, rgba(99,102,241,0.12))":"var(--bg)",color:isChosen?"var(--a)":"var(--t3)",cursor:isMe?"pointer":"default",fontWeight:isChosen?"700":"400"}}>
+                    {a.emoji} {a.name}
+                  </span>;
+                })}
+                {isMe && <span style={{fontSize:"10px",color:"var(--t3)",alignSelf:"center",marginLeft:"2px"}}>← 點選設為稱號</span>}
+              </div>
+            )}
+          </div>
+        );
+      })}</div>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>獨贏紀錄 (持續統計)</p>{sortedSolo.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無獨贏紀錄</p> : sortedSolo.map(([name, dates]) => (<div key={name} style={{display:"flex",alignItems:"flex-start",gap:"16px",marginBottom:"16px"}}><div style={{minWidth:"80px",flexShrink:0}}><div style={{fontSize:"16px",fontWeight:"600",color:"var(--t1)"}}>{name}</div><div style={{fontSize:"13px",fontWeight:"600",color:"var(--amber)",marginTop:"2px"}}>{dates.length} 次</div></div><div style={{flex:1,display:"flex",flexWrap:"wrap",gap:"6px",paddingTop:"2px"}}>{[...dates].sort().map(d => { const [,mm,dd] = d.split("-"); return <span key={d} className="badge badge-gold">{parseInt(mm)}/{parseInt(dd)}</span>; })}</div></div>))}</div>
     </div>
   );
@@ -1566,7 +1649,7 @@ function HistoryModal({ weekly, onClose }) {
   );
 }
 
-function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory, isAdmin}) {
+function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory, isAdmin, userTitles, boundName, onTitleChange}) {
   const [showClearModal, setShowClearModal] = useState(false);
   const [targetDate, setTargetDate] = useState(null);
 
@@ -1632,7 +1715,7 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
           </div>
         );
       })}
-      {showStats && <StatsPanel weekly={weekly} isDark={isDark} />}
+      {showStats && <StatsPanel weekly={weekly} isDark={isDark} userTitles={userTitles} boundName={boundName} onTitleChange={onTitleChange} />}
     </div>
   );
 }
@@ -1827,6 +1910,7 @@ function App() {
   const [absent, setAbsent] = useState([]);
   const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
   const [showBirthdayModal, setShowBirthdayModal] = useState(false);
+  const [userTitles, setUserTitles] = useState({});
 
   // ✨ 確保 Loading 與 Toast 正常運作
   const [isLoading, setIsLoading] = useState(false);
@@ -1911,6 +1995,14 @@ function App() {
   useEffect(() => {
     const ref = fRef("cardPool");
     const handler = snap => setCardPool(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  // 稱號即時監聽
+  useEffect(() => {
+    const ref = fRef("userTitles");
+    const handler = snap => setUserTitles(snap.val() || {});
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
@@ -2206,7 +2298,8 @@ function App() {
       }
     }
     const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) : 50;
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true})};
+    const isBirthdayWinner = todayBirthdays.some(b => b.name === result.winner.name);
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(isBirthdayWinner && {birthdayWinner: result.winner.name})};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
@@ -2371,6 +2464,7 @@ function App() {
       } else {
         const newRef = fRef("participants").push();
         await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
+        await fRef(`participationCount/${sanitizeKey(name)}`).transaction(n => (n || 0) + 1);
       }
       if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
 
@@ -2445,6 +2539,11 @@ function App() {
 
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
   async function confirmReset() { setConfirmModal(false); await doReset(); }
+  async function handleTitleChange(key) {
+    const sKey = sanitizeKey(boundName);
+    if (!key) { await fRef(`userTitles/${sKey}`).remove(); }
+    else { await fSet(`userTitles/${sKey}`, key); }
+  }
 
 
   const numMax = sess?.numMax || 99;
@@ -2503,7 +2602,7 @@ function App() {
               {isLoading ? "處理中..." : "建立遊戲"}
             </button>
           </div>
-          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div>
+          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -2525,7 +2624,7 @@ function App() {
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} />
             </div>
           </div>
           <div className="col">
@@ -2602,7 +2701,7 @@ function App() {
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -2629,11 +2728,11 @@ function App() {
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
                 <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
+                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} />
               </div>
             </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={handleCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
-            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
+            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} /></div>
           </div>
         </div>
         <Footer />
@@ -2653,7 +2752,7 @@ function App() {
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} />
             </div>
           </div>
           <div className="col">
@@ -2664,7 +2763,7 @@ function App() {
               <button onClick={doCancelAbsent} className="ghost">改變心意，我要參加！</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} /></div>
         </div>
       </div>
       <Footer />
@@ -2683,7 +2782,7 @@ function App() {
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
-          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
+          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
       </div>
@@ -2723,7 +2822,7 @@ function App() {
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} /></div>
+              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} /></div>
             </div>
             <div className="layout-main">
               <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className="result-number">{drawnNumber}</div></div>
