@@ -349,12 +349,13 @@
     { key:"solo1",    emoji:"🎯", name:"命中",           desc:"累積 1 次獨贏",           rarity:1 },
     { key:"solo3",    emoji:"✨", name:"天選之人",       desc:"累積 3 次獨贏",           rarity:2 },
     { key:"solo10",   emoji:"👑", name:"神射手",         desc:"累積 10 次獨贏",          rarity:4 },
+    { key:"streak3",  emoji:"⚡", name:"三連勝",         desc:"達成 3 連勝",             rarity:2 },
     { key:"streak5",  emoji:"🔥", name:"連勝王",         desc:"達成 5 連勝",             rarity:3 },
-    { key:"streak10", emoji:"💥", name:"無敵",           desc:"達成 10 連勝",            rarity:4 },
+    { key:"streak10", emoji:"⭐", name:"超級幸運星",     desc:"達成 10 連勝",            rarity:4 },
     { key:"lose30",   emoji:"💀", name:"冥燈",           desc:"連續 30 次未中獎",        rarity:3 },
     { key:"lose50",   emoji:"👻", name:"幽靈",           desc:"連續 50 次未中獎",        rarity:4 },
     { key:"lose100",  emoji:"🌑", name:"黑洞",           desc:"連續 100 次未中獎",       rarity:5 },
-    { key:"luckyDay", emoji:"🎰", name:"Lucky Day 英雄", desc:"在 Lucky Day 中獎",       rarity:2 },
+    { key:"luckyDay", emoji:"🎰", name:"Lucky",          desc:"在 Lucky Day 中獎",       rarity:2 },
     { key:"birthday", emoji:"🎂", name:"生日禮物",       desc:"生日當天中獎",            rarity:3 },
   ];
 </script>
@@ -580,6 +581,7 @@ function computeAchievements(name, weeklyData, participationCount) {
   if (soloWins >= 1)   unlocked.push("solo1");
   if (soloWins >= 3)   unlocked.push("solo3");
   if (soloWins >= 10)  unlocked.push("solo10");
+  if (maxStreak >= 3)  unlocked.push("streak3");
   if (maxStreak >= 5)  unlocked.push("streak5");
   if (maxStreak >= 10) unlocked.push("streak10");
   if (maxLose >= 30)   unlocked.push("lose30");
