@@ -1554,7 +1554,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
                   const isChosen = chosenKey === key;
                   return <span key={key} title={`${a.desc}${isMe ? (isChosen ? "（點擊取消）" : "（點擊選為稱號）") : ""}`}
                     onClick={isMe ? () => onTitleChange(isChosen ? null : key) : undefined}
-                    style={{fontSize:"10px",padding:"2px 7px",borderRadius:"4px",border:`1px solid ${isChosen?"var(--a)":"var(--b1)"}`,background:isChosen?"var(--a-dim, rgba(99,102,241,0.12))":"var(--bg)",color:isChosen?"var(--a)":"var(--t3)",cursor:isMe?"pointer":"default",fontWeight:isChosen?"700":"400"}}>
+                    style={{fontSize:"12px",padding:"2px 7px",borderRadius:"5px",border:`1px solid ${isChosen?"rgba(124,58,237,0.7)":"rgba(124,58,237,0.35)"}`,background:isChosen?"rgba(124,58,237,0.25)":"rgba(124,58,237,0.15)",color:isChosen?"var(--t1)":"var(--t1)",cursor:isMe?"pointer":"default",fontWeight:isChosen?"700":"500",outline:isChosen?"2px solid rgba(124,58,237,0.4)":"none",outlineOffset:"1px"}}>
                     {a.emoji} {a.name}
                   </span>;
                 })}
