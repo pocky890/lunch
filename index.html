@@ -1781,7 +1781,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose 
 
   return (
     <div className="modal-bg" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="card fade-up" style={{width:"420px",maxWidth:"95vw"}}>
+      <div className="card fade-up" style={{width:"420px",maxWidth:"95vw",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
         <div style={{display:"flex",alignItems:"center",marginBottom:"20px"}}>
           <h2 style={{flex:1,fontSize:"18px"}}>🏆 我的成就</h2>
           <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
@@ -1793,7 +1793,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose 
             : <span style={{fontSize:"14px",color:"var(--t3)"}}>尚未選擇，點選下方成就來設定</span>
           }
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:"6px",overflowY:"auto",flex:1}}>
           {ACHIEVEMENTS.map(a => {
             const isUnlocked = unlocked.has(a.key);
             const isChosen = chosenKey === a.key;
