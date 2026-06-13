@@ -1621,6 +1621,7 @@ function App() {
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
+  const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
   const [cheapskateUsers, setCheapskateUsers] = useState([]);
 
@@ -2007,7 +2008,8 @@ function App() {
         : {};
 
       if (myEntry) {
-        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest, number:num, cardUsed:null, number2:null, ...cardExtra});
+        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest});
+        setIsEditing(false);
       } else {
         const newRef = fRef("participants").push();
         await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra});
@@ -2082,6 +2084,7 @@ function App() {
     const myEntry = pts.find(p => p.name === form.name);
     if (myEntry) await fRef(`participants/${myEntry.id}`).remove();
     try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
+    setIsEditing(false);
     setPhase("join");
   }
 
@@ -2168,40 +2171,47 @@ function App() {
               <label>餐廳類型</label>
               <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
               {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                <label style={{margin:0}}>選一個號碼（1 ~ {numMax}）</label>
-                <button className="ghost btn-sm" title="隨機選號" onClick={()=>{
-                  const taken = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
-                  const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
-                  if (available.length===0) return;
-                  const pick = available[Math.floor(Math.random()*available.length)];
-                  setForm(f=>({...f,number:String(pick)})); setNumWarn("");
-                }}>🎲 隨機</button>
-              </div>
-              <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
-              {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
-              {(() => {
-                const activeCard = myCards.find(c => c.id === cardToUse);
-                if (activeCard?.type === "extra_number") return (
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                      <label style={{margin:0}}>第二個號碼（1 ~ {numMax}）</label>
-                      <button className="ghost btn-sm" onClick={()=>{
-                        const taken = new Set([...takenNums.filter(x=>x.name!==form.name).map(x=>x.num), parseInt(form.number)].filter(Boolean));
-                        const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
-                        if (available.length===0) return;
-                        setNumber2(String(available[Math.floor(Math.random()*available.length)]));
-                      }}>🎲 隨機</button>
+              {isEditing ? (
+                <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
+                  號碼已鎖定：<strong style={{color:"var(--t1)"}}>#{form.number}</strong>
+                  <span style={{fontSize:"12px",color:"var(--t3)",marginLeft:"8px"}}>修改時只能換餐廳</span>
+                </div>
+              ) : (<>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+                  <label style={{margin:0}}>選一個號碼（1 ~ {numMax}）</label>
+                  <button className="ghost btn-sm" title="隨機選號" onClick={()=>{
+                    const taken = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
+                    const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
+                    if (available.length===0) return;
+                    const pick = available[Math.floor(Math.random()*available.length)];
+                    setForm(f=>({...f,number:String(pick)})); setNumWarn("");
+                  }}>🎲 隨機</button>
+                </div>
+                <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={form.number} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,3);setForm({...form,number:v});setNumWarn("");}} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
+                {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
+                {(() => {
+                  const activeCard = myCards.find(c => c.id === cardToUse);
+                  if (activeCard?.type === "extra_number") return (
+                    <div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+                        <label style={{margin:0}}>第二個號碼（1 ~ {numMax}）</label>
+                        <button className="ghost btn-sm" onClick={()=>{
+                          const taken = new Set([...takenNums.filter(x=>x.name!==form.name).map(x=>x.num), parseInt(form.number)].filter(Boolean));
+                          const available = Array.from({length:numMax},(_,i)=>i+1).filter(n=>!taken.has(n));
+                          if (available.length===0) return;
+                          setNumber2(String(available[Math.floor(Math.random()*available.length)]));
+                        }}>🎲 隨機</button>
+                      </div>
+                      <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={number2} onChange={e=>setNumber2(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
                     </div>
-                    <div className="num-input-wrap"><span className="num-prefix">#</span><input type="text" inputMode="numeric" maxLength={3} value={number2} onChange={e=>setNumber2(e.target.value.replace(/\D/g,"").slice(0,3))} placeholder={`1 ~ ${numMax}`} style={{marginBottom:"8px"}} /></div>
-                  </div>
-                );
-                return null;
-              })()}
-              {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); }} />}
+                  );
+                  return null;
+                })()}
+                {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); }} />}
+              </>)}
               <div className="divider" />
               <button onClick={doJoin} disabled={isLoading}>
-                {isLoading ? "處理中..." : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
+                {isLoading ? "處理中..." : isEditing ? "確認修改" : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
               </button>
               {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}}>重新設定時間</button>}
               <div className="divider" />
@@ -2217,7 +2227,7 @@ function App() {
   );
 
   if (phase==="joined") {
-    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setCardToUse(""); setNumber2(""); setPhase("join"); }
+    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setCardToUse(""); setNumber2(""); setIsEditing(true); setPhase("join"); }
     return (
       <div>
         {AP}
