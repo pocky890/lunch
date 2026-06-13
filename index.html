@@ -721,7 +721,7 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
 }
 
 /* ── Admin Panel ── */
-function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, sess, onAuth, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax }) {
+function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
   const [newRest, setNewRest] = React.useState("");
@@ -741,18 +741,6 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
   const [settingsMsg, setSettingsMsg] = React.useState("");
   const today = todayStr(), todayRec = weekly[today];
   if (!open) return null;
-
-  if (!auth) return (
-    <div className="modal-bg">
-      <div className="card fade-up" style={{width:"340px",maxWidth:"90vw"}}>
-        <div style={{marginBottom:"20px"}}><h2 style={{fontSize:"18px",marginBottom:"6px"}}>管理員面板</h2><p>輸入密碼進入管理介面</p></div>
-        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onAuth(pw)} placeholder="輸入密碼" autoFocus />
-        {pwErr && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"-8px",marginBottom:"12px"}}>{pwErr}</p>}
-        <button onClick={()=>onAuth(pw)}>確認</button>
-        <button className="ghost" onClick={onClose}>取消</button>
-      </div>
-    </div>
-  );
 
   const catRests = rests[cat] || [];
   async function handleAdd() { const n=newRest.trim(); if(!n)return; await onAddRest(cat,n); setNewRest(""); }
@@ -2044,7 +2032,7 @@ function App() {
     {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
     {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
-    <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} />
+    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} />
   </>;
 
   if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
