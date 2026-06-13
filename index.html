@@ -812,6 +812,8 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
 function MembersTab() {
   const [members, setMembers] = React.useState([]); // [{uid, name, birthday, resigned}]
   const [msg, setMsg] = React.useState("");
+  const [editingBirthday, setEditingBirthday] = React.useState(null); // uid
+  const [bdInput, setBdInput] = React.useState("");
 
   React.useEffect(() => {
     async function load() {
@@ -829,6 +831,16 @@ function MembersTab() {
     }
     load();
   }, []);
+
+  async function saveBirthday(uid) {
+    const val = bdInput.trim();
+    const valid = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(val);
+    if (!valid) { setMsg("格式錯誤，請輸入 MM-DD"); setTimeout(() => setMsg(""), 3000); return; }
+    await fSet(`userBirthdays/${uid}`, val);
+    setMembers(prev => prev.map(m => m.uid === uid ? {...m, birthday: val} : m));
+    setEditingBirthday(null);
+    setMsg("生日已更新 ✓"); setTimeout(() => setMsg(""), 3000);
+  }
 
   async function toggleResigned(uid, currentlyResigned) {
     if (currentlyResigned) {
@@ -870,7 +882,14 @@ function MembersTab() {
         {members.map(m => (
           <div key={m.uid} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",alignItems:"center",borderTop:"1px solid var(--b1)",opacity:m.resigned?0.5:1}}>
             <span style={{fontSize:"13px",color:"var(--t1)"}}>{m.name}</span>
-            <span style={{fontSize:"12px",color:"var(--t3)",textAlign:"center"}}>{m.birthday}</span>
+            {editingBirthday === m.uid
+              ? <span style={{display:"flex",alignItems:"center",gap:"4px",justifyContent:"center"}}>
+                  <input value={bdInput} onChange={e=>setBdInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveBirthday(m.uid);if(e.key==="Escape")setEditingBirthday(null);}} placeholder="MM-DD" style={{width:"58px",fontSize:"12px",padding:"2px 4px",borderRadius:"4px",border:"1px solid var(--a)",background:"var(--bg)",color:"var(--t1)",textAlign:"center"}} autoFocus />
+                  <button className="ghost" style={{fontSize:"12px",padding:"1px 4px"}} onClick={()=>saveBirthday(m.uid)}>✓</button>
+                  <button className="ghost" style={{fontSize:"12px",padding:"1px 4px"}} onClick={()=>setEditingBirthday(null)}>✗</button>
+                </span>
+              : <span style={{fontSize:"12px",color:"var(--t3)",textAlign:"center",cursor:"pointer",textDecoration:"underline dotted"}} title="點擊修改生日" onClick={()=>{setEditingBirthday(m.uid);setBdInput(m.birthday==="－"?"":m.birthday);}}>{m.birthday}</span>
+            }
             <button className={`ghost btn-sm${m.resigned?" btn-danger":""}`}
               style={{fontSize:"11px",padding:"3px 8px",margin:"0 auto"}}
               onClick={() => toggleResigned(m.uid, m.resigned)}>
