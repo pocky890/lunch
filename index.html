@@ -2205,6 +2205,13 @@ function App() {
       setTodayBirthdays([{ uid:"fake", name:"壽星玩家" }]);
       setCheapskateUsers(["免付卡玩家"]);
       setAwardedCards([{ name:"加號卡玩家", type:"extra_number" }, { name:"一般玩家", type:"streak_protect" }]);
+      setUserTitles({
+        [sanitizeKey("最接近玩家")]: "streak5",
+        [sanitizeKey("壽星玩家")]:   "birthday",
+        [sanitizeKey("一般玩家")]:   "lose30",
+        [sanitizeKey("加號卡玩家")]: "solo3",
+        [sanitizeKey("免付卡玩家")]: "join100",
+      });
       setPhase("results");
       return;
     }
