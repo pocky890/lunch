@@ -38,6 +38,31 @@ async function fbSet(path, value) {
   });
 }
 
+// 讀取值與其 ETag（用於 compare-and-swap）
+async function fbGetWithEtag(path) {
+  const res = await fetch(`${FIREBASE_BASE}/${path}.json`, {
+    headers: { "X-Firebase-ETag": "true" },
+  });
+  return { value: await res.json(), etag: res.headers.get("ETag") };
+}
+
+// 條件寫入：僅當 ETag 仍相符（值未被他人改動）時才寫入。
+// 回傳 true 表示本次成功寫入；false 表示已被搶先（412）。
+// 若無法取得 ETag（fallback），退回非原子寫入以確保安全網不失效。
+async function fbSetIfMatch(path, value, etag) {
+  if (!etag) { await fbSet(path, value); return true; }
+  const res = await fetch(`${FIREBASE_BASE}/${path}.json`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "if-match": etag },
+    body: JSON.stringify(value),
+  });
+  if (res.status === 200) return true;
+  if (res.status === 412) return false; // 已被瀏覽器或另一實例搶先寫入
+  // 非預期狀態：保守退回非原子寫入，避免安全網完全失效
+  await fbSet(path, value);
+  return true;
+}
+
 async function fbPost(path, value) {
   await fetch(`${FIREBASE_BASE}/${path}.json`, {
     method: "POST",
@@ -120,9 +145,11 @@ async function main() {
   const pts = Object.values(ptsObj || {}).sort((a, b) => a.joinedAt - b.joinedAt);
   if (pts.length < 2) {
     console.log(`Only ${pts.length} participant(s), sending no-participants notification`);
-    const alreadySent = await fbGet(`weekly/${today}`);
-    if (alreadySent) { console.log("No-participants notification already sent, skip"); return; }
-    await fbSet(`weekly/${today}`, { noParticipants: true });
+    // CAS：僅當 weekly 仍為空時才寫入並送通知，避免與瀏覽器/另一實例重複
+    const { value: cur0, etag: etag0 } = await fbGetWithEtag(`weekly/${today}`);
+    if (cur0 !== null) { console.log("Result already exists, skip"); return; }
+    const wrote0 = await fbSetIfMatch(`weekly/${today}`, { noParticipants: true }, etag0);
+    if (!wrote0) { console.log("Lost race for no-participants write, skip"); return; }
     const absentObj0 = await fbGet("absent");
     const absentNames0 = Object.values(absentObj0 || {}).map(v => typeof v === "object" ? v.name : v);
     await fetch(WEBHOOK_URL, {
@@ -166,8 +193,8 @@ async function main() {
     }
   }
 
-  // 6. 再次確認 weekly 沒被瀏覽器搶先寫入
-  const doubleCheck = await fbGet(`weekly/${today}`);
+  // 6. 再次確認 weekly 沒被瀏覽器搶先寫入（CAS，取得 ETag 供條件寫入）
+  const { value: doubleCheck, etag: weeklyEtag } = await fbGetWithEtag(`weekly/${today}`);
   if (doubleCheck) { console.log("Browser just wrote the result, skip"); return; }
 
   // 7. 計算連勝並寫入 weekly
@@ -193,7 +220,9 @@ async function main() {
     ...(result.followRestUser && { followRestUser: result.followRestUser }),
     ...(isDoubleDay(today) && { specialDay: true }),
   };
-  await fbSet(`weekly/${today}`, rec);
+  // CAS 寫入：若在計算期間被瀏覽器/另一實例搶先寫入，則放棄並不送通知
+  const wrote = await fbSetIfMatch(`weekly/${today}`, rec, weeklyEtag);
+  if (!wrote) { console.log("Lost race for weekly write, skip notification"); return; }
   console.log(`Written weekly/${today}:`, rec);
 
   // 8. 發卡牌（每位參加者的號碼都檢查）
