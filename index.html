@@ -2302,14 +2302,6 @@ function App() {
     || new URLSearchParams(location.search).has("birthday");
   const takenNums = pts.map(p=>({num:p.number,name:p.name})).filter(x=>x.num);
 
-  const AP = <>
-    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
-    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} />}
-    {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
-    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
-    {birthdayModal}
-  </>;
-
   if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
   if (authState === "login") return <LoginScreen isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} />;
   if (authState === "setname") return <SetNameScreen user={currentUser} isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
@@ -2317,6 +2309,14 @@ function App() {
   const birthdayModal = showBirthdayModal && currentUser
     ? <BirthdaySetModal uid={currentUser.uid} onClose={()=>setShowBirthdayModal(false)} />
     : null;
+
+  const AP = <>
+    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
+    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} />}
+    {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
+    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
+    {birthdayModal}
+  </>;
 
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
