@@ -301,12 +301,20 @@
     : "https://epf-agent.perfectcorp.com/webhook/5f40c259-b592-4748-9c8e-c9456efd7de7";
   const CWA_API_KEY = "CWA-C4D8DB72-C4BF-4D05-A34F-E9C7FE178D38";
   const CARD_TYPES = {
-    follow_restaurant: { name:"跟著我吃卡", emoji:"🍽️", desc:"當日餐廳由你決定，無視開獎結果", expireDays:30, total:3 },
-    extra_number:      { name:"加號卡",     emoji:"➕",  desc:"多選一個號碼，取最接近者",     expireDays:30, total:5 },
-    streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄", expireDays:90, total:5 },
-    reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼", expireDays:60, total:5 },
-    steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌",         expireDays:30, total:3 },
-    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額",        expireDays:60, total:1 },
+    follow_restaurant: { name:"跟著我吃卡", emoji:"🍽️", desc:"當日餐廳由你決定，無視開獎結果" },
+    extra_number:      { name:"加號卡",     emoji:"➕",  desc:"多選一個號碼，取最接近者"     },
+    streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄" },
+    reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼" },
+    steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
+    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
+  };
+  const CARD_DEFAULTS = {
+    follow_restaurant: { total:3, expireDays:30 },
+    extra_number:      { total:5, expireDays:30 },
+    streak_protect:    { total:5, expireDays:90 },
+    reveal_numbers:    { total:5, expireDays:60 },
+    steal_card:        { total:3, expireDays:30 },
+    cheapskate_card:   { total:1, expireDays:60 },
   };
 </script>
 
@@ -510,13 +518,33 @@ function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
 
 /* ── Card System ── */
 async function initCardSystem() {
-  const pool = await fGet("cardPool") || {};
-  const defaults = { follow_restaurant:3, extra_number:5, streak_protect:5, reveal_numbers:5, steal_card:3, cheapskate_card:1 };
-  const updates = {};
-  for (const [type, count] of Object.entries(defaults)) {
-    if (pool[type] === undefined) updates[type] = count;
+  // 初始化 cardConfig（只補缺少的）
+  const config = await fGet("cardConfig") || {};
+  const configUpdates = {};
+  for (const [type, def] of Object.entries(CARD_DEFAULTS)) {
+    if (!config[type]) { configUpdates[type] = def; }
+    else {
+      const upd = {};
+      if (config[type].total      === undefined) upd.total      = def.total;
+      if (config[type].expireDays === undefined) upd.expireDays = def.expireDays;
+      if (Object.keys(upd).length > 0) configUpdates[type] = { ...config[type], ...upd };
+    }
   }
-  if (Object.keys(updates).length > 0) await fRef("cardPool").update(updates);
+  if (Object.keys(configUpdates).length > 0) await fRef("cardConfig").update(configUpdates);
+
+  // 合併最終 config
+  const merged = {};
+  for (const type of Object.keys(CARD_DEFAULTS)) {
+    merged[type] = { ...CARD_DEFAULTS[type], ...(config[type] || {}), ...(configUpdates[type] || {}) };
+  }
+
+  // 初始化 cardPool（只補缺少的）
+  const pool = await fGet("cardPool") || {};
+  const poolUpdates = {};
+  for (const [type, cfg] of Object.entries(merged)) {
+    if (pool[type] === undefined) poolUpdates[type] = cfg.total;
+  }
+  if (Object.keys(poolUpdates).length > 0) await fRef("cardPool").update(poolUpdates);
 }
 
 async function ensureDailyCards(today) {
@@ -550,7 +578,8 @@ async function checkAndAwardCard(name, number, today) {
   });
   if (!claimed) return null;
   const type = entry.type;
-  const expMs = (CARD_TYPES[type]?.expireDays||30) * 86400000;
+  const cardCfg = await fGet(`cardConfig/${type}`);
+  const expMs = (cardCfg?.expireDays ?? CARD_DEFAULTS[type]?.expireDays ?? 30) * 86400000;
   const exp = new Date(Date.now()+expMs);
   const expiresAt = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
   const ref = fRef(`userCards/${sanitizeKey(name)}`).push();
@@ -648,7 +677,17 @@ function HelpModal({ onClose, numMax = 99 }) {
 }
 
 /* ── Card Help Modal ── */
-function CardHelpModal({ onClose }) {
+function CardHelpModal({ onClose, cardConfig = {} }) {
+  const cards = [
+    { type:"follow_restaurant", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
+    { type:"extra_number",      desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
+    { type:"streak_protect",    desc:"被動卡，無需手動操作。開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
+    { type:"reveal_numbers",    desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
+    { type:"steal_card",        desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
+    { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
+  ];
+  const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
+    Object.values(CARD_DEFAULTS).reduce((s, c) => s + c.total, 0);
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="card fade-up" style={{width:"460px",maxWidth:"95vw",maxHeight:"85vh",overflowY:"auto"}}>
@@ -658,25 +697,21 @@ function CardHelpModal({ onClose }) {
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
           <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
-            每天系統會將 <strong style={{color:"var(--t1)"}}>22 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
+            每天系統會將 <strong style={{color:"var(--t1)"}}>{totalCards} 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
           </div>
-          {[
-            { emoji:"🍽️", name:"跟著我吃卡", limit:"3 張 · 30 天", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
-            { emoji:"➕", name:"加號卡",       limit:"5 張 · 30 天", desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
-            { emoji:"🛡️", name:"連勝保護卡",  limit:"5 張 · 90 天", desc:"被動卡，無需手動操作。開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
-            { emoji:"👁️", name:"公開卡",      limit:"5 張 · 60 天", desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
-            { emoji:"🎭", name:"盜牌卡",      limit:"3 張 · 30 天", desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
-            { emoji:"🤑", name:"免付卡",      limit:"1 張 · 60 天", desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
-          ].map(c => (
-            <div key={c.name}>
+          {cards.map(c => {
+            const ct = CARD_TYPES[c.type];
+            const cfg = cardConfig[c.type] || CARD_DEFAULTS[c.type] || {};
+            return (
+            <div key={c.type}>
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
-                <span style={{fontSize:"18px"}}>{c.emoji}</span>
-                <span>{c.name}</span>
-                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{c.limit}</span>
+                <span style={{fontSize:"18px"}}>{ct.emoji}</span>
+                <span>{ct.name}</span>
+                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{cfg.total ?? "?"} 張 · {cfg.expireDays ?? "?"} 天</span>
               </div>
               <div>{c.desc}</div>
             </div>
-          ))}
+          )})}
           <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
             💡 卡牌池總量有限，用完就沒了。使用後卡牌歸還牌池，下次還有機會再抽到。未被領取的卡隔天重新分配位置。
           </div>
@@ -720,7 +755,7 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
 }
 
 /* ── Admin Panel ── */
-function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax }) {
+function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
   const [newRest, setNewRest] = React.useState("");
@@ -739,6 +774,15 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [settingsNumMax, setSettingsNumMax] = React.useState(String(sess?.numMax || 99));
   const [settingsMsg, setSettingsMsg] = React.useState("");
   const [resetCardMsg, setResetCardMsg] = React.useState("");
+  const [editConfig, setEditConfig] = React.useState({});
+  const [cardConfigMsg, setCardConfigMsg] = React.useState("");
+  React.useEffect(() => {
+    const merged = {};
+    for (const type of Object.keys(CARD_DEFAULTS)) {
+      merged[type] = { ...CARD_DEFAULTS[type], ...(cardConfig[type] || {}) };
+    }
+    setEditConfig(merged);
+  }, [cardConfig]);
   const today = todayStr(), todayRec = weekly[today];
   if (!open) return null;
 
@@ -919,18 +963,42 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                 {settingsMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"-4px"}}>{settingsMsg}</p>}
                 <div style={{height:"1px",background:"var(--b1)",margin:"20px 0"}} />
               </>}
-              <label>卡牌池</label>
-              <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"16px"}}>將卡牌池重置為說明書的標準數量（不影響玩家手上已持有的卡）</p>
-              <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",padding:"12px 16px",marginBottom:"12px",fontSize:"13px",color:"var(--t2)"}}>
-                {Object.entries({follow_restaurant:3,extra_number:5,streak_protect:5,reveal_numbers:5,steal_card:3,cheapskate_card:1}).map(([type,cnt]) => (
-                  <div key={type} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}>
-                    <span>{CARD_TYPES[type]?.emoji} {CARD_TYPES[type]?.name}</span>
-                    <strong>{cnt} 張</strong>
-                  </div>
-                ))}
+              <label>卡牌設定</label>
+              <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"12px"}}>調整每張卡的總量與有效天數。總量變動時，Pool 會自動補足差額（已發出的卡不受影響）。</p>
+              <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",overflow:"hidden",marginBottom:"12px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"8px 12px",background:"var(--s3)",fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase"}}>
+                  <span>卡牌</span><span style={{textAlign:"center"}}>總量</span><span style={{textAlign:"center"}}>有效天</span>
+                </div>
+                {Object.keys(CARD_DEFAULTS).map((type, idx) => {
+                  const ct = CARD_TYPES[type];
+                  const cfg = editConfig[type] || CARD_DEFAULTS[type];
+                  return (
+                    <div key={type} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",alignItems:"center",borderTop:"1px solid var(--b1)"}}>
+                      <span style={{fontSize:"13px",color:"var(--t1)"}}>{ct.emoji} {ct.name}</span>
+                      <input type="number" min="0" max="99" value={cfg.total ?? ""} onChange={e=>setEditConfig(prev=>({...prev,[type]:{...prev[type],total:parseInt(e.target.value)||0}}))}
+                        style={{marginBottom:0,padding:"4px 6px",fontSize:"13px",textAlign:"center",width:"64px",margin:"0 auto"}} />
+                      <input type="number" min="1" max="365" value={cfg.expireDays ?? ""} onChange={e=>setEditConfig(prev=>({...prev,[type]:{...prev[type],expireDays:parseInt(e.target.value)||1}}))}
+                        style={{marginBottom:0,padding:"4px 6px",fontSize:"13px",textAlign:"center",width:"64px",margin:"0 auto"}} />
+                    </div>
+                  );
+                })}
               </div>
-              <button className="ghost btn-danger" onClick={async()=>{await fSet("cardPool",{follow_restaurant:3,extra_number:5,streak_protect:5,reveal_numbers:5,steal_card:3,cheapskate_card:1});setResetCardMsg("已重置 ✓");setTimeout(()=>setResetCardMsg(""),2000);}} style={{width:"100%",marginBottom:0}}>重置卡牌池</button>
-              {resetCardMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"8px"}}>{resetCardMsg}</p>}
+              <button onClick={async()=>{
+                const configUpdates = {};
+                const poolUpdates = {};
+                for (const type of Object.keys(CARD_DEFAULTS)) {
+                  const newCfg = editConfig[type] || CARD_DEFAULTS[type];
+                  const oldTotal = (cardConfig[type]?.total ?? CARD_DEFAULTS[type].total);
+                  const oldPool  = cardPool[type] ?? 0;
+                  const delta = (newCfg.total ?? 0) - oldTotal;
+                  configUpdates[type] = newCfg;
+                  poolUpdates[type]   = Math.max(0, oldPool + delta);
+                }
+                await fRef("cardConfig").update(configUpdates);
+                await fRef("cardPool").update(poolUpdates);
+                setCardConfigMsg("已儲存 ✓"); setTimeout(()=>setCardConfigMsg(""),2000);
+              }} style={{marginBottom:"8px"}}>儲存卡牌設定</button>
+              {cardConfigMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"-4px"}}>{cardConfigMsg}</p>}
             </div>
           )}
           {tab==="record" && (
@@ -1545,6 +1613,7 @@ function App() {
   const [adminOpen, setAdminOpen] = useState(false);
 
   const [cardPool, setCardPool] = useState({});
+  const [cardConfig, setCardConfig] = useState({});
   const [myCards, setMyCards] = useState([]);
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
@@ -1595,6 +1664,14 @@ function App() {
   useEffect(() => {
     const ref = fRef("cardPool");
     const handler = snap => setCardPool(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  // Card config 即時監聽
+  useEffect(() => {
+    const ref = fRef("cardConfig");
+    const handler = snap => setCardConfig(snap.val() || {});
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
@@ -2025,9 +2102,9 @@ function App() {
 
   const AP = <>
     {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
-    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} />}
+    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
-    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} />
+    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
   </>;
 
   if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;

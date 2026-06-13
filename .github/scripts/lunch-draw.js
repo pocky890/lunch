@@ -5,12 +5,20 @@ const FIREBASE_BASE = "https://launch-fdd3a-default-rtdb.firebaseio.com/lunch";
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 const CARD_TYPES = {
-  follow_restaurant: { name:"跟著我吃卡", expireDays:30 },
-  extra_number:      { name:"加號卡",     expireDays:30 },
-  streak_protect:    { name:"連勝保護卡", expireDays:90 },
-  reveal_numbers:    { name:"公開卡",     expireDays:60 },
-  steal_card:        { name:"盜牌卡",     expireDays:30 },
-  cheapskate_card:   { name:"免付卡",     expireDays:60 },
+  follow_restaurant: { name:"跟著我吃卡" },
+  extra_number:      { name:"加號卡" },
+  streak_protect:    { name:"連勝保護卡" },
+  reveal_numbers:    { name:"公開卡" },
+  steal_card:        { name:"盜牌卡" },
+  cheapskate_card:   { name:"免付卡" },
+};
+const CARD_DEFAULTS = {
+  follow_restaurant: { expireDays:30 },
+  extra_number:      { expireDays:30 },
+  streak_protect:    { expireDays:90 },
+  reveal_numbers:    { expireDays:60 },
+  steal_card:        { expireDays:30 },
+  cheapskate_card:   { expireDays:60 },
 };
 
 function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
@@ -36,13 +44,13 @@ async function fbPost(path, value) {
   });
 }
 
-async function checkAndAwardCard(name, number, today) {
+async function checkAndAwardCard(name, number, today, cardConfig) {
   const entry = await fbGet(`dailyCards/${today}/${number}`);
   if (!entry || entry.pickedBy != null) return null;
   // Non-transactional claim — backup script is single-instance, low collision risk
   await fbSet(`dailyCards/${today}/${number}/pickedBy`, name);
   const type = entry.type;
-  const expDays = CARD_TYPES[type]?.expireDays || 30;
+  const expDays = cardConfig?.[type]?.expireDays ?? CARD_DEFAULTS[type]?.expireDays ?? 30;
   const exp = new Date(Date.now() + expDays * 86400000);
   const expiresAt = `${exp.getUTCFullYear()}-${String(exp.getUTCMonth()+1).padStart(2,"0")}-${String(exp.getUTCDate()).padStart(2,"0")}`;
   await fbPost(`userCards/${sanitizeKey(name)}`, { type, expiresAt, obtainedAt: today });
@@ -184,12 +192,13 @@ async function main() {
   console.log(`Written weekly/${today}:`, rec);
 
   // 8. 發卡牌（每位參加者的號碼都檢查）
+  const cardConfig = await fbGet("cardConfig") || {};
   const awardedCards = [];
   for (const p of pts) {
     const numbers = [p.number];
     if (p.cardUsed === "extra_number" && p.number2) numbers.push(p.number2);
     for (const n of numbers) {
-      const cardType = await checkAndAwardCard(p.name, n, today);
+      const cardType = await checkAndAwardCard(p.name, n, today, cardConfig);
       if (cardType) { awardedCards.push({ name: p.name, type: cardType }); break; }
     }
   }
