@@ -218,24 +218,19 @@
       border-radius: 50%; font-size: 16px; margin-bottom: 0; box-shadow: none; border: 1px solid var(--b1) !important; background: transparent !important;
     }
 
-    /* --- 「有更新」提示：脈動光暈 + NEW 紅點 --- */
-    .has-news { position: relative; animation: newsPulse 1.8s ease-in-out infinite; }
+    /* --- 「有更新」提示：整顆按鈕脈動光暈 + 靜態 NEW 紅點 --- */
+    .has-news { position: relative; animation: newsPulse 1.6s ease-in-out infinite; }
     .has-news::after {
       content: ""; position: absolute; top: -2px; right: -2px;
       width: 9px; height: 9px; border-radius: 50%;
       background: #FF3B30; border: 2px solid var(--bg);
-      animation: newsDot 1.8s ease-in-out infinite;
     }
     @keyframes newsPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0.45); }
-      50%      { box-shadow: 0 0 0 6px rgba(255,59,48,0); }
-    }
-    @keyframes newsDot {
-      0%, 100% { transform: scale(1);   opacity: 1; }
-      50%      { transform: scale(1.35); opacity: 0.7; }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0.55); }
+      50%      { box-shadow: 0 0 0 10px rgba(255,59,48,0); }
     }
     @media (prefers-reduced-motion: reduce) {
-      .has-news, .has-news::after { animation: none; }
+      .has-news { animation: none; }
     }
 
     /* --- 手動深色模式 (深海藍質感漸層) --- */
