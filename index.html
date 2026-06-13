@@ -219,6 +219,7 @@
     }
 
     /* --- 「有更新」提示：整顆按鈕脈動光暈 + 靜態 NEW 紅點 --- */
+    /* 用 filter:drop-shadow 而非 box-shadow，因 .ghost 的 box-shadow 帶 !important 會蓋過動畫 */
     .has-news { position: relative; animation: newsPulse 1.6s ease-in-out infinite; }
     .has-news::after {
       content: ""; position: absolute; top: -2px; right: -2px;
@@ -226,8 +227,8 @@
       background: #FF3B30; border: 2px solid var(--bg);
     }
     @keyframes newsPulse {
-      0%, 100% { box-shadow: 0 0 3px 1px rgba(255,59,48,0.25); }
-      50%      { box-shadow: 0 0 14px 5px rgba(255,59,48,0.85); }
+      0%, 100% { filter: drop-shadow(0 0 2px rgba(255,59,48,0.45)); }
+      50%      { filter: drop-shadow(0 0 9px rgba(255,59,48,0.95)); }
     }
     @media (prefers-reduced-motion: reduce) {
       .has-news { animation: none; }
