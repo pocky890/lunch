@@ -1829,13 +1829,13 @@ function App() {
       const [mm, dd] = [today.slice(5,7), today.slice(8,10)];
       const todayMMDD = `${mm}-${dd}`;
       const [birthdays, names, statuses] = await Promise.all([
-        fGet("userBirthdays") || {},
-        fGet("userNames") || {},
-        fGet("userStatus") || {},
+        fGet("userBirthdays"),
+        fGet("userNames"),
+        fGet("userStatus"),
       ]);
       const result = [];
       for (const [uid, mmdd] of Object.entries(birthdays || {})) {
-        if (mmdd === todayMMDD && (statuses[uid] !== "resigned") && names[uid]) {
+        if (mmdd === todayMMDD && ((statuses || {})[uid] !== "resigned") && (names || {})[uid]) {
           result.push({ uid, name: names[uid] });
         }
       }
@@ -2254,7 +2254,6 @@ function App() {
         if (entry) {
           await fRef(`participants/${entry[0]}`).remove();
           try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
-          setMyEntry(null);
         }
       }
       try { localStorage.setItem("lunch_absent_date", todayStr()); } catch(e) {}
