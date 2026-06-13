@@ -312,6 +312,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <div id="root"></div>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -323,7 +324,10 @@
 const { useState, useEffect, useRef } = React;
 
 firebase.initializeApp(FIREBASE_CONFIG);
-const db   = firebase.database();
+const db           = firebase.database();
+const auth         = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 const fRef = p => db.ref(`${DB_PREFIX}/${p}`);
 const fGet = p => fRef(p).once("value").then(s => s.val());
 const fSet = (p, v) => fRef(p).set(v);
@@ -941,7 +945,7 @@ function AdminPanel({ open, auth, pw, setPw, pwErr, rests, weekly, pts, absent, 
 }
 
 /* ── UI Components ── */
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   return (
     <div className="site-header">
@@ -966,6 +970,12 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           <button className="ghost theme-toggle" onClick={toggleDark} title="切換深淺色模式">
             {isDark ? "☀️" : "🌙"}
           </button>
+          {userName && (
+            <div style={{display:"flex",alignItems:"center",gap:"8px",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
+              <span style={{fontSize:"13px",fontWeight:"500",color:"var(--t2)"}}>{userName}</span>
+              <button className="ghost btn-sm" onClick={()=>auth.signOut()} style={{marginBottom:0,fontSize:"12px",color:"var(--t3)"}}>登出</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1390,18 +1400,110 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
   );
 }
 
+/* ── Login Screen ── */
+function LoginScreen({ isDark, toggleDark }) {
+  const [loading, setLoading] = React.useState(false);
+  const [err, setErr] = React.useState("");
+  async function handleGoogleLogin() {
+    setLoading(true); setErr("");
+    try { await auth.signInWithPopup(googleProvider); }
+    catch(e) { setErr("登入失敗，請再試一次"); setLoading(false); }
+  }
+  return (
+    <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column"}}>
+      <div className="site-header">
+        <div className="site-header-inner">
+          <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
+          <button className="ghost theme-toggle" onClick={toggleDark}>{isDark?"☀️":"🌙"}</button>
+        </div>
+      </div>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+        <div className="card fade-up" style={{width:"360px",maxWidth:"95vw",textAlign:"center",padding:"40px 32px"}}>
+          <div style={{fontSize:"48px",marginBottom:"20px"}}>◈</div>
+          <h1 style={{fontSize:"24px",marginBottom:"8px"}}>午餐大樂透</h1>
+          <p style={{marginBottom:"32px"}}>請先登入，才能參與每日抽獎</p>
+          <button onClick={handleGoogleLogin} disabled={loading}
+            style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",width:"100%",padding:"13px 20px",marginBottom:"12px",background:"#FFFFFF",border:"1px solid #D1D1D6",color:"#1D1D1F",borderRadius:"var(--r)",fontSize:"15px",fontWeight:"500",boxShadow:"0 1px 3px rgba(0,0,0,0.08)",cursor:"pointer",transition:"all 0.2s"}}>
+            <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.1 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2c-7.7 0-14.4 4.4-17.7 10.7z" opacity=".5"/><path fill="#FBBC05" d="M24 46c5.8 0 10.8-1.9 14.8-5.2l-6.8-5.6C29.8 36.8 27 37.8 24 37.8c-6 0-10.7-3.9-11.7-9.2l-7.1 5.5C7.8 41.5 15.3 46 24 46z" opacity=".5"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-1 3-3.3 5.4-6.2 6.8l6.8 5.6C40.7 37.3 44 31.1 44 24c0-1.3-.2-2.7-.5-4z" opacity=".5"/></svg>
+            {loading ? "登入中…" : "使用 Google 帳號登入"}
+          </button>
+          {err && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"8px"}}>{err}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Set Name Screen ── */
+function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
+  const suggested = (user.displayName || "").split(" ")[0];
+  const [name, setName] = React.useState(suggested);
+  const [loading, setLoading] = React.useState(false);
+  const [err, setErr] = React.useState("");
+
+  async function handleConfirm() {
+    const n = name.trim();
+    if (!n) { setErr("請輸入名稱"); return; }
+    if (n.length > 20) { setErr("名稱最多 20 字"); return; }
+    setLoading(true); setErr("");
+    try {
+      const key = sanitizeKey(n);
+      const existingUid = await fGet(`nameToUid/${key}`);
+      if (existingUid && existingUid !== user.uid) {
+        setErr(`「${n}」這個名字已有人使用，請換一個`);
+        setLoading(false); return;
+      }
+      await fSet(`nameToUid/${key}`, user.uid);
+      await fSet(`userNames/${user.uid}`, n);
+      onNameSet(n);
+    } catch(e) {
+      setErr("儲存失敗，請再試一次"); setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column"}}>
+      <div className="site-header">
+        <div className="site-header-inner">
+          <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
+          <button className="ghost theme-toggle" onClick={toggleDark}>{isDark?"☀️":"🌙"}</button>
+        </div>
+      </div>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+        <div className="card fade-up" style={{width:"360px",maxWidth:"95vw",padding:"40px 32px"}}>
+          <div style={{marginBottom:"28px"}}>
+            <h2 style={{fontSize:"20px",marginBottom:"8px"}}>設定你的遊戲名稱</h2>
+            <p>這個名字會顯示在排行榜與開獎結果上。<br/>若之前有使用過，請輸入<strong style={{color:"var(--t1)"}}>相同名字</strong>以保留紀錄。</p>
+          </div>
+          <label>遊戲名稱</label>
+          <input value={name} onChange={e=>{setName(e.target.value);setErr("");}}
+            onKeyDown={e=>e.key==="Enter"&&handleConfirm()}
+            placeholder="輸入名字" maxLength={20} autoFocus />
+          {err && <p style={{color:"var(--red)",fontSize:"13px",marginTop:"-10px",marginBottom:"14px",fontWeight:"500"}}>{err}</p>}
+          <button onClick={handleConfirm} disabled={loading}>
+            {loading ? "確認中…" : "確認名稱"}
+          </button>
+          <button className="ghost" onClick={()=>auth.signOut()} style={{fontSize:"13px",color:"var(--t3)"}}>登出，切換帳號</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── App 主程式 ── */
 function App() {
+  const [authState, setAuthState] = useState("loading"); // loading | login | setname | ready
+  const [currentUser, setCurrentUser] = useState(null);
+  const [boundName, setBoundName] = useState("");
+
   const [phase, setPhase] = useState("loading");
   const [sess, setSess] = useState(null);
   const [pts, setPts] = useState([]);
   const [rests, setRests] = useState(mergeRests(null));
   const [weekly, setWeekly] = useState({});
-  
+
   const [form, setForm] = useState(() => {
-    let savedName = "";
-    try { savedName = localStorage.getItem("lunch_name") || ""; } catch(e) {}
-    return { name: savedName, category:"", rest:"", cust:"", number:"", deadline:"11:50", numMax: "99" };
+    return { name: "", category:"", rest:"", cust:"", number:"", deadline:"11:50", numMax: "99" };
   });
   
   const [result, setResult] = useState(null);
@@ -1422,9 +1524,21 @@ function App() {
   const [toastMsg, setToastMsg] = useState("");
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    try { return localStorage.getItem("lunch_theme") === "dark"; } 
+    try { return localStorage.getItem("lunch_theme") === "dark"; }
     catch(e) { return false; }
   });
+
+  // Auth 狀態監聽
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged(async user => {
+      if (!user) { setAuthState("login"); setCurrentUser(null); setBoundName(""); return; }
+      setCurrentUser(user);
+      const name = await fGet(`userNames/${user.uid}`);
+      if (!name) { setAuthState("setname"); }
+      else { setBoundName(name); setForm(f => ({...f, name})); setAuthState("ready"); }
+    });
+    return () => unsub();
+  }, []);
 
   const [adminOpen, setAdminOpen] = useState(false);
   const [adminAuth, setAdminAuth] = useState(false);
@@ -1916,12 +2030,16 @@ function App() {
     <AdminPanel open={adminOpen} auth={adminAuth} pw={adminPw} setPw={setAdminPw} pwErr={adminPwErr} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onAuth={handleAdminAuth} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} />
   </>;
 
+  if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
+  if (authState === "login") return <LoginScreen isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} />;
+  if (authState === "setname") return <SetNameScreen user={currentUser} isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
+
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
 
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <HolidayBanner />
@@ -1945,7 +2063,7 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -1962,7 +2080,11 @@ function App() {
           <div className="col">
             <div className="card">
               <div className="form-title"><h2>加入遊戲</h2><p>選好店、押好幸運號碼</p></div>
-              <label>你的名字</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="輸入姓名" />
+              <label>你的名字</label>
+              <div style={{position:"relative",marginBottom:"16px"}}>
+                <input value={form.name} readOnly style={{background:"var(--s3)",cursor:"default",paddingRight:"72px"}} />
+                <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",color:"var(--t3)",fontWeight:"500"}}>Google 帳號</span>
+              </div>
               <label>餐廳類型</label>
               <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
               {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
@@ -2018,7 +2140,7 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -2043,7 +2165,7 @@ function App() {
   if (phase==="absent") return (
     <div>
       {AP}
-      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
       <div className="page fade-up">
         <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
@@ -2078,7 +2200,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <HolidayBanner />
@@ -2115,7 +2237,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} />
+        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={()=>setShowHelp(true)} onCardHelp={()=>setShowCardHelp(true)} weather={weather} userName={boundName} />
         <div className="page fade-up">
           <PasswordModal show={resetModal} pw={resetPw} setPw={setResetPw} err={resetErr} onConfirm={confirmReset} onCancel={()=>setResetModal(false)} desc="輸入密碼才能重設今天的遊戲" />
           <HolidayBanner />
