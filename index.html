@@ -2615,8 +2615,13 @@ function App() {
       const hasNew = unlocked.some(k => !seen.includes(k));
       setHasNewAchievement(hasNew);
       // 唯一成就且尚未選稱號 → 自動選
-      if (unlocked.length === 1 && !userTitles[sKey]) {
-        handleTitleChange(unlocked[0]);
+      if (unlocked.length >= 1 && !userTitles[sKey]) {
+        const best = unlocked.reduce((a, b) => {
+          const ra = ACHIEVEMENTS.find(x => x.key === a)?.rarity || 0;
+          const rb = ACHIEVEMENTS.find(x => x.key === b)?.rarity || 0;
+          return rb > ra ? b : a;
+        });
+        handleTitleChange(best);
       }
     });
   }, [boundName, weekly, userTitles]);
