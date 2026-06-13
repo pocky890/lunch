@@ -770,14 +770,14 @@ function MembersTab() {
   React.useEffect(() => {
     async function load() {
       const [names, birthdays, statuses] = await Promise.all([
-        fGet("userNames") || {},
-        fGet("userBirthdays") || {},
-        fGet("userStatus") || {},
+        fGet("userNames"),
+        fGet("userBirthdays"),
+        fGet("userStatus"),
       ]);
       const list = Object.entries(names || {}).map(([uid, name]) => ({
         uid, name,
-        birthday: birthdays[uid] || "－",
-        resigned: statuses[uid] === "resigned",
+        birthday: (birthdays || {})[uid] || "－",
+        resigned: (statuses || {})[uid] === "resigned",
       })).sort((a,b) => a.name.localeCompare(b.name, "zh-Hant"));
       setMembers(list);
     }
