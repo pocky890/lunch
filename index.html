@@ -2025,8 +2025,8 @@ function App() {
     if (new URLSearchParams(location.search).has("testresult")) {
       const fakePts = [
         { id:"t1", name:"壽星測試", number:42, birthdayNumbers:[15,27,63,88], cardUsed:"extra_number", number2:5, rest:"一幸拉麵", category:"日式" },
-        { id:"t2", name:"一般玩家", number:30, rest:"好友雞肉", category:"台式麵飯" },
-        { id:"t3", name:"另一位", number:17, rest:"速食店", category:"速食" },
+        { id:"t2", name:"加號卡玩家", number:30, cardUsed:"extra_number", number2:55, rest:"好友雞肉", category:"台式麵飯" },
+        { id:"t3", name:"一般玩家", number:17, rest:"速食店", category:"速食" },
       ];
       const drawn = 42;
       const res = determineResultWithCards(fakePts, drawn);
