@@ -2048,8 +2048,9 @@ function App() {
     return () => ref.off("value", handler);
   }, []);
 
-  // 稱號即時監聽
+  // 稱號即時監聽（testresult 模式由假資料 block 設定，不用 listener 覆蓋）
   useEffect(() => {
+    if (new URLSearchParams(location.search).has("testresult")) return;
     const ref = fRef("userTitles");
     const handler = snap => setUserTitles(snap.val() || {});
     ref.on("value", handler);
