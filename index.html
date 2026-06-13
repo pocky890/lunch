@@ -2204,6 +2204,16 @@ function App() {
     setIsLoading(true);
     try {
       await fRef(`absent/${sanitizeKey(name)}`).set({name, absentAt: Date.now()});
+      // 若之前已送出參加，一併清除
+      const existingPts = await fGet("participants");
+      if (existingPts) {
+        const entry = Object.entries(existingPts).find(([, v]) => v.name === name);
+        if (entry) {
+          await fRef(`participants/${entry[0]}`).remove();
+          try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
+          setMyEntry(null);
+        }
+      }
       try { localStorage.setItem("lunch_absent_date", todayStr()); } catch(e) {}
       setPhase("absent");
     } catch(e) {
