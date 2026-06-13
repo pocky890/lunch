@@ -1748,6 +1748,7 @@ function App() {
   useEffect(() => {
     Promise.all([fGet("session"),fGet("participants"),fGet("absent")]).then(async ([s,ptsObj,absentObj]) => {
       const today = todayStr();
+      await initCardSystem(); // 補齊新增的卡種
       if (!s || s.date !== today) { setPhase("setup"); return; }
       const p = snapToArr(ptsObj);
       const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
