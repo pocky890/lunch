@@ -338,8 +338,18 @@ const db           = firebase.database();
 const auth         = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-const fRef = p => db.ref(`${DB_PREFIX}/${p}`);
-const fGet = p => fRef(p).once("value").then(s => s.val());
+const TEST_MODE = new URLSearchParams(location.search).has("testmode");
+function fRef(p) {
+  const real = db.ref(`${DB_PREFIX}/${p}`);
+  if (!TEST_MODE) return real;
+  const noop = () => Promise.resolve();
+  return {
+    set: noop, update: noop, remove: noop, transaction: noop,
+    push: () => ({ key: `test_${Math.random().toString(36).slice(2)}`, set: noop }),
+    on: real.on.bind(real), off: real.off.bind(real), once: real.once.bind(real),
+  };
+}
+const fGet = p => db.ref(`${DB_PREFIX}/${p}`).once("value").then(s => s.val());
 const fSet = (p, v) => fRef(p).set(v);
 
 // 餐廳分類
@@ -1173,6 +1183,15 @@ function BirthdayBanner({ todayBirthdays }) {
   return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"#FDF2F8",border:"1px solid #F9A8D4",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#9D174D"}}>
       🎂 <strong>{todayBirthdays.join("、")}</strong> 今天生日快樂！今日可選 5 個號碼🎉
+    </div>
+  );
+}
+
+function TestModeBanner() {
+  if (!TEST_MODE) return null;
+  return (
+    <div style={{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",zIndex:9999,background:"#1E293B",color:"#F8FAFC",padding:"8px 20px",borderRadius:"999px",fontSize:"13px",fontWeight:"600",boxShadow:"0 4px 16px rgba(0,0,0,0.3)",pointerEvents:"none",display:"flex",alignItems:"center",gap:"8px"}}>
+      🧪 測試模式｜資料不會寫入 DB
     </div>
   );
 }
@@ -2315,6 +2334,7 @@ function App() {
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
     {birthdayModal}
+    <TestModeBanner />
   </>;
 
   if (phase==="loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
