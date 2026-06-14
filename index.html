@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 23:10";
+  const BUILD_TIME = "2026-06-14 23:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2300,7 +2300,7 @@ function App() {
       try {
         await fRef(`cheapskateUsers/${today}/${sanitizeKey(myName)}`).set(myName);
         await returnCardToPool(myName, card.id);
-        showToast("🤑 免付卡自動啟動！免除本次連勝請客費");
+        showToast("🤑 免付卡自動啟動！免除本次連勝請客費", 10000);
       } catch(e) { cheapskateAutoUsedRef.current = false; }
     })();
   }, [phase, result, myCards, weekly]);
@@ -2324,7 +2324,7 @@ function App() {
         await returnCardToPool(myName, card.id);
         const newWeekly = await fGet("weekly");
         setWeekly(newWeekly || {});
-        showToast("🛡️ 連勝保護卡自動啟動！連勝保留中");
+        showToast("🛡️ 連勝保護卡自動啟動！連勝保留中", 10000);
       } catch(e) {
         streakAutoProtectedRef.current = false;
         showToast("連勝保護卡啟動失敗，請重試");
@@ -2688,7 +2688,7 @@ function App() {
             await newRef.set(stolen);
             stealSucceeded = true;
             if (stolen.type === "steal_card") await fRef(`specialAchievements/${sanitizeKey(name)}/stealSteal`).set(true);
-            showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`);
+            showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`, 10000);
             await fRef(`stolenNotice/${sanitizeKey(victim.name)}`).set({ by: name, cardType: stolen.type, date: todayStr() });
           } else {
             showToast("🎭 想偷的卡剛好被用掉了，盜牌卡保留 😅");
