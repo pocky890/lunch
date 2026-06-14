@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:45";
+  const BUILD_TIME = "2026-06-14 19:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2763,7 +2763,7 @@ function App() {
     await fSet(`drawn/${today}`, null);
     await fRef(`weekly/${today}`).remove();
     savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--"); setAbsent([]);
-    setForm({name:"",category:"",rest:"",cust:"",number:"",deadline:"11:50"}); setPhase("setup");
+    setForm(f=>({name:f.name||boundName,category:"",rest:"",cust:"",number:"",deadline:"11:50"})); setPhase("setup");
   }
 
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
