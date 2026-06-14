@@ -312,6 +312,19 @@
     /* ─── 開獎動畫 ─── */
     @keyframes numFlash { 0%,100%{opacity:1;}50%{opacity:0.2;} }
     @keyframes revealPop { 0%{transform:scale(0.7);opacity:0;}60%{transform:scale(1.18);}100%{transform:scale(1);opacity:1;} }
+
+    /* ─── 核彈動畫 ─── */
+    @keyframes nukeIcbmDrop { 0%{top:-15%} 100%{top:48%} }
+    @keyframes nukeExhaust { 0%{transform:scaleY(1);opacity:1} 100%{transform:scaleY(0.75);opacity:0.7} }
+    @keyframes nukeBlindFlash { 0%{opacity:0;background:#fff} 4%{opacity:1;background:#fff} 18%{opacity:1;background:#fff9d6} 45%{opacity:0.55;background:#ff4500} 100%{opacity:0;background:#ff2200} }
+    @keyframes nukeShockExpand { 0%{width:0;height:0;opacity:1;border-width:28px} 100%{width:1600px;height:1600px;opacity:0;border-width:1px} }
+    @keyframes nukeRingBlast { 0%{opacity:0;width:0;height:0;border-width:18px} 6%{opacity:1;width:180px;height:180px} 45%{opacity:0;width:650px;height:650px;transform:translate(-50%,-50%) rotateX(75deg) translateY(-380px)} 100%{opacity:0} }
+    @keyframes nukeBaseGlow { 0%,8%{opacity:1} 100%{opacity:0} }
+    @keyframes nukePartReveal { 0%{transform:scale(0.1) translateY(100px);opacity:0} 12%{opacity:1} 100%{transform:scale(1) translateY(0);opacity:0.95} }
+    @keyframes nukeFireColor { 0%{background:#fff;box-shadow:0 0 80px 30px rgba(255,255,255,0.9)} 10%{background:#ffeb3b;box-shadow:0 0 60px 20px rgba(255,235,59,0.9)} 28%{background:#ff4500;box-shadow:0 0 40px 10px rgba(255,69,0,0.8)} 100%{background:#111;box-shadow:inset 0 20px 30px rgba(0,0,0,0.95)} }
+    @keyframes nukeNumScorch { 0%{opacity:1;filter:blur(0)} 20%{color:#ff4500;text-shadow:0 0 20px #ff3300,0 0 50px #ff0000;filter:blur(0.5px)} 100%{color:#0a0500;text-shadow:0 0 8px #ff2200,2px 3px 0 #1a0000;filter:blur(0.5px)} }
+    @keyframes nukeBgDarken { 0%{background:#EEF2F9} 100%{background:radial-gradient(circle at 50% 60%,#2a0a0a 0%,#050505 100%)} }
+    @keyframes nukeMsgIn { 0%{opacity:0;transform:translateY(12px)} 100%{opacity:1;transform:translateY(0)} }
   </style>
 </head>
 <body>
@@ -356,7 +369,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 23:12";
+  const BUILD_TIME = "2026-06-15 01:41";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -913,6 +926,105 @@ function DrawAnimation({ drawnNumber, onDone, isDark }) {
         {String(num).padStart(2,"0")}
       </div>
       {revealed && <div style={{marginTop:"32px",fontSize:"14px",color:"var(--t3)",animation:"fadeUp 0.5s ease 0.3s both"}}>🎰 開獎完成，即將顯示結果…</div>}
+    </div>
+  );
+}
+
+/* ── Nuke Animation ── */
+function NukeAnimation({ drawnNumber, nukedParticipants, onDone }) {
+  const [step, setStep] = React.useState('idle');
+  const particles = React.useRef(Array.from({length:80},(_,i)=>{
+    let x,y,size,delay,dur;
+    if(i<30){
+      x=(Math.random()-0.5)*60; y=-Math.random()*320;
+      size=80+Math.random()*80; delay=(Math.abs(y)/320)*0.5; dur=5+Math.random()*2;
+    } else {
+      const angle=Math.random()*Math.PI*2, radius=Math.random()*180;
+      x=Math.cos(angle)*radius*1.5;
+      y=-320-Math.abs(Math.sin(angle))*radius*0.8-Math.random()*60;
+      size=120+Math.random()*120; delay=0.4+(radius/180)*0.4+Math.random()*0.3; dur=6+Math.random()*2;
+    }
+    return {x,y,size,delay,dur,id:i};
+  })).current;
+
+  React.useEffect(()=>{
+    const ts=[];
+    const s=(fn,d)=>{ const t=setTimeout(fn,d); ts.push(t); };
+    s(()=>setStep('icbm'), 300);
+    s(()=>setStep('explode'), 2100);
+    s(()=>setStep('scorch'), 3800);
+    s(()=>setStep('msg'), 4200);
+    s(onDone, 6800);
+    return ()=>ts.forEach(clearTimeout);
+  },[]);
+
+  const scorched = step==='scorch'||step==='msg';
+  const exploding = step==='explode'||scorched;
+  const showMsg = step==='msg';
+
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:2000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",
+      animation: scorched?"nukeBgDarken 2s forwards":"none", background:"#EEF2F9"}}>
+
+      {/* 閃光 */}
+      {exploding && <div style={{position:"absolute",inset:0,zIndex:100,pointerEvents:"none",animation:"nukeBlindFlash 4s ease-out forwards"}} />}
+
+      {/* ICBM */}
+      {(step==='icbm'||step==='explode') && (
+        <div style={{position:"absolute",left:"50%",width:"14px",height:"90px",transform:"translateX(-50%) rotate(180deg)",zIndex:50,
+          animation:"nukeIcbmDrop 1.8s ease-in forwards"}}>
+          <div style={{width:"100%",height:"100%",background:"linear-gradient(to right,#333 0%,#888 50%,#222 100%)",borderRadius:"50% 50% 10% 10%/30% 30% 0 0"}} />
+          <div style={{position:"absolute",bottom:"-10px",left:"-8px",right:"-8px",height:"28px",background:"#111",clipPath:"polygon(25% 0,75% 0,100% 100%,0 100%)",zIndex:-1}} />
+          <div style={{position:"absolute",bottom:"-48px",left:"2px",right:"2px",height:"48px",background:"linear-gradient(to bottom,#fff,#ffeb3b,#ff4500,transparent)",filter:"blur(3px)",animation:"nukeExhaust 0.1s infinite alternate"}} />
+        </div>
+      )}
+
+      {/* 號碼 */}
+      <div style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        {/* 蘑菇雲容器，掛在號碼正下方中央 */}
+        {exploding && (
+          <div style={{position:"absolute",bottom:"50%",left:"50%",zIndex:-1}}>
+            {/* 震波 */}
+            <div style={{position:"absolute",bottom:0,left:0,width:0,height:0,border:"10px solid rgba(255,255,255,0.9)",borderRadius:"50%",
+              transform:"translate(-50%,-50%) rotateX(75deg)",animation:"nukeShockExpand 1.4s ease-out forwards"}} />
+            {/* 底部光暈 */}
+            <div style={{position:"absolute",bottom:"-50px",left:0,transform:"translate(-50%,0)",width:"400px",height:"100px",
+              background:"radial-gradient(circle,#ffeb3b,#ff4500,transparent)",filter:"blur(20px)",animation:"nukeBaseGlow 7s forwards"}} />
+            {/* 凝結環 */}
+            <div style={{position:"absolute",bottom:0,left:0,borderRadius:"50%",border:"10px solid rgba(255,235,59,0.9)",
+              boxShadow:"0 0 30px #ff4500,inset 0 0 30px #ff4500",transform:"translate(-50%,-50%) rotateX(75deg)",
+              animation:"nukeRingBlast 5s cubic-bezier(0.1,0.8,0.3,1) forwards"}} />
+            {/* 粒子 */}
+            {particles.map(p=>(
+              <div key={p.id} style={{position:"absolute",width:`${p.size}px`,height:`${p.size}px`,
+                left:`${p.x-p.size/2}px`,top:`${p.y-p.size/2}px`,
+                borderRadius:"50%",opacity:0,filter:"blur(4px)",
+                animationName:"nukePartReveal",animationFillMode:"forwards",
+                animationDelay:`${p.delay}s`,animationDuration:`${p.dur}s`}}>
+                <div style={{width:"100%",height:"100%",borderRadius:"50%",background:"#fff",
+                  animationName:"nukeFireColor",animationFillMode:"forwards",
+                  animationDelay:`${p.delay}s`,animationDuration:`${p.dur*0.6}s`}} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 幸運號碼 */}
+        <div style={{fontSize:"clamp(100px,22vw,180px)",fontWeight:"800",lineHeight:1,
+          fontVariantNumeric:"tabular-nums",letterSpacing:"-4px",position:"relative",zIndex:10,
+          color: scorched?"#0a0500":"#1D1D1F",
+          animation: scorched?"nukeNumScorch 2s forwards":"none",
+          textShadow: scorched?"0 0 8px #ff2200,2px 3px 0 #1a0000":"none"}}>
+          {String(drawnNumber).padStart(2,"0")}
+        </div>
+
+        {showMsg && (
+          <div style={{marginTop:"24px",fontSize:"15px",color:"#ff4500",animation:"nukeMsgIn 0.5s ease both",textAlign:"center",zIndex:10,lineHeight:1.6}}>
+            ☢️ 核彈爆炸！<br/>
+            {nukedParticipants?.length>0 && <span style={{color:"#ff6633"}}>{nukedParticipants.map(p=>p.name).join("、")} 出局</span>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2399,6 +2511,27 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // ?nukedraw：模擬含核彈卡的完整開獎動畫流程（drawing → nuking → results）
+    if (TEST_MODE && new URLSearchParams(location.search).has("nukedraw")) {
+      const today = todayStr();
+      const drawn = 45;
+      const fakePts = [
+        { id:"t1", name:"最接近玩家",   number:48, rest:"好友雞肉",  category:"台式麵飯" },
+        { id:"t2", name:"核彈卡玩家",   number:45, cardUsed:"nuke_card", nukedNumbers:getNukeZone(45,99), rest:"燒肉店", category:"日式" },
+        { id:"t3", name:"被炸出局玩家", number:55, rest:"便當店",    category:"台式麵飯" },
+        { id:"t4", name:"一般玩家A",    number:30, rest:"火鍋店",    category:"火鍋" },
+        { id:"t5", name:"一般玩家B",    number:70, rest:"速食店",    category:"速食" },
+      ];
+      const nuked = [fakePts[2]];
+      const active = fakePts.filter(p=>!nuked.includes(p));
+      const res = determineResultWithCards(fakePts, drawn);
+      setSess({ deadline:"11:50", date:today, numMax:99 });
+      setPts(fakePts);
+      setAnimResult({ ...res, drawnNumber: drawn, nukedParticipants: nuked });
+      setPhase("drawing");
+      return;
+    }
+
     // ?testresult：直接跳到開獎結果頁預覽，資料為假資料
     if (new URLSearchParams(location.search).has("testresult")) {
       const today = todayStr();
@@ -3078,7 +3211,15 @@ function App() {
   );
 
   if (phase==="drawing") return (
-    <DrawAnimation drawnNumber={animResult?.drawnNumber} isDark={isDarkMode} onDone={()=>{ setResult(animResult); setAnimResult(null); setPhase("results"); }} />
+    <DrawAnimation drawnNumber={animResult?.drawnNumber} isDark={isDarkMode} onDone={()=>{
+      const r = animResult;
+      setResult(r); setAnimResult(null);
+      setPhase(r?.nukedParticipants?.length > 0 ? "nuking" : "results");
+    }} />
+  );
+
+  if (phase==="nuking") return (
+    <NukeAnimation drawnNumber={result?.drawnNumber} nukedParticipants={result?.nukedParticipants} onDone={()=>setPhase("results")} />
   );
 
   if (phase==="results") {
