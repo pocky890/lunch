@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:37";
+  const BUILD_TIME = "2026-06-14 19:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2797,6 +2797,10 @@ function App() {
     });
   }, [boundName, weekly, userTitles]);
 
+  // boundName 已知但 form.name 尚未同步時（如 testmode 重新整理）自動補上
+  useEffect(() => {
+    if (boundName && !form.name) setForm(f => ({...f, name: boundName}));
+  }, [boundName]);
 
   const numMax = sess?.numMax || 99;
   const effectiveNumMax = isDoubleDay() ? Math.ceil(numMax / 2) : numMax;
