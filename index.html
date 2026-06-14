@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:20";
+  const BUILD_TIME = "2026-06-14 19:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -745,28 +745,35 @@ function getPreviousStreak(weekly, name, today) {
 function determineResultWithCards(pts, drawnNumber) {
   const nukedSet = new Set();
   pts.forEach(p => { if (p.cardUsed==="nuke_card"&&p.nukedNumbers) p.nukedNumbers.forEach(n=>nukedSet.add(n)); });
-  const nukedPts = nukedSet.size>0 ? pts.filter(p=>p.cardUsed!=="nuke_card"&&nukedSet.has(p.number)) : [];
-  const activePts = nukedSet.size>0 ? pts.filter(p=>p.cardUsed==="nuke_card"||!nukedSet.has(p.number)) : pts;
-  const effective = activePts.map(p => {
-    // 收集此人所有有效號碼
-    const allNums = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
-    if (allNums.length === 1) return p;
-    if (allNums.includes(drawnNumber)) return { ...p, number: drawnNumber };
-    const best = allNums.reduce((a,b) => Math.abs(a-drawnNumber) <= Math.abs(b-drawnNumber) ? a : b);
-    return { ...p, number: best };
+  const nukedPts = [], partialNuked = [];
+  const activePts = nukedSet.size===0 ? pts : pts.filter(p => {
+    if (p.cardUsed==="nuke_card") return true;
+    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[])].filter(Boolean);
+    const surviving = allNums.filter(n=>!nukedSet.has(n));
+    if (surviving.length===0) { nukedPts.push(p); return false; }
+    if (surviving.length<allNums.length) partialNuked.push({...p, destroyedNumbers:allNums.filter(n=>nukedSet.has(n))});
+    return true;
   });
+  const effective = activePts.map(p => {
+    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[])].filter(Boolean);
+    const validNums = (nukedSet.size>0&&p.cardUsed!=="nuke_card") ? allNums.filter(n=>!nukedSet.has(n)) : allNums;
+    if (validNums.length===1) return {...p, number:validNums[0]};
+    if (validNums.includes(drawnNumber)) return {...p, number:drawnNumber};
+    const best = validNums.reduce((a,b)=>Math.abs(a-drawnNumber)<=Math.abs(b-drawnNumber)?a:b);
+    return {...p, number:best};
+  });
+  const nukeExtra = {...(nukedPts.length>0&&{nukedParticipants:nukedPts}), ...(partialNuked.length>0&&{partialNukedParticipants:partialNuked})};
   const res = determineResult(effective, drawnNumber);
   if (!res) return null;
-  // 獨贏最大，soloWin 時跟著我吃卡無效
   if (!res.soloWin) {
-    const fwUsers = effective.filter(p => p.cardUsed === "follow_restaurant");
-    if (fwUsers.length > 0) {
-      fwUsers.sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
+    const fwUsers = effective.filter(p => p.cardUsed==="follow_restaurant");
+    if (fwUsers.length>0) {
+      fwUsers.sort((a,b)=>Math.abs(a.number-drawnNumber)-Math.abs(b.number-drawnNumber));
       const fw = fwUsers[0];
-      return { ...res, winner: { ...res.winner, rest: fw.rest }, followRestUser: fw.name, ...(nukedPts.length>0&&{nukedParticipants:nukedPts}) };
+      return {...res, winner:{...res.winner,rest:fw.rest}, followRestUser:fw.name, ...nukeExtra};
     }
   }
-  return { ...res, ...(nukedPts.length>0&&{nukedParticipants:nukedPts}) };
+  return {...res, ...nukeExtra};
 }
 
 /* ── Help Modal ── */
@@ -3140,11 +3147,14 @@ function App() {
                   );
                 })}
               </div>
-              {result.nukedParticipants?.length > 0 && (
+              {(result.nukedParticipants?.length > 0 || result.partialNukedParticipants?.length > 0) && (
                 <div style={{padding:"12px 16px",background:isDarkMode?"rgba(239,68,68,0.08)":"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px"}}>
                   <div style={{fontWeight:"600",marginBottom:"6px",color:"rgba(239,68,68,0.9)"}}>☢️ 被核彈波及</div>
-                  {result.nukedParticipants.map((p,i) => (
+                  {result.nukedParticipants?.map((p,i) => (
                     <div key={i} style={{color:"var(--t3)"}}>💥 <strong style={{color:"var(--t2)"}}>{p.name}</strong>（#{p.number}）出局</div>
+                  ))}
+                  {result.partialNukedParticipants?.map((p,i) => (
+                    <div key={i} style={{color:"var(--t3)"}}>💨 <strong style={{color:"var(--t2)"}}>{p.name}</strong> 的 {p.destroyedNumbers.map(n=>`#${n}`).join("、")} 被炸毀，以存活號碼繼續參賽</div>
                   ))}
                 </div>
               )}
