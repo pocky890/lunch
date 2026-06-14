@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:56";
+  const BUILD_TIME = "2026-06-14 20:04";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1453,7 +1453,8 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
         const group = grouped[type];
         const nearest = group[0]; // use nearest-expiry card first
         const active = group.some(c => c.id === cardToUse);
-        const days = Math.ceil((new Date(nearest.expiresAt)-new Date(today))/86400000);
+        const daysRaw = Math.ceil((new Date(nearest.expiresAt)-new Date(today))/86400000);
+        const days = daysRaw > 999 ? "∞" : daysRaw;
         return (
           <div key={type} onClick={() => onSelectCard(active ? "" : nearest.id)}
             style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:"pointer",marginBottom:"4px",
