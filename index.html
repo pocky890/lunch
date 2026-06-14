@@ -343,7 +343,8 @@
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼" },
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
     cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
-    thirsty_card:      { name:"口渴卡",     emoji:"🥤", desc:"加入時宣告使用。開獎後當天所有參加者須合請你喝一杯，上限 100 元。" },
+    thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後當天所有參加者須合請你喝一杯，上限 100 元。" },
+    nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選一個號碼作為核心，開獎時清除九宮格內所有其他人" },
   };
   const CARD_DEFAULTS = {
     follow_restaurant: { total:3, expireDays:30 },
@@ -353,8 +354,9 @@
     steal_card:        { total:3, expireDays:30 },
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
+    nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 18:51";
+  const BUILD_TIME = "2026-06-14 19:20";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -636,6 +638,16 @@ function managedToRests(managed) {
 }
 
 function sanitizeKey(str) { return str.replace(/[.#$/[\]]/g, "_"); }
+function getNukeZone(center, numMax, cols=10) {
+  const row = Math.floor((center-1)/cols), col = (center-1)%cols;
+  const zone = [];
+  for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
+    if (dr===0&&dc===0) continue;
+    const r=row+dr, c=col+dc, n=r*cols+c+1;
+    if (r>=0&&c>=0&&c<cols&&n>=1&&n<=numMax) zone.push(n);
+  }
+  return zone;
+}
 
 /* ── Card System ── */
 async function initCardSystem() {
@@ -731,7 +743,11 @@ function getPreviousStreak(weekly, name, today) {
 }
 
 function determineResultWithCards(pts, drawnNumber) {
-  const effective = pts.map(p => {
+  const nukedSet = new Set();
+  pts.forEach(p => { if (p.cardUsed==="nuke_card"&&p.nukedNumbers) p.nukedNumbers.forEach(n=>nukedSet.add(n)); });
+  const nukedPts = nukedSet.size>0 ? pts.filter(p=>p.cardUsed!=="nuke_card"&&nukedSet.has(p.number)) : [];
+  const activePts = nukedSet.size>0 ? pts.filter(p=>p.cardUsed==="nuke_card"||!nukedSet.has(p.number)) : pts;
+  const effective = activePts.map(p => {
     // 收集此人所有有效號碼
     const allNums = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
     if (allNums.length === 1) return p;
@@ -747,10 +763,10 @@ function determineResultWithCards(pts, drawnNumber) {
     if (fwUsers.length > 0) {
       fwUsers.sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
       const fw = fwUsers[0];
-      return { ...res, winner: { ...res.winner, rest: fw.rest }, followRestUser: fw.name };
+      return { ...res, winner: { ...res.winner, rest: fw.rest }, followRestUser: fw.name, ...(nukedPts.length>0&&{nukedParticipants:nukedPts}) };
     }
   }
-  return res;
+  return { ...res, ...(nukedPts.length>0&&{nukedParticipants:nukedPts}) };
 }
 
 /* ── Help Modal ── */
@@ -1495,12 +1511,13 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
 
 // slots: [{num, color, outline}], maxSlots, onSlotsChange
 // takenBy: nums taken by others; weekly: for heatmap
-function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark }) {
+function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark, nukeZone = [] }) {
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
   const maxCount = Math.max(0, ...Object.values(numCounts));
   const base = isDark ? "96,165,250" : "0,113,227";
   const takenSet = new Set(takenBy.map(Number));
+  const nukeSet = new Set(nukeZone);
   const slotMap = {};
   slots.forEach(s => { if (s.num) slotMap[Number(s.num)] = s; });
   return (
@@ -1508,6 +1525,7 @@ function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy
       {Array.from({length:numMax},(_,i)=>i+1).map(n => {
         const slot = slotMap[n];
         const selected = !!slot;
+        const inNuke = nukeSet.has(n) && !selected;
         const taken = takenSet.has(n) && !selected;
         const atMax = !selected && slots.filter(s=>s.num).length >= maxSlots;
         const disabled = taken || atMax;
@@ -1516,6 +1534,9 @@ function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy
         let bg, color;
         if (selected) {
           bg = slot.color; color = "#fff";
+        } else if (inNuke) {
+          bg = isDark ? "rgba(239,68,68,0.25)" : "rgba(239,68,68,0.15)";
+          color = isDark ? "#FCA5A5" : "#B91C1C";
         } else if (disabled) {
           bg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
           color = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)";
@@ -1536,7 +1557,7 @@ function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy
         };
         return (
           <div key={n}
-            title={taken ? `#${n}（已有人選）` : atMax ? "已選滿" : count > 0 ? `#${n}：出現 ${count} 次` : `#${n}`}
+            title={taken ? `#${n}（已有人選）` : inNuke ? `#${n}（核彈範圍）` : atMax ? "已選滿" : count > 0 ? `#${n}：出現 ${count} 次` : `#${n}`}
             onClick={handleClick}
             style={{aspectRatio:"1",borderRadius:"4px",userSelect:"none",cursor:taken?"not-allowed":atMax?"default":"pointer",
               background:bg,display:"flex",alignItems:"center",justifyContent:"center",
@@ -2634,8 +2655,9 @@ function App() {
       // 盜牌卡只有成功偷到才算使用；其餘主動卡照常消耗
       const cardConsumed = activeCard && !PASSIVE_TYPES.includes(activeCard.type)
         && (activeCard.type !== "steal_card" || stealSucceeded);
+      const nukedNumbers = (cardConsumed && activeCard.type === "nuke_card") ? getNukeZone(num, effectiveNumMax) : null;
       const cardExtra = cardConsumed
-        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}) }
+        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(nukedNumbers ? { nukedNumbers } : {}) }
         : {};
       const bdExtra = bdNums ? { birthdayNumbers: bdNums } : {};
 
@@ -2867,6 +2889,9 @@ function App() {
               ) : (<>
                 {(() => {
                   const isExtraCard = myCards.find(c=>c.id===cardToUse)?.type === "extra_number";
+                  const isNukeCard  = myCards.find(c=>c.id===cardToUse)?.type === "nuke_card";
+                  const nukeCenter  = isNukeCard && form.number ? parseInt(form.number) : null;
+                  const nukeZone    = nukeCenter ? getNukeZone(nukeCenter, effectiveNumMax) : [];
                   const slots = [
                     { key:"main",    color:"rgba(0,113,227,0.9)",   outline:"rgba(0,113,227,0.6)",   label:"主號碼",   num: form.number },
                     ...(isExtraCard ? [{ key:"extra", color:"rgba(234,88,12,0.85)",  outline:"rgba(234,88,12,0.5)",   label:"加號卡",   num: number2 }] : []),
@@ -2907,14 +2932,16 @@ function App() {
                           選號碼（1 ~ {effectiveNumMax}）
                           {isBirthday&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>🎂 生日+4</span>}
                           {isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>➕ 加號卡+1</span>}
+                          {isNukeCard&&<span style={{fontSize:"11px",color:"rgba(239,68,68,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>☢️ 選核心號碼</span>}
                         </label>
                         <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
                       </div>
+                      {isNukeCard && nukeCenter && <div style={{fontSize:"12px",color:"rgba(239,68,68,0.85)",marginBottom:"4px"}}>紅色格子（共 {nukeZone.length} 格）將在開獎時清除</div>}
                       {legends.length > 0 && <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"4px"}}>{legends}</div>}
                       <NumberPicker numMax={effectiveNumMax} slots={slots} maxSlots={slots.length}
                         onSlotsChange={handleSlotsChange}
                         takenBy={[]}
-                        weekly={weekly} isDark={isDarkMode} />
+                        weekly={weekly} isDark={isDarkMode} nukeZone={nukeZone} />
                     </>
                   );
                 })()}
@@ -3022,7 +3049,7 @@ function App() {
     const streak = computeStreak(weekly, winner.name, todayStr(), pts.length);
     const treatAmount = streak >= 3 ? streak * 10 : 0;
     const soloTreatPerPerson = soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
-    const nonWinnerCount = pts.length - soloWinners.length;
+    const nonWinnerCount = allSorted.length - soloWinners.length;
     const maxTotal = nonWinnerCount * soloTreatPerPerson;
     const perWinner = soloWinners.length > 1 ? Math.floor(maxTotal / soloWinners.length) : maxTotal;
     // 深色模式下 winner 卡片 & 排名列替代色
@@ -3113,6 +3140,14 @@ function App() {
                   );
                 })}
               </div>
+              {result.nukedParticipants?.length > 0 && (
+                <div style={{padding:"12px 16px",background:isDarkMode?"rgba(239,68,68,0.08)":"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px"}}>
+                  <div style={{fontWeight:"600",marginBottom:"6px",color:"rgba(239,68,68,0.9)"}}>☢️ 被核彈波及</div>
+                  {result.nukedParticipants.map((p,i) => (
+                    <div key={i} style={{color:"var(--t3)"}}>💥 <strong style={{color:"var(--t2)"}}>{p.name}</strong>（#{p.number}）出局</div>
+                  ))}
+                </div>
+              )}
               {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始遊戲</button>}
             </div>
           </div>
