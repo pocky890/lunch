@@ -55,7 +55,7 @@ session/                當日設定（numMax 等）
 - 回應語言：繁體中文
 - 風格：簡潔，不要多餘解釋，確認後直接動手
 - commit 訊息：中文，附上功能描述
-- 每次 push 前記得更新 `BUILD_TIME`
+- 每次 push 前記得更新 `BUILD_TIME`，時間用台灣時間（UTC+8），指令：`[System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'Taipei Standard Time').ToString('yyyy-MM-dd HH:mm')`
 - 不要加不必要的 comment 或 console.log
 - UI 改動要同時考慮亮色/深色模式（用 CSS 變數，不寫死顏色）
 
