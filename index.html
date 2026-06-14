@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 22:40";
+  const BUILD_TIME = "2026-06-14 22:41";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2582,7 +2582,7 @@ function App() {
             nonWinnerCount:     pts.length - soloWinners.length,
             followRestUser:  result.followRestUser || "",
             cardsUsed:       pts.filter(p=>p.cardUsed).map(p=>`${p.name} ${CARD_TYPES[p.cardUsed]?.emoji}${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
-            cardsAwarded:    won.map(w=>`${w.name} ${CARD_TYPES[w.type]?.emoji}${CARD_TYPES[w.type]?.name}`).join(", "),
+            cardsAwarded:    won.length > 0 ? `${won.length} 張` : "",
           })
         }).catch(() => {});
       }
