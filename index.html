@@ -2882,8 +2882,8 @@ function App() {
                     </>
                   );
                 })()}
-                <p style={{fontSize:"12px",color:"var(--t3)",marginTop:"-4px",marginBottom:"4px"}}>送出後號碼與卡牌無法修改</p>
-                <p style={{fontSize:"12px",color:"var(--t3)",marginTop:0,marginBottom:"12px"}}>點已選號碼可取消選擇</p>
+                <p style={{fontSize:"12px",color:"var(--red)",marginTop:"-4px",marginBottom:"4px"}}>。送出後號碼與卡牌無法修改</p>
+                <p style={{fontSize:"12px",color:"var(--red)",marginTop:0,marginBottom:"12px"}}>。點已選號碼可取消選擇</p>
                 {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); }} />}
               </>)}
               <div className="divider" />
