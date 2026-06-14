@@ -973,6 +973,16 @@ function MembersTab() {
 function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
+  const [commitTime, setCommitTime] = React.useState("");
+  React.useEffect(() => {
+    if (!open) return;
+    fetch("https://api.github.com/repos/pocky890/lunch/commits/main")
+      .then(r => r.json())
+      .then(d => {
+        const dt = new Date(d?.commit?.committer?.date);
+        if (!isNaN(dt)) setCommitTime(`${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`);
+      }).catch(()=>{});
+  }, [open]);
   const [newRest, setNewRest] = React.useState("");
   const [renaming, setRenaming] = React.useState(null);
   const [renameVal, setRenameVal] = React.useState("");
@@ -1067,7 +1077,10 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="card fade-up" style={{width:"580px",maxWidth:"95vw",maxHeight:"82vh",display:"flex",flexDirection:"column"}}>
         <div style={{display:"flex",alignItems:"center",marginBottom:"20px",flexShrink:0}}>
-          <h2 style={{flex:1,fontSize:"18px"}}>管理員面板</h2>
+          <div style={{flex:1,display:"flex",alignItems:"baseline",gap:"10px"}}>
+            <h2 style={{fontSize:"18px",margin:0}}>管理員面板</h2>
+            {commitTime && <span style={{fontSize:"11px",color:"var(--t3)"}}>更新於 {commitTime}</span>}
+          </div>
           <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
         </div>
         <div style={{display:"flex",gap:"8px",marginBottom:"20px",flexShrink:0}}>
