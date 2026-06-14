@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 17:54";
+  const BUILD_TIME = "2026-06-14 17:59";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2339,7 +2339,15 @@ function App() {
         const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
         fakeWeekly[ds] = { winner:"最接近玩家", rest:"好友雞肉", soloWin:false };
       }
-      const fakePts = [
+      const isMultiWin = new URLSearchParams(location.search).has("multiwin");
+      const fakePts = isMultiWin ? [
+        { id:"t1", name:"共贏玩家A",  number:50, rest:"好友雞肉",  category:"台式麵飯" },
+        { id:"t2", name:"共贏玩家B",  number:50, rest:"拉麵店",    category:"日式" },
+        { id:"t3", name:"共贏玩家C",  number:50, rest:"速食店",    category:"速食" },
+        { id:"t4", name:"一般玩家D",  number:30, rest:"火鍋店",    category:"火鍋" },
+        { id:"t5", name:"一般玩家E",  number:70, rest:"便當店",    category:"台式麵飯" },
+        { id:"t6", name:"一般玩家F",  number:20, rest:"飲料店",    category:"其它" },
+      ] : [
         { id:"t1", name:"最接近玩家",   number:48, rest:"好友雞肉",     category:"台式麵飯" },
         { id:"t2", name:"跟著我吃玩家", number:52, cardUsed:"follow_restaurant", rest:"跟著我吃的店", category:"日式" },
         { id:"t3", name:"加號卡玩家",   number:30, cardUsed:"extra_number", number2:75, rest:"速食店", category:"速食" },
