@@ -2873,7 +2873,7 @@ function App() {
                         </label>
                         <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
                       </div>
-                      {legends.length > 0 && <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"6px"}}>{legends}</div>}
+                      {legends.length > 0 && <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"4px"}}>{legends}<span style={{fontSize:"11px",color:"var(--t3)",alignSelf:"center"}}>（點選中的號碼可取消）</span></div>}
                       <NumberPicker numMax={effectiveNumMax} slots={slots} maxSlots={slots.length}
                         onSlotsChange={handleSlotsChange}
                         takenBy={takenNums.filter(x=>x.name!==form.name).map(x=>x.num)}
