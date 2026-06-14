@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 18:04";
+  const BUILD_TIME = "2026-06-14 18:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3030,7 +3030,7 @@ function App() {
                   {soloWinners.map((w,i) => (
                     <div key={i} style={{fontSize: soloWinners.length > 1 ? "22px" : "32px", fontWeight:"700",color:oc.h,marginBottom:"4px"}}>{w.name}</div>
                   ))}
-                  <div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px",marginTop:"4px"}}>{winner.rest}</div>
+                  <div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px",marginTop:"4px"}}>{winner.rest}{soloWinners.length > 1 && <span style={{fontSize:"12px",color:oc.p,marginLeft:"8px"}}>（抽籤決定）</span>}</div>
                   <div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} />
                   {streak>=3 ? (
                     <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {streak} 連勝加成</span>每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，合計 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
