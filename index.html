@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 17:46";
+  const BUILD_TIME = "2026-06-14 17:49";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -563,8 +563,7 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
     const rec = weekly[date];
     if (!rec) break;
     if (rec.skipStreak) continue;
-    if (isWinnerOf(rec, winnerName) && rec.soloWin) continue;
-    if (isWinnerOf(rec, winnerName) && !rec.soloWin) { streak++; } else { break; }
+    if (isWinnerOf(rec, winnerName)) { streak++; } else { break; }
   }
   return streak;
 }
@@ -588,7 +587,7 @@ function computeAchievements(name, weeklyData, participationCount) {
   let maxStreak = 0, curStreak = 0;
   recs.forEach(r => {
     if (r.noParticipants) return;
-    if (isWinnerOf(r, name) && !r.soloWin) { curStreak++; maxStreak = Math.max(maxStreak, curStreak); }
+    if (isWinnerOf(r, name)) { curStreak++; maxStreak = Math.max(maxStreak, curStreak); }
     else { curStreak = 0; }
   });
   let maxLose = 0, curLose = 0;
@@ -714,7 +713,6 @@ function getPreviousStreak(weekly, name, today) {
     const rec = weekly[date];
     if (!rec || rec.noParticipants) break;
     if (rec.skipStreak) continue;
-    if (isWinnerOf(rec, name) && rec.soloWin) continue;
     if (isWinnerOf(rec, name)) { count++; } else { break; }
   }
   return count;
@@ -2447,19 +2445,19 @@ function App() {
       return;
     }
     const skipStreak = pts.length < 4;
-    const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weekly, result.winner.name, today, pts.length);
-    // 人數不足或獨贏時，往前算保留中的連勝數（供通知顯示用）
+    const streak = skipStreak ? 0 : computeStreak(weekly, result.winner.name, today, pts.length);
+    // 人數不足時，往前算保留中的連勝數（供通知顯示用）
     let preservedStreak = 0;
-    if (skipStreak || result.soloWin) {
+    if (skipStreak) {
       const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
       for (const date of pastDates) {
         const rec = weekly[date];
         if (!rec) break;
-        if (rec.skipStreak || (rec.winner === result.winner.name && rec.soloWin)) continue;
-        if (rec.winner === result.winner.name && !rec.soloWin) { preservedStreak++; } else { break; }
+        if (rec.skipStreak) continue;
+        if (isWinnerOf(rec, result.winner.name)) { preservedStreak++; } else { break; }
       }
     }
-    const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) : 50;
+    const soloTreatPerPerson = result.soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
     const soloWinners = result.winners || [result.winner];
     const birthdayWinnerEntry = soloWinners.find(w => todayBirthdays.some(b => b.name === w.name));
     const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(birthdayWinnerEntry && {birthdayWinner: birthdayWinnerEntry.name})};
@@ -2989,22 +2987,9 @@ function App() {
     );
     const {winner, soloWin, drawnNumber, sorted} = result, allSorted = sorted || pts;
     const soloWinners = result.winners || [winner];
-    const streak = soloWin ? 0 : computeStreak(weekly, winner.name, todayStr(), pts.length);
+    const streak = computeStreak(weekly, winner.name, todayStr(), pts.length);
     const treatAmount = streak >= 3 ? streak * 10 : 0;
-    // 獨贏時計算保留中的連勝數，決定請客金額
-    const soloPreservedStreak = soloWin ? (() => {
-      const today = todayStr();
-      const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
-      let count = 0;
-      for (const date of pastDates) {
-        const rec = weekly[date];
-        if (!rec) break;
-        if (rec.skipStreak || (isWinnerOf(rec, winner.name) && rec.soloWin)) continue;
-        if (isWinnerOf(rec, winner.name) && !rec.soloWin) { count++; } else { break; }
-      }
-      return count;
-    })() : 0;
-    const soloTreatPerPerson = soloWin ? Math.max(50, soloPreservedStreak >= 3 ? soloPreservedStreak * 10 : 0) : 50;
+    const soloTreatPerPerson = soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
     const nonWinnerCount = pts.length - soloWinners.length;
     const maxTotal = nonWinnerCount * soloTreatPerPerson;
     const perWinner = soloWinners.length > 1 ? Math.floor(maxTotal / soloWinners.length) : maxTotal;
@@ -3018,7 +3003,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(soloPreservedStreak>=3&&soloPreservedStreak*10>50?`🎯🔥 命中 + ${soloPreservedStreak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} />
+        <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
@@ -3038,8 +3023,8 @@ function App() {
                   ))}
                   <div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px",marginTop:"4px"}}>{winner.rest}</div>
                   <div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} />
-                  {soloPreservedStreak>=3&&soloPreservedStreak*10>50 ? (
-                    <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {soloPreservedStreak} 連勝加成</span>每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，合計 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
+                  {streak>=3 ? (
+                    <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {streak} 連勝加成</span>每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，合計 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
                   ) : (
                     <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · 每人最多 <strong style={{color:oc.str}}>50 元</strong> · 共 {nonWinnerCount} 人，上限 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
                   )}
