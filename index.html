@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 18:23";
+  const BUILD_TIME = "2026-06-14 18:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -374,7 +374,8 @@
     { key:"birthday",   emoji:"🎉", name:"天公疼壽星",   desc:"生日當天中獎",               rarity:3 },
     { key:"sharedWin",  emoji:"🤝", name:"有福同享",     desc:"與他人一起獨贏",             rarity:2 },
     { key:"fatedTie",   emoji:"🔗", name:"命運的糾纏",   desc:"開獎時與他人距離完全相同",   rarity:2 },
-    { key:"stealSteal", emoji:"🎭", name:"神偷怪盜",     desc:"用盜牌卡偷到了盜牌卡",       rarity:3 },
+    { key:"stealSteal",  emoji:"🎭", name:"神偷怪盜",   desc:"用盜牌卡偷到了盜牌卡",                     rarity:3 },
+    { key:"bloodyLeech", emoji:"🥤", name:"嗜血水蛭", desc:"同一天使用口渴卡，並且獨贏",                rarity:4 },
   ];
 </script>
 
@@ -602,7 +603,8 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const bdWin      = recs.some(r => r.birthdayWinner === name);
   const sharedWin  = recs.some(r => r.winners?.length > 1 && r.winners.includes(name));
   const fatedTie   = recs.some(r => r.tiedParticipants?.includes(name));
-  const stealSteal = !!specialAchievements.stealSteal;
+  const stealSteal  = !!specialAchievements.stealSteal;
+  const bloodyLeech = !!specialAchievements.bloodyLeech;
   const pc = participationCount || 0;
   const unlocked = [];
   if (pc >= 50)        unlocked.push("join50");
@@ -623,6 +625,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (sharedWin)       unlocked.push("sharedWin");
   if (fatedTie)        unlocked.push("fatedTie");
   if (stealSteal)      unlocked.push("stealSteal");
+  if (bloodyLeech)     unlocked.push("bloodyLeech");
   return unlocked;
 }
 
@@ -2501,6 +2504,14 @@ function App() {
           }
         }
         if (won.length > 0) await fRef(`weekly/${today}`).update({ cardsAwarded: won });
+        if (result.soloWin) {
+          for (const w of soloWinners) {
+            const pt = pts.find(p => p.id === w.id);
+            if (pt?.cardUsed === "thirsty_card") {
+              await fRef(`specialAchievements/${sanitizeKey(w.name)}/bloodyLeech`).set(true);
+            }
+          }
+        }
         fetch(WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
