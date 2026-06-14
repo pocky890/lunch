@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 15:26";
+  const BUILD_TIME = "2026-06-14 16:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🎮", name:"常客",           desc:"參與 50 次",              rarity:1 },
@@ -2238,6 +2238,7 @@ function App() {
     const myName = form.name.trim();
     if (!myName || result.winner?.name === myName) return;
     const today = todayStr();
+    if (!weekly[today]?.winner) return; // 等winner寫入後再觸發，避免蓋掉尚未完成的transaction
     if (weekly[today]?.skipStreak) return; // 已保護或人數不足，不需觸發
     if (getPreviousStreak(weekly, myName, today) < 2) return;
     const card = myCards.find(c => c.type === "streak_protect" && c.expiresAt >= today);
@@ -2457,20 +2458,18 @@ function App() {
       });
       setWeekly(prev => ({...prev, [today]: rec}));
 
-      // 開獎後：偵測參加者號碼中是否藏有卡牌
-      await ensureDailyCards(today, effectiveNumMax);
-      const won = [];
-      for (const p of pts) {
-        // 每人每天最多得 1 張，依序檢查主號、生日號碼、加號卡第二號碼
-        const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
-        for (const n of numbers) {
-          const t = await checkAndAwardCard(p.name, n, today);
-          if (t) { won.push({ name: p.name, type: t }); break; }
-        }
-      }
-      if (won.length > 0) setAwardedCards(won);
-
       if (didWrite) {
+        // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
+        await ensureDailyCards(today, effectiveNumMax);
+        const won = [];
+        for (const p of pts) {
+          const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
+          for (const n of numbers) {
+            const t = await checkAndAwardCard(p.name, n, today);
+            if (t) { won.push({ name: p.name, type: t }); break; }
+          }
+        }
+        if (won.length > 0) setAwardedCards(won);
         fetch(WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2641,12 +2640,13 @@ function App() {
     setIsLoading(true);
     try {
       await fRef(`absent/${sanitizeKey(name)}`).set({name, absentAt: Date.now()});
-      // 若之前已送出參加，一併清除
+      // 若之前已送出參加，一併清除並退還參與次數
       const existingPts = await fGet("participants");
       if (existingPts) {
         const entry = Object.entries(existingPts).find(([, v]) => v.name === name);
         if (entry) {
           await fRef(`participants/${entry[0]}`).remove();
+          await fRef(`participationCount/${sanitizeKey(name)}`).transaction(n => Math.max(0, (n || 0) - 1));
           try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
         }
       }
@@ -2668,7 +2668,10 @@ function App() {
 
   async function doCancel() {
     const myEntry = pts.find(p => p.name === form.name);
-    if (myEntry) await fRef(`participants/${myEntry.id}`).remove();
+    if (myEntry) {
+      await fRef(`participants/${myEntry.id}`).remove();
+      await fRef(`participationCount/${sanitizeKey(form.name)}`).transaction(n => Math.max(0, (n || 0) - 1));
+    }
     try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
     setIsEditing(false);
     setPhase("join");
