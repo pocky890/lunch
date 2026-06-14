@@ -2846,17 +2846,13 @@ function App() {
                     if (isBirthday) setBdNumbers([get("bd0"),get("bd1"),get("bd2"),get("bd3")]);
                   };
                   const doRandom = () => {
-                    const usedSet = new Set(slots.filter(s=>s.num).map(s=>Number(s.num)));
                     const takenSet = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
-                    const avail = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!usedSet.has(n)&&!takenSet.has(n));
+                    const avail = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!takenSet.has(n));
                     if (!avail.length) return;
-                    const emptySlots = slots.filter(s=>!s.num);
-                    const filled = [...slots];
-                    emptySlots.forEach(s => {
-                      if (!avail.length) return;
+                    const filled = slots.map(s => {
+                      if (!avail.length) return {...s, num:""};
                       const pick = avail.splice(Math.floor(Math.random()*avail.length),1)[0];
-                      const idx = filled.findIndex(x=>x.key===s.key);
-                      filled[idx] = {...filled[idx], num: String(pick)};
+                      return {...s, num: String(pick)};
                     });
                     handleSlotsChange(filled);
                   };
@@ -2869,9 +2865,13 @@ function App() {
                   ) : null).filter(Boolean);
                   return (
                     <>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
-                        <label style={{margin:0}}>選號碼（1 ~ {effectiveNumMax}）{isBirthday&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px"}}>🎂 生日+4</span>}{isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px"}}>➕ 加號卡+1</span>}</label>
-                        <button className="ghost btn-sm" onClick={doRandom}>🎲 隨機</button>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"6px",gap:"8px"}}>
+                        <label style={{margin:0,flex:1,flexWrap:"wrap"}}>
+                          選號碼（1 ~ {effectiveNumMax}）
+                          {isBirthday&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>🎂 生日+4</span>}
+                          {isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>➕ 加號卡+1</span>}
+                        </label>
+                        <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
                       </div>
                       {legends.length > 0 && <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"6px"}}>{legends}</div>}
                       <NumberPicker numMax={effectiveNumMax} slots={slots} maxSlots={slots.length}
