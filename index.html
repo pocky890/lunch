@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 18:09";
+  const BUILD_TIME = "2026-06-14 18:23";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -370,8 +370,11 @@
     { key:"lose30",   emoji:"🌩️", name:"好運絕緣體",     desc:"連續 30 次未中獎",        rarity:3 },
     { key:"lose50",   emoji:"🗿", name:"非洲大酋長",     desc:"連續 50 次未中獎",        rarity:4 },
     { key:"lose100",  emoji:"☄️", name:"天煞孤星",       desc:"連續 100 次未中獎",       rarity:5 },
-    { key:"luckyDay", emoji:"🎰", name:"賭神附體",       desc:"在 Lucky Day 中獎",       rarity:2 },
-    { key:"birthday", emoji:"🎉", name:"天公疼壽星",     desc:"生日當天中獎",            rarity:3 },
+    { key:"luckyDay",   emoji:"🎰", name:"賭神附體",     desc:"在 Lucky Day 中獎",         rarity:2 },
+    { key:"birthday",   emoji:"🎉", name:"天公疼壽星",   desc:"生日當天中獎",               rarity:3 },
+    { key:"sharedWin",  emoji:"🤝", name:"有福同享",     desc:"與他人一起獨贏",             rarity:2 },
+    { key:"fatedTie",   emoji:"🔗", name:"命運的糾纏",   desc:"開獎時與他人距離完全相同",   rarity:2 },
+    { key:"stealSteal", emoji:"🎭", name:"神偷怪盜",     desc:"用盜牌卡偷到了盜牌卡",       rarity:3 },
   ];
 </script>
 
@@ -545,7 +548,7 @@ function determineResult(pts, drawnNumber) {
   const winnerIndex = drawnNumber % tiedWinners.length;
   const finalWinner = tiedWinners[winnerIndex];
   const finalSorted = [finalWinner, ...sorted.filter(p => p.id !== finalWinner.id)];
-  return { winner: finalWinner, winners: [finalWinner], soloWin: false, sorted: finalSorted };
+  return { winner: finalWinner, winners: [finalWinner], soloWin: false, sorted: finalSorted, ...(tiedWinners.length > 1 && { tiedParticipants: tiedWinners.map(w => w.name) }) };
 }
 
 function isWinnerOf(rec, name) {
@@ -581,7 +584,7 @@ function computeLoserStreak(weekly, name, today) {
   return count;
 }
 
-function computeAchievements(name, weeklyData, participationCount) {
+function computeAchievements(name, weeklyData, participationCount, specialAchievements = {}) {
   const recs = Object.entries(weeklyData || {}).sort(([a],[b]) => a < b ? -1 : 1).map(([,r]) => r).filter(Boolean);
   const soloWins = recs.filter(r => r.soloWin && isWinnerOf(r, name)).length;
   let maxStreak = 0, curStreak = 0;
@@ -595,8 +598,11 @@ function computeAchievements(name, weeklyData, participationCount) {
     if (r.noParticipants) return;
     if (isWinnerOf(r, name)) { curLose = 0; } else { curLose++; maxLose = Math.max(maxLose, curLose); }
   });
-  const luckyDay = recs.some(r => isWinnerOf(r, name) && r.specialDay);
-  const bdWin    = recs.some(r => r.birthdayWinner === name);
+  const luckyDay   = recs.some(r => isWinnerOf(r, name) && r.specialDay);
+  const bdWin      = recs.some(r => r.birthdayWinner === name);
+  const sharedWin  = recs.some(r => r.winners?.length > 1 && r.winners.includes(name));
+  const fatedTie   = recs.some(r => r.tiedParticipants?.includes(name));
+  const stealSteal = !!specialAchievements.stealSteal;
   const pc = participationCount || 0;
   const unlocked = [];
   if (pc >= 50)        unlocked.push("join50");
@@ -614,6 +620,9 @@ function computeAchievements(name, weeklyData, participationCount) {
   if (maxLose >= 100)  unlocked.push("lose100");
   if (luckyDay)        unlocked.push("luckyDay");
   if (bdWin)           unlocked.push("birthday");
+  if (sharedWin)       unlocked.push("sharedWin");
+  if (fatedTie)        unlocked.push("fatedTie");
+  if (stealSteal)      unlocked.push("stealSteal");
   return unlocked;
 }
 
@@ -1580,7 +1589,7 @@ function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
   );
 }
 
-function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleChange}) {
+function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleChange, mySpecialAchievements = {}}) {
   const chartRef = useRef(null); const chartInstanceRef = useRef(null);
   const [participationCounts, setParticipationCounts] = useState({});
   useEffect(() => { fGet("participationCount").then(d => setParticipationCounts(d || {})); }, []);
@@ -1620,9 +1629,9 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>Top 10 店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>個人戰績 (持續統計)</p>{sortedPersonal.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : sortedPersonal.map(([name, stat], i) => {
         const sKey = sanitizeKey(name);
-        const unlocked = computeAchievements(name, weekly, participationCounts[sKey] || 0);
-        const chosenKey = userTitles[sKey];
         const isMe = name === boundName;
+        const unlocked = computeAchievements(name, weekly, participationCounts[sKey] || 0, isMe ? mySpecialAchievements : {});
+        const chosenKey = userTitles[sKey];
         return (
           <div key={name} style={{padding:"10px 12px",borderRadius:"var(--r)",border:"1px solid var(--b1)",background:"var(--s3)",marginBottom:"6px"}}>
             <div style={{display:"flex",alignItems:"center"}}>
@@ -1803,7 +1812,7 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
           </div>
         );
       })}
-      {showStats && <StatsPanel weekly={weekly} isDark={isDark} userTitles={userTitles} boundName={boundName} onTitleChange={onTitleChange} />}
+      {showStats && <StatsPanel weekly={weekly} isDark={isDark} userTitles={userTitles} boundName={boundName} onTitleChange={onTitleChange} mySpecialAchievements={mySpecialAchievements} />}
     </div>
   );
 }
@@ -1858,13 +1867,13 @@ function LoginScreen({ isDark, toggleDark }) {
 }
 
 /* ── My Profile Modal ── */
-function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose }) {
+function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose, specialAchievements = {} }) {
   const [participationCount, setParticipationCount] = React.useState(0);
   React.useEffect(() => {
     fGet(`participationCount/${sanitizeKey(boundName)}`).then(n => setParticipationCount(n || 0));
   }, [boundName]);
 
-  const unlocked = new Set(computeAchievements(boundName, weekly, participationCount));
+  const unlocked = new Set(computeAchievements(boundName, weekly, participationCount, specialAchievements));
   const chosenKey = userTitles[sanitizeKey(boundName)];
 
   return (
@@ -2088,6 +2097,7 @@ function App() {
   const [bdNumbers, setBdNumbers] = useState(["","","",""]); // birthday extra numbers [n2..n5]
   const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
+  const [mySpecialAchievements, setMySpecialAchievements] = useState({});
   const [cheapskateUsers, setCheapskateUsers] = useState([]);
 
   const [weather, setWeather] = useState({ loading: true, temp: null, pop: null, error: false });
@@ -2468,7 +2478,7 @@ function App() {
     const soloTreatPerPerson = result.soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
     const soloWinners = result.winners || [result.winner];
     const birthdayWinnerEntry = soloWinners.find(w => todayBirthdays.some(b => b.name === w.name));
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(birthdayWinnerEntry && {birthdayWinner: birthdayWinnerEntry.name})};
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(birthdayWinnerEntry && {birthdayWinner: birthdayWinnerEntry.name})};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
@@ -2600,6 +2610,7 @@ function App() {
             const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
             await newRef.set(stolen);
             stealSucceeded = true;
+            if (stolen.type === "steal_card") await fRef(`specialAchievements/${sanitizeKey(name)}/stealSteal`).set(true);
             showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`);
           } else {
             showToast("🎭 想偷的卡剛好被用掉了，盜牌卡保留 😅");
@@ -2712,8 +2723,9 @@ function App() {
   useEffect(() => {
     if (!boundName || !weekly) return;
     const sKey = sanitizeKey(boundName);
-    fGet(`participationCount/${sKey}`).then(pc => {
-      const unlocked = computeAchievements(boundName, weekly, pc || 0);
+    Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`)]).then(([pc, sa]) => {
+      setMySpecialAchievements(sa || {});
+      const unlocked = computeAchievements(boundName, weekly, pc || 0, sa || {});
       const storageKey = `lunch_seen_ach_${sKey}`;
       const seen = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const hasNew = unlocked.some(k => !seen.includes(k));
@@ -2770,12 +2782,12 @@ function App() {
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
     {birthdayModal}
-    {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} onClose={()=>{
+    {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} onClose={()=>{
       setShowProfile(false);
       setHasNewAchievement(false);
       const sKey = sanitizeKey(boundName);
-      fGet(`participationCount/${sKey}`).then(pc => {
-        const unlocked = computeAchievements(boundName, weekly, pc || 0);
+      Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`)]).then(([pc, sa]) => {
+        const unlocked = computeAchievements(boundName, weekly, pc || 0, sa || {});
         localStorage.setItem(`lunch_seen_ach_${sKey}`, JSON.stringify(unlocked));
       });
     }} />}
