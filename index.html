@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:30";
+  const BUILD_TIME = "2026-06-14 19:31";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -800,6 +800,7 @@ function HelpModal({ onClose, numMax = 99 }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎯 獨贏（完全命中）</div>
             <div>如果有人選的號碼<strong style={{color:"var(--t1)"}}>完全等於</strong>幸運號碼，就是「獨贏」！其他人每人最多補助 <strong style={{color:"var(--t1)"}}>50 元</strong>，讓他吃他選的店。若該人同時有連勝紀錄且連勝金額（N × 10 元）超過 50 元，則以<strong style={{color:"var(--t1)"}}>連勝金額為主</strong>。</div>
+            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>🤝 多人同時完全命中時，<strong style={{color:"var(--t2)"}}>所有人都算獨贏</strong>，補助金平分給每位贏家。餐廳從共贏者中隨機抽籤決定。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🤝 同分決勝</div>
