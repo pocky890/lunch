@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 15:05";
+  const BUILD_TIME = "2026-06-14 15:26";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🎮", name:"常客",           desc:"參與 50 次",              rarity:1 },
@@ -2365,7 +2365,7 @@ function App() {
       const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
       setSess(s); setPts(p); setAbsent(absentNames);
       if (isDeadlinePassed(s.deadline)) {
-        const drawn = await getOrDrawNumber(today, isDoubleDay(today) ? Math.floor((s?.numMax||99)/2) : (s?.numMax||99)); const res = determineResultWithCards(p, drawn);
+        const drawn = await getOrDrawNumber(today, isDoubleDay(today) ? Math.ceil((s?.numMax||99)/2) : (s?.numMax||99)); const res = determineResultWithCards(p, drawn);
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
       } else {
@@ -2401,7 +2401,7 @@ function App() {
       setCd(calcCountdown(dl));
       if (isDeadlinePassed(dl)) {
         clearInterval(timerRef.current);
-        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), _today = todayStr(), _nm = sessRef.current?.numMax||99, drawn = await getOrDrawNumber(_today, isDoubleDay(_today) ? Math.floor(_nm/2) : _nm), res = determineResultWithCards(finalPts, drawn);
+        const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), _today = todayStr(), _nm = sessRef.current?.numMax||99, drawn = await getOrDrawNumber(_today, isDoubleDay(_today) ? Math.ceil(_nm/2) : _nm), res = determineResultWithCards(finalPts, drawn);
         const rd = res ? {...res,drawnNumber:drawn} : {drawnNumber:drawn,winner:null,soloWin:false,sorted:finalPts};
         setPts(finalPts); setAnimResult(rd); setPhase("drawing");
       }
@@ -2717,7 +2717,7 @@ function App() {
 
 
   const numMax = sess?.numMax || 99;
-  const effectiveNumMax = isDoubleDay() ? Math.floor(numMax / 2) : numMax;
+  const effectiveNumMax = isDoubleDay() ? Math.ceil(numMax / 2) : numMax;
   const isBirthday = todayBirthdays.some(b => b.name === boundName)
     || (TEST_MODE && new URLSearchParams(location.search).has("birthday"));
   const takenNums = pts.flatMap(p => [
