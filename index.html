@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:31";
+  const BUILD_TIME = "2026-06-14 19:37";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2241,9 +2241,13 @@ function App() {
   useEffect(() => {
     const name = form.name.trim();
     if (!name) { setMyCards([]); return; }
-    // testmode: ?extracard 注入假加號卡
+    // testmode: ?extracard 注入假加號卡 / ?nukecard 注入假核彈卡
     if (TEST_MODE && new URLSearchParams(location.search).has("extracard")) {
       setMyCards([{ id:"test_extra", type:"extra_number", expiresAt:"9999-12-31" }]);
+      return;
+    }
+    if (TEST_MODE && new URLSearchParams(location.search).has("nukecard")) {
+      setMyCards([{ id:"test_nuke", type:"nuke_card", expiresAt:"9999-12-31" }]);
       return;
     }
     const ref = fRef(`userCards/${sanitizeKey(name)}`);
@@ -2382,8 +2386,17 @@ function App() {
         const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
         fakeWeekly[ds] = { winner:"最接近玩家", rest:"好友雞肉", soloWin:false };
       }
-      const isMultiWin = new URLSearchParams(location.search).has("multiwin");
-      const fakePts = isMultiWin ? [
+      const isMultiWin  = new URLSearchParams(location.search).has("multiwin");
+      const isNukeTest  = new URLSearchParams(location.search).has("nuketest");
+      const fakePts = isNukeTest ? [
+        { id:"t1", name:"最接近玩家",   number:48, rest:"好友雞肉",     category:"台式麵飯" },
+        { id:"t2", name:"核彈卡玩家",   number:45, cardUsed:"nuke_card", nukedNumbers:getNukeZone(45,99), rest:"燒肉店", category:"日式" },
+        { id:"t3", name:"被炸出局玩家", number:55, rest:"便當店",        category:"台式麵飯" },
+        { id:"t4", name:"部分命中玩家", number:35, cardUsed:"extra_number", number2:80, rest:"拉麵店", category:"日式" },
+        { id:"t5", name:"口渴卡玩家",   number:20, cardUsed:"thirsty_card", rest:"飲料店", category:"其它" },
+        { id:"t6", name:"一般玩家A",    number:30, rest:"火鍋店",        category:"火鍋" },
+        { id:"t7", name:"一般玩家B",    number:70, rest:"速食店",        category:"速食" },
+      ] : isMultiWin ? [
         { id:"t1", name:"共贏玩家A",  number:50, rest:"好友雞肉",  category:"台式麵飯" },
         { id:"t2", name:"共贏玩家B",  number:50, rest:"拉麵店",    category:"日式" },
         { id:"t3", name:"共贏玩家C",  number:50, rest:"速食店",    category:"速食" },
