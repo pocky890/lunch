@@ -354,7 +354,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
   };
-  const BUILD_TIME = "2026-06-14 16:06";
+  const BUILD_TIME = "2026-06-14 16:08";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🎮", name:"常客",           desc:"參與 50 次",              rarity:1 },
@@ -2258,6 +2258,13 @@ function App() {
     })();
   }, [phase, result, myCards, weekly]);
 
+  useEffect(() => {
+    if (phase !== "results") return;
+    const today = todayStr();
+    const cards = weekly[today]?.cardsAwarded;
+    if (cards?.length > 0) setAwardedCards(cards);
+  }, [phase, weekly]);
+
   function openAdmin() { setAdminOpen(true); }
   function closeAdmin() { setAdminOpen(false); }
   async function adminAddRest(cat, name) { await fRef(`restaurants_managed/${cat}/${name}`).set(true); }
@@ -2469,7 +2476,7 @@ function App() {
             if (t) { won.push({ name: p.name, type: t }); break; }
           }
         }
-        if (won.length > 0) setAwardedCards(won);
+        if (won.length > 0) await fRef(`weekly/${today}`).update({ cardsAwarded: won });
         fetch(WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
