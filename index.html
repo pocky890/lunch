@@ -344,7 +344,7 @@
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
     cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後當天所有參加者須合請你喝一杯，上限 100 元。" },
-    nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選一個號碼作為核心，開獎時清除九宮格內所有其他人" },
+    nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選號碼為核心，九宮格內其他人出局" },
   };
   const CARD_DEFAULTS = {
     follow_restaurant: { total:3, expireDays:30 },
@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 19:54";
+  const BUILD_TIME = "2026-06-14 19:56";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1464,8 +1464,10 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
               <div style={{fontSize:"13px",fontWeight:"600"}}>{ct.name}{group.length > 1 ? ` ×${group.length}` : ""}</div>
               <div style={{fontSize:"11px",opacity:0.75}}>{ct.desc}</div>
             </div>
-            <span style={{fontSize:"11px",opacity:0.6}}>剩 {days}d</span>
-            {active && <span style={{fontSize:"11px",fontWeight:"700",marginLeft:"4px"}}>✓ 使用中</span>}
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"2px",flexShrink:0}}>
+              <span style={{fontSize:"11px",opacity:0.6}}>剩 {days}d</span>
+              {active && <span style={{fontSize:"11px",fontWeight:"700"}}>✓ 使用中</span>}
+            </div>
           </div>
         );
       })}
