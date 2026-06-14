@@ -343,7 +343,7 @@
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼" },
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
     cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
-    thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後當天所有參加者須合請你喝一杯，上限 100 元。" },
+    thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者須合請你喝一杯，上限 100 元。被核彈炸出局則效果取消。" },
     nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選號碼為核心，九宮格內其他人出局" },
   };
   const CARD_DEFAULTS = {
@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 22:23";
+  const BUILD_TIME = "2026-06-14 22:35";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -846,7 +846,7 @@ function CardHelpModal({ onClose, cardConfig = {} }) {
     { type:"reveal_numbers",    desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
     { type:"steal_card",        desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
-    { type:"thirsty_card",      desc:"加入時宣告使用。開獎後當天所有參加者須各自請你喝一杯，上限 100 元。" },
+    { type:"thirsty_card",      desc:"加入時宣告使用。開獎後當天所有參加者須各自請你喝一杯，上限 100 元。若被核彈卡炸出局，效果取消。" },
     { type:"nuke_card",         desc:"加入時選一個號碼為核心。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者本人免疫。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -3137,7 +3137,7 @@ function App() {
                   ))}
                 </div>
               )}
-              {pts.filter(p=>p.cardUsed==="thirsty_card").map((p,i) => (
+              {pts.filter(p=>p.cardUsed==="thirsty_card"&&!result.nukedParticipants?.some(n=>n.id===p.id)).map((p,i) => (
                 <div key={i} style={{padding:"12px 16px",background:"var(--c-blue-bg)",border:"1px solid var(--c-blue-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-blue-tx)"}}>
                   🥤 <strong>{p.name}</strong> 使用了口渴卡！所有參加者須合請他喝一杯（上限 100 元）
                 </div>
