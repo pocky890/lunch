@@ -1477,33 +1477,29 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
 }
 
 
-// value: string (single), multiValues: string[] (multi), maxSelect: number
-function NumberPicker({ numMax, value, onChange, multiValues, onMultiChange, maxSelect = 4, takenBy = [], excludeNums = [], weekly = {}, isDark }) {
-  const isMulti = multiValues !== undefined;
+// slots: [{num, color, outline}], maxSlots, onSlotsChange
+// takenBy: nums taken by others; weekly: for heatmap
+function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark }) {
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
   const maxCount = Math.max(0, ...Object.values(numCounts));
   const base = isDark ? "96,165,250" : "0,113,227";
   const takenSet = new Set(takenBy.map(Number));
-  const excludeSet = new Set(excludeNums.map(Number));
-  const multiSet = new Set((multiValues || []).map(Number).filter(Boolean));
+  const slotMap = {};
+  slots.forEach(s => { if (s.num) slotMap[Number(s.num)] = s; });
   return (
     <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:"3px",marginBottom:"8px"}}>
       {Array.from({length:numMax},(_,i)=>i+1).map(n => {
-        const selectedSingle = !isMulti && Number(value) === n;
-        const selectedMulti = isMulti && multiSet.has(n);
-        const selected = selectedSingle || selectedMulti;
+        const slot = slotMap[n];
+        const selected = !!slot;
         const taken = takenSet.has(n) && !selected;
-        const excluded = excludeSet.has(n);
-        const atMax = isMulti && multiSet.size >= maxSelect && !selectedMulti;
-        const disabled = taken || excluded || atMax;
+        const atMax = !selected && slots.filter(s=>s.num).length >= maxSlots;
+        const disabled = taken || atMax;
         const count = numCounts[n] || 0;
         const intensity = count === 0 ? 0 : maxCount <= 1 ? 0.4 : 0.2 + (count/maxCount)*0.55;
         let bg, color;
-        if (selectedMulti) {
-          bg = "rgba(219,39,119,0.85)"; color = "#fff";
-        } else if (selectedSingle) {
-          bg = isDark ? "rgba(96,165,250,1)" : "rgba(0,113,227,1)"; color = "#fff";
+        if (selected) {
+          bg = slot.color; color = "#fff";
         } else if (disabled) {
           bg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
           color = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)";
@@ -1512,25 +1508,27 @@ function NumberPicker({ numMax, value, onChange, multiValues, onMultiChange, max
           color = count > 0 ? (isDark?"#BFDBFE":"#003580") : "var(--t3)";
         }
         const handleClick = () => {
-          if (disabled) return;
-          if (isMulti) {
-            const next = selectedMulti ? [...multiValues].filter(v => Number(v) !== n) : [...(multiValues||[]), String(n)];
-            onMultiChange(next);
-          } else {
-            onChange(String(n));
+          if (taken) return;
+          if (selected) {
+            onSlotsChange(slots.map(s => s.num === String(n) ? {...s, num:""} : s));
+          } else if (!atMax) {
+            const next = [...slots];
+            const emptyIdx = next.findIndex(s => !s.num);
+            if (emptyIdx >= 0) next[emptyIdx] = {...next[emptyIdx], num: String(n)};
+            onSlotsChange(next);
           }
         };
         return (
           <div key={n}
-            title={taken ? `#${n}（已有人選）` : atMax ? `已選滿 ${maxSelect} 個` : count > 0 ? `#${n}：出現 ${count} 次` : `#${n}`}
+            title={taken ? `#${n}（已有人選）` : atMax ? "已選滿" : count > 0 ? `#${n}：出現 ${count} 次` : `#${n}`}
             onClick={handleClick}
-            style={{aspectRatio:"1",borderRadius:"4px",userSelect:"none",cursor:disabled?"not-allowed":"pointer",
+            style={{aspectRatio:"1",borderRadius:"4px",userSelect:"none",cursor:taken?"not-allowed":atMax?"default":"pointer",
               background:bg,display:"flex",alignItems:"center",justifyContent:"center",
               fontSize:"11px",fontWeight:selected?"700":"600",color,
-              outline:selected?"2px solid "+(selectedMulti?"rgba(219,39,119,0.6)":"rgba(0,113,227,0.6)"):"none",outlineOffset:"1px",
-              opacity:disabled?0.35:1,transition:"transform 0.08s",
+              outline:selected?`2px solid ${slot.outline}`:"none",outlineOffset:"1px",
+              opacity:(taken||atMax)?0.35:1,transition:"transform 0.08s",
             }}
-            onMouseEnter={e=>{if(!disabled)e.currentTarget.style.transform="scale(1.15)";}}
+            onMouseEnter={e=>{if(!taken&&!atMax)e.currentTarget.style.transform="scale(1.15)";}}
             onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
           >{n}</div>
         );
@@ -2820,58 +2818,62 @@ function App() {
                   <span style={{fontSize:"12px",color:"var(--t3)",marginLeft:"8px"}}>修改時只能換餐廳</span>
                 </div>
               ) : (<>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                  <label style={{margin:0}}>選一個號碼（1 ~ {effectiveNumMax}）</label>
-                  <button className="ghost btn-sm" title="隨機選號" onClick={()=>{
-                    const taken = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
-                    const available = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!taken.has(n));
-                    if (available.length===0) return;
-                    const pick = available[Math.floor(Math.random()*available.length)];
-                    setForm(f=>({...f,number:String(pick)})); setNumWarn("");
-                  }}>🎲 隨機</button>
-                </div>
-                <NumberPicker numMax={effectiveNumMax} value={form.number}
-                  onChange={v=>{setForm(f=>({...f,number:v}));setNumWarn("");}}
-                  takenBy={takenNums.filter(x=>x.name!==form.name).map(x=>x.num)}
-                  weekly={weekly} isDark={isDarkMode} />
-                {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
-              <p style={{fontSize:"12px",color:"var(--t3)",marginTop:"-4px",marginBottom:"12px"}}>送出後號碼與卡牌無法修改</p>
                 {(() => {
-                  const activeCard = myCards.find(c => c.id === cardToUse);
-                  if (activeCard?.type === "extra_number") return (
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                        <label style={{margin:0}}>第二個號碼（1 ~ {effectiveNumMax}）</label>
-                        <button className="ghost btn-sm" onClick={()=>{
-                          const taken = new Set([...takenNums.filter(x=>x.name!==form.name).map(x=>x.num), parseInt(form.number)].filter(Boolean));
-                          const available = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!taken.has(n));
-                          if (available.length===0) return;
-                          setNumber2(String(available[Math.floor(Math.random()*available.length)]));
-                        }}>🎲 隨機</button>
+                  const isExtraCard = myCards.find(c=>c.id===cardToUse)?.type === "extra_number";
+                  const slots = [
+                    { key:"main",    color:"rgba(0,113,227,0.9)",   outline:"rgba(0,113,227,0.6)",   label:"主號碼",   num: form.number },
+                    ...(isExtraCard ? [{ key:"extra", color:"rgba(234,88,12,0.85)",  outline:"rgba(234,88,12,0.5)",   label:"加號卡",   num: number2 }] : []),
+                    ...(isBirthday  ? [
+                      { key:"bd0", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日", num: bdNumbers[0] },
+                      { key:"bd1", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日", num: bdNumbers[1] },
+                      { key:"bd2", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日", num: bdNumbers[2] },
+                      { key:"bd3", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日", num: bdNumbers[3] },
+                    ] : []),
+                  ];
+                  const handleSlotsChange = (next) => {
+                    const get = key => next.find(s=>s.key===key)?.num || "";
+                    setForm(f=>({...f, number: get("main")})); setNumWarn("");
+                    if (isExtraCard) setNumber2(get("extra"));
+                    if (isBirthday) setBdNumbers([get("bd0"),get("bd1"),get("bd2"),get("bd3")]);
+                  };
+                  const doRandom = () => {
+                    const usedSet = new Set(slots.filter(s=>s.num).map(s=>Number(s.num)));
+                    const takenSet = new Set(takenNums.filter(x=>x.name!==form.name).map(x=>x.num));
+                    const avail = Array.from({length:effectiveNumMax},(_,i)=>i+1).filter(n=>!usedSet.has(n)&&!takenSet.has(n));
+                    if (!avail.length) return;
+                    const emptySlots = slots.filter(s=>!s.num);
+                    const filled = [...slots];
+                    emptySlots.forEach(s => {
+                      if (!avail.length) return;
+                      const pick = avail.splice(Math.floor(Math.random()*avail.length),1)[0];
+                      const idx = filled.findIndex(x=>x.key===s.key);
+                      filled[idx] = {...filled[idx], num: String(pick)};
+                    });
+                    handleSlotsChange(filled);
+                  };
+                  const filledCount = slots.filter(s=>s.num).length;
+                  const legends = slots.map(s=>s.num ? (
+                    <span key={s.key} style={{fontSize:"12px",display:"inline-flex",alignItems:"center",gap:"4px"}}>
+                      <span style={{width:"10px",height:"10px",borderRadius:"2px",background:s.color,display:"inline-block"}} />
+                      {s.label} #{s.num}
+                    </span>
+                  ) : null).filter(Boolean);
+                  return (
+                    <>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                        <label style={{margin:0}}>選號碼（1 ~ {effectiveNumMax}）{isBirthday&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px"}}>🎂 生日+4</span>}{isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px"}}>➕ 加號卡+1</span>}</label>
+                        <button className="ghost btn-sm" onClick={doRandom}>🎲 隨機</button>
                       </div>
-                      <NumberPicker numMax={effectiveNumMax} value={number2}
-                        onChange={v=>setNumber2(v)}
+                      {legends.length > 0 && <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"6px"}}>{legends}</div>}
+                      <NumberPicker numMax={effectiveNumMax} slots={slots} maxSlots={slots.length}
+                        onSlotsChange={handleSlotsChange}
                         takenBy={takenNums.filter(x=>x.name!==form.name).map(x=>x.num)}
-                        excludeNums={form.number ? [form.number] : []}
                         weekly={weekly} isDark={isDarkMode} />
-                    </div>
+                      {numWarn && <p style={{color:"var(--red)",fontSize:"13px",marginTop:0,marginBottom:"12px",fontWeight:"500"}}>{numWarn}</p>}
+                    </>
                   );
-                  return null;
                 })()}
-                {isBirthday && (
-                  <div style={{marginTop:"8px",padding:"12px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"var(--r)"}}>
-                    <div style={{fontSize:"13px",fontWeight:"600",color:"var(--c-pink-tx)",marginBottom:"8px"}}>
-                    🎂 今天是你的生日！再選 4 個號碼（已選 {bdNumbers.filter(Boolean).length}/4）
-                  </div>
-                  <NumberPicker numMax={effectiveNumMax}
-                    multiValues={bdNumbers.filter(Boolean)}
-                    onMultiChange={vals => { const padded = [...vals, "", "", "", ""].slice(0,4); setBdNumbers(padded); }}
-                    maxSelect={4}
-                    takenBy={takenNums.filter(x=>x.name!==form.name).map(x=>x.num)}
-                    excludeNums={[form.number, number2].filter(Boolean)}
-                    weekly={weekly} isDark={isDarkMode} />
-                  </div>
-                )}
+                <p style={{fontSize:"12px",color:"var(--t3)",marginTop:"-4px",marginBottom:"12px"}}>送出後號碼與卡牌無法修改</p>
                 {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); }} />}
               </>)}
               <div className="divider" />
