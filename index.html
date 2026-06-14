@@ -2194,6 +2194,11 @@ function App() {
   useEffect(() => {
     const name = form.name.trim();
     if (!name) { setMyCards([]); return; }
+    // testmode: ?extracard 注入假加號卡
+    if (TEST_MODE && new URLSearchParams(location.search).has("extracard")) {
+      setMyCards([{ id:"test_extra", type:"extra_number", expiresAt:"9999-12-31" }]);
+      return;
+    }
     const ref = fRef(`userCards/${sanitizeKey(name)}`);
     const handler = snap => {
       const today = todayStr();
