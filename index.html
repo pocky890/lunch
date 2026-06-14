@@ -577,7 +577,12 @@ function computeLoserStreak(weekly, name, today) {
 function computeAchievements(name, weeklyData, participationCount) {
   const recs = Object.entries(weeklyData || {}).sort(([a],[b]) => a < b ? -1 : 1).map(([,r]) => r).filter(Boolean);
   const soloWins = recs.filter(r => r.winner === name && r.soloWin).length;
-  const maxStreak = recs.reduce((m, r) => r.winner === name && !r.soloWin && r.streak ? Math.max(m, r.streak) : m, 0);
+  let maxStreak = 0, curStreak = 0;
+  recs.forEach(r => {
+    if (r.noParticipants) return;
+    if (r.winner === name && !r.soloWin) { curStreak++; maxStreak = Math.max(maxStreak, curStreak); }
+    else { curStreak = 0; }
+  });
   let maxLose = 0, curLose = 0;
   recs.forEach(r => {
     if (r.noParticipants) return;
