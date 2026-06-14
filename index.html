@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 20:05";
+  const BUILD_TIME = "2026-06-14 22:23";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -543,7 +543,7 @@ function determineResult(pts, drawnNumber) {
   const sorted = [...pts].sort((a,b) => Math.abs(a.number-drawnNumber) - Math.abs(b.number-drawnNumber));
   const exactWinners = sorted.filter(p => p.number === drawnNumber);
   if (exactWinners.length > 0) {
-    const rep = exactWinners[Math.floor(Math.random() * exactWinners.length)];
+    const rep = exactWinners[drawnNumber % exactWinners.length];
     return { winner: rep, winners: exactWinners, soloWin: true, sorted: sorted };
   }
   const minDiff = Math.abs(sorted[0].number - drawnNumber);
