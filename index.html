@@ -356,7 +356,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-14 22:47";
+  const BUILD_TIME = "2026-06-14 23:08";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2240,6 +2240,23 @@ function App() {
     return () => ref.off("value", handler);
   }, []);
 
+  // 盜牌通知監聽（被偷時顯示 toast，任何頁面皆有效）
+  useEffect(() => {
+    const name = form.name.trim();
+    if (!name) return;
+    const ref = fRef(`stolenNotice/${sanitizeKey(name)}`);
+    const handler = snap => {
+      const data = snap.val();
+      if (!data) return;
+      const mm = data.date?.slice(5,7), dd = data.date?.slice(8,10);
+      const dateLabel = mm && dd ? `（${parseInt(mm)}/${parseInt(dd)}）` : "";
+      showToast(`🎭 你的 ${CARD_TYPES[data.cardType]?.emoji}${CARD_TYPES[data.cardType]?.name} 被 ${data.by} 偷走了！${dateLabel}`);
+      fRef(`stolenNotice/${sanitizeKey(name)}`).remove();
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, [form.name]);
+
   // 我的手牌即時監聽（依 name）
   useEffect(() => {
     const name = form.name.trim();
@@ -2672,6 +2689,7 @@ function App() {
             stealSucceeded = true;
             if (stolen.type === "steal_card") await fRef(`specialAchievements/${sanitizeKey(name)}/stealSteal`).set(true);
             showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`);
+            await fRef(`stolenNotice/${sanitizeKey(victim.name)}`).set({ by: name, cardType: stolen.type, date: todayStr() });
           } else {
             showToast("🎭 想偷的卡剛好被用掉了，盜牌卡保留 😅");
           }
