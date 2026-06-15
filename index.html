@@ -342,7 +342,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：之後內容有改動時把對應數字 +1，動畫與紅點會對所有人重新出現一次
-  const WHATSNEW_VERSION = { cards: 2, rules: 2 };
+  const WHATSNEW_VERSION  = { cards: 2, rules: 2 };
+  const WHATSNEW_NEW_CARDS = ["thirsty_card"]; // 當版 cards 有更新的卡種
+  const WHATSNEW_NEW_RULES = ["solo"];          // 當版 rules 有更新的段落 key
   const DB_PREFIX         = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
   const TEST_DRAWN_NUMBER = 78; // 測試模式固定開獎號碼
   const TEST_MOCK_DATE    = "2026-12-25"; // 測試模式模擬日期（節日橫幅用）
@@ -370,7 +372,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 15:40";
+  const BUILD_TIME = "2026-06-15 15:49";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -791,7 +793,9 @@ function determineResultWithCards(pts, drawnNumber) {
 }
 
 /* ── Help Modal ── */
-function HelpModal({ onClose, numMax = 99 }) {
+const NewDot = () => <span style={{display:"inline-block",width:"7px",height:"7px",borderRadius:"50%",background:"#EF4444",marginLeft:"5px",verticalAlign:"middle",flexShrink:0}} />;
+
+function HelpModal({ onClose, numMax = 99, newSections = [] }) {
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="card fade-up" style={{width:"440px",maxWidth:"95vw",maxHeight:"85vh",overflowY:"auto"}}>
@@ -812,7 +816,7 @@ function HelpModal({ onClose, numMax = 99 }) {
             <div>誰的號碼最接近幸運號碼，今天就去吃他選的店，大家<strong style={{color:"var(--t1)"}}>各自付帳</strong>。</div>
           </div>
           <div>
-            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎯 獨贏（完全命中）</div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎯 獨贏（完全命中）{newSections.includes("solo") && <NewDot />}</div>
             <div>如果有人選的號碼<strong style={{color:"var(--t1)"}}>完全等於</strong>幸運號碼，就是「獨贏」！其他人每人最多補助 <strong style={{color:"var(--t1)"}}>50 元</strong>，讓他吃他選的店。若該人同時有連勝紀錄且連勝金額（N × 10 元）超過 50 元，則以<strong style={{color:"var(--t1)"}}>連勝金額為主</strong>。🎂 若獨贏者當天生日，所有金額<strong style={{color:"var(--t1)"}}>加倍</strong>（50 元 → 100 元，有連勝則連勝金額 × 2）。</div>
             <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>🤝 多人同時完全命中時，<strong style={{color:"var(--t2)"}}>所有人都算獨贏</strong>，補助金平分給每位贏家。餐廳從共贏者中隨機抽籤決定。</div>
           </div>
@@ -852,7 +856,7 @@ function HelpModal({ onClose, numMax = 99 }) {
 }
 
 /* ── Card Help Modal ── */
-function CardHelpModal({ onClose, cardConfig = {} }) {
+function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
   const cards = [
     { type:"follow_restaurant", desc:"加入時宣告使用。非獨贏情況下，不論開獎號碼是誰，當天統一去你選的餐廳。若有人獨贏（完全命中），獨贏最大，卡牌無效。若多人同天使用，以號碼最接近開獎號碼的人優先。連勝機制照常計算。" },
     { type:"extra_number",      desc:"加入時宣告使用，需同時選兩個號碼。開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼。" },
@@ -883,7 +887,7 @@ function CardHelpModal({ onClose, cardConfig = {} }) {
             <div key={c.type}>
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
                 <span style={{fontSize:"18px"}}>{ct.emoji}</span>
-                <span>{ct.name}</span>
+                <span>{ct.name}{newCardTypes.includes(c.type) && <NewDot />}</span>
                 <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{cfg.total ?? "?"} 張 · {cfg.expireDays ?? "?"} 天</span>
               </div>
               <div>{c.desc}</div>
@@ -3077,8 +3081,8 @@ function App() {
     : null;
 
   const AP = <>
-    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} />}
-    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} />}
+    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} newSections={rulesNews ? WHATSNEW_NEW_RULES : []} />}
+    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} newCardTypes={cardNews ? WHATSNEW_NEW_CARDS : []} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
     {birthdayModal}
