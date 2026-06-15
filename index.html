@@ -370,7 +370,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 13:28";
+  const BUILD_TIME = "2026-06-15 13:32";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2305,6 +2305,18 @@ function App() {
     });
     return () => unsub();
   }, []);
+
+  // 即時同步 boundName（管理員改名後不需重新整理）
+  useEffect(() => {
+    if (!currentUser) return;
+    const ref = fRef(`userNames/${currentUser.uid}`);
+    const handler = snap => {
+      const name = snap.val();
+      if (name) { setBoundName(name); setForm(f => ({...f, name})); }
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, [currentUser]);
 
   const [adminOpen, setAdminOpen] = useState(false);
 
