@@ -372,7 +372,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 15:56";
+  const BUILD_TIME = "2026-06-15 16:02";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2273,8 +2273,10 @@ function App() {
   const seenWhatsnew = (key) => { try { return localStorage.getItem(key); } catch(e) { return null; } };
   const [cardNews, setCardNews] = useState(() => seenWhatsnew("lunch_seen_cards") !== String(WHATSNEW_VERSION.cards));
   const [rulesNews, setRulesNews] = useState(() => seenWhatsnew("lunch_seen_rules") !== String(WHATSNEW_VERSION.rules));
-  const openCardHelp = () => { setShowCardHelp(true); setCardNews(false); try { localStorage.setItem("lunch_seen_cards", String(WHATSNEW_VERSION.cards)); } catch(e) {} };
-  const openHelp     = () => { setShowHelp(true);     setRulesNews(false); try { localStorage.setItem("lunch_seen_rules", String(WHATSNEW_VERSION.rules)); } catch(e) {} };
+  const [helpNewSections, setHelpNewSections] = useState([]);
+  const [cardHelpNewTypes, setCardHelpNewTypes] = useState([]);
+  const openCardHelp = () => { setCardHelpNewTypes(cardNews ? WHATSNEW_NEW_CARDS : []); setShowCardHelp(true); setCardNews(false); try { localStorage.setItem("lunch_seen_cards", String(WHATSNEW_VERSION.cards)); } catch(e) {} };
+  const openHelp     = () => { setHelpNewSections(rulesNews ? WHATSNEW_NEW_RULES : []); setShowHelp(true);     setRulesNews(false); try { localStorage.setItem("lunch_seen_rules", String(WHATSNEW_VERSION.rules)); } catch(e) {} };
   const [animResult, setAnimResult] = useState(null);
   const [absent, setAbsent] = useState([]);
   const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
@@ -3081,8 +3083,8 @@ function App() {
     : null;
 
   const AP = <>
-    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} newSections={rulesNews ? WHATSNEW_NEW_RULES : []} />}
-    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} newCardTypes={cardNews ? WHATSNEW_NEW_CARDS : []} />}
+    {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} newSections={helpNewSections} />}
+    {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} newCardTypes={cardHelpNewTypes} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} />
     {birthdayModal}
