@@ -63,10 +63,11 @@ session/                當日設定（numMax 等）
 `userStatus/{uid} === "resigned"` → `authState = "resigned"` → 顯示封鎖畫面，無法使用任何功能。
 
 ## 說明同步原則（必須遵守）
-任何卡牌或遊戲規則的改動，commit 前必須同步更新以下三個地方，不等使用者提醒：
+任何卡牌或遊戲規則的改動，commit 前必須同步更新以下四個地方，不等使用者提醒：
 1. `index.html` 的 `CardHelpModal`（卡牌說明彈窗）或 `HelpModal`（遊戲說明彈窗）
 2. Notion 頁面（午餐大樂透，ID: `3618dfd5-5a4d-8085-a434-fa1f457cd47c`）
-3. `CLAUDE.md` 的卡牌系統描述（若有新增/移除卡種）
+3. `index.html` 頂部的 `WHATSNEW_VERSION`：卡牌說明改動 → `cards` +1，遊戲規則改動 → `rules` +1（觸發紫光通知）
+4. `CLAUDE.md` 的卡牌系統描述（若有新增/移除卡種）
 
 ## 注意事項
 - Firebase Security Rules 目前為 public read/write（測試環境），正式上線前需要加 Auth 驗證
