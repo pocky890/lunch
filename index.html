@@ -378,7 +378,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 19:36";
+  const BUILD_TIME = "2026-06-15 23:13";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1526,7 +1526,14 @@ function Footer() {
   );
 }
 
-function StatCards({deadline, ptsCount, cd}) {
+function StatCards({deadline, ptsCount}) {
+  const [cd, setCd] = useState("--:--");
+  useEffect(() => {
+    if (!deadline) { setCd("--:--"); return; }
+    setCd(calcCountdown(deadline));
+    const timer = setInterval(() => setCd(calcCountdown(deadline)), 1000);
+    return () => clearInterval(timer);
+  }, [deadline]);
   return (
     <div className="grid-3-meta">
       <div className="stat-card"><div className="stat-label">截止時間</div><div className="stat-value">{deadline}</div><div className="stat-sub">今日開獎時間</div></div>
@@ -2271,7 +2278,6 @@ function App() {
   });
   
   const [result, setResult] = useState(null);
-  const [cd, setCd] = useState("--:--");
   const [numWarn, setNumWarn] = useState("");
   const [confirmModal, setConfirmModal] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -2569,6 +2575,11 @@ function App() {
   const streakAutoProtectedRef = useRef(false);
   const cheapskateAutoUsedRef = useRef(false);
 
+  useEffect(() => {
+    streakAutoProtectedRef.current = false;
+    cheapskateAutoUsedRef.current = false;
+  }, [currentUser]);
+
   function showToast(msg, duration=3000) {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), duration);
@@ -2733,10 +2744,8 @@ function App() {
 
   useEffect(() => {
     if (!sess || (phase!=="join" && phase!=="joined" && phase!=="absent")) return;
-    setCd(calcCountdown(sess.deadline));
     timerRef.current = setInterval(async () => {
       const dl = sessRef.current?.deadline; if (!dl) return;
-      setCd(calcCountdown(dl));
       if (isDeadlinePassed(dl)) {
         clearInterval(timerRef.current);
         const ptsObj = await fGet("participants"), finalPts = snapToArr(ptsObj), _today = todayStr(), _nm = sessRef.current?.numMax||99, drawn = await getOrDrawNumber(_today, isDoubleDay(_today) ? Math.ceil(_nm/2) : _nm), res = determineResultWithCards(finalPts, drawn);
@@ -3025,7 +3034,7 @@ function App() {
     await fSet("absent", null);
     await fSet(`drawn/${today}`, null);
     await fRef(`weekly/${today}`).remove();
-    savedRef.current = false; setSess(null); setPts([]); setResult(null); setCd("--:--"); setAbsent([]);
+    savedRef.current = false; setSess(null); setPts([]); setResult(null); setAbsent([]);
     setForm(f=>({name:f.name||boundName,category:"",rest:"",cust:"",number:"",deadline:"11:50"})); setPhase("setup");
   }
 
@@ -3148,7 +3157,7 @@ function App() {
       <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <StreakWarning pts={pts} weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} />
@@ -3267,7 +3276,7 @@ function App() {
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
-          <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+          <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <StreakWarning pts={pts} weekly={weekly} />
           <div className="grid-3">
@@ -3292,7 +3301,7 @@ function App() {
       <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <StatCards deadline={sess?.deadline} ptsCount={pts.length} cd={cd} />
+        <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <div className="grid-3">
           <div className="col">
