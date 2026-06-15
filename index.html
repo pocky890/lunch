@@ -370,7 +370,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 13:20";
+  const BUILD_TIME = "2026-06-15 13:25";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1036,7 +1036,7 @@ function MembersTab() {
   const [msg, setMsg] = React.useState("");
   const [editingBirthday, setEditingBirthday] = React.useState(null); // uid
   const [bdInput, setBdInput] = React.useState("");
-  const [editingName, setEditingName] = React.useState(null); // uid
+  const [renamingMember, setRenamingMember] = React.useState(null); // {uid, name}
   const [nameInput, setNameInput] = React.useState("");
   const [renaming, setRenaming] = React.useState(false);
 
@@ -1096,9 +1096,10 @@ function MembersTab() {
     setTimeout(() => setMsg(""), 3000);
   }
 
-  async function renameMember(uid, oldName, newName) {
-    newName = newName.trim();
-    if (!newName || newName === oldName) { setEditingName(null); return; }
+  async function renameMember() {
+    const { uid, name: oldName } = renamingMember;
+    const newName = nameInput.trim();
+    if (!newName || newName === oldName) { setRenamingMember(null); return; }
     setRenaming(true);
     setMsg("更新中…");
     try {
@@ -1133,7 +1134,7 @@ function MembersTab() {
         if (pt.name === oldName) await fSet(`participants/${key}/name`, newName);
       }
       setMembers(prev => prev.map(m => m.uid === uid ? {...m, name: newName} : m));
-      setEditingName(null);
+      setRenamingMember(null);
       setMsg("名字已更新 ✓"); setTimeout(() => setMsg(""), 3000);
     } catch(e) {
       setMsg(`更新失敗：${e.message}`); setTimeout(() => setMsg(""), 5000);
@@ -1144,6 +1145,24 @@ function MembersTab() {
 
   return (
     <div>
+      {renamingMember && (
+        <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&setRenamingMember(null)}>
+          <div className="card fade-up" style={{width:"320px",maxWidth:"92vw"}}>
+            <h3 style={{fontSize:"16px",marginBottom:"4px"}}>修改名字</h3>
+            <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"16px"}}>原名：{renamingMember.name}</p>
+            <input value={nameInput} onChange={e=>setNameInput(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter")renameMember();if(e.key==="Escape")setRenamingMember(null);}}
+              placeholder="輸入新名字" autoFocus disabled={renaming}
+              style={{width:"100%",fontSize:"14px",padding:"8px 10px",borderRadius:"8px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)",boxSizing:"border-box",marginBottom:"12px"}} />
+            <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+              <button className="ghost btn-sm" onClick={()=>setRenamingMember(null)} disabled={renaming} style={{marginBottom:0}}>取消</button>
+              <button className="btn-sm" onClick={renameMember} disabled={renaming||!nameInput.trim()} style={{marginBottom:0,background:"var(--a)",color:"#fff",border:"none",borderRadius:"8px",padding:"6px 16px",cursor:"pointer",opacity:renaming||!nameInput.trim()?0.5:1}}>
+                {renaming ? "更新中…" : "確認"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <p style={{fontSize:"13px",color:"var(--t3)",marginBottom:"12px"}}>離職成員的生日不會觸發生日 Banner。</p>
       {msg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginBottom:"8px"}}>{msg}</p>}
       <div style={{border:"1px solid var(--b1)",borderRadius:"var(--r)",overflow:"hidden"}}>
@@ -1152,17 +1171,10 @@ function MembersTab() {
         </div>
         {members.map(m => (
           <div key={m.uid} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",alignItems:"center",borderTop:"1px solid var(--b1)",opacity:m.resigned?0.5:1}}>
-            {editingName === m.uid
-              ? <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
-                  <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")renameMember(m.uid,m.name,nameInput);if(e.key==="Escape")setEditingName(null);}} style={{flex:1,minWidth:0,fontSize:"13px",padding:"2px 6px",borderRadius:"4px",border:"1px solid var(--a)",background:"var(--bg)",color:"var(--t1)"}} autoFocus disabled={renaming} />
-                  <button className="ghost" style={{fontSize:"12px",padding:"1px 6px",flexShrink:0}} onClick={()=>renameMember(m.uid,m.name,nameInput)} disabled={renaming}>✓</button>
-                  <button className="ghost" style={{fontSize:"12px",padding:"1px 6px",flexShrink:0}} onClick={()=>setEditingName(null)} disabled={renaming}>✗</button>
-                </div>
-              : <div style={{fontSize:"13px",color:"var(--t1)",display:"flex",alignItems:"center",gap:"6px"}}>
-                  {m.name}
-                  <button className="ghost" style={{fontSize:"11px",padding:"1px 5px",opacity:0.5,flexShrink:0}} title="修改名字" onClick={()=>{setEditingName(m.uid);setNameInput(m.name);}}>✏️</button>
-                </div>
-            }
+            <div style={{fontSize:"13px",color:"var(--t1)",display:"flex",alignItems:"center",gap:"6px"}}>
+              {m.name}
+              <button className="ghost" style={{fontSize:"11px",padding:"1px 5px",opacity:0.5,flexShrink:0}} title="修改名字" onClick={()=>{setRenamingMember({uid:m.uid,name:m.name});setNameInput(m.name);}}>✏️</button>
+            </div>
             {editingBirthday === m.uid
               ? <span style={{display:"flex",alignItems:"center",gap:"4px",justifyContent:"center"}}>
                   <input value={bdInput} onChange={e=>setBdInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveBirthday(m.uid);if(e.key==="Escape")setEditingBirthday(null);}} placeholder="MM-DD" style={{width:"58px",fontSize:"12px",padding:"2px 4px",borderRadius:"4px",border:"1px solid var(--a)",background:"var(--bg)",color:"var(--t1)",textAlign:"center"}} autoFocus />
