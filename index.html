@@ -370,7 +370,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 10:53";
+  const BUILD_TIME = "2026-06-15 13:15";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1895,7 +1895,7 @@ function HistoryModal({ weekly, onClose }) {
   );
 }
 
-function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory, isAdmin, userTitles, boundName, onTitleChange}) {
+function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHistory, isAdmin, userTitles, boundName, onTitleChange, mySpecialAchievements = {}}) {
   const [showClearModal, setShowClearModal] = useState(false);
   const [targetDate, setTargetDate] = useState(null);
 
@@ -3029,7 +3029,7 @@ function App() {
               {isLoading ? "處理中..." : "建立遊戲"}
             </button>
           </div>
-          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} /></div>
+          <div style={{marginTop:"40px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -3051,7 +3051,7 @@ function App() {
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} />
             </div>
           </div>
           <div className="col">
@@ -3169,7 +3169,7 @@ function App() {
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
                 <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} />
+                <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} />
               </div>
             </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={handleCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
@@ -3193,7 +3193,7 @@ function App() {
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} />
+              <WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} />
             </div>
           </div>
           <div className="col">
@@ -3231,7 +3231,7 @@ function App() {
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
-          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
+          <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
       </div>
@@ -3261,7 +3261,7 @@ function App() {
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
-              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} /></div>
+              <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} /></div>
             </div>
             <div className="layout-main">
               <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className={`result-number${result.nukedParticipants?.length>0?" result-number-scorched":""}`}>{drawnNumber}</div></div>
