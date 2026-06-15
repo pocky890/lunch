@@ -370,7 +370,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 13:25";
+  const BUILD_TIME = "2026-06-15 13:28";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1173,7 +1173,7 @@ function MembersTab() {
           <div key={m.uid} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",padding:"10px 12px",alignItems:"center",borderTop:"1px solid var(--b1)",opacity:m.resigned?0.5:1}}>
             <div style={{fontSize:"13px",color:"var(--t1)",display:"flex",alignItems:"center",gap:"6px"}}>
               {m.name}
-              <button className="ghost" style={{fontSize:"11px",padding:"1px 5px",opacity:0.5,flexShrink:0}} title="修改名字" onClick={()=>{setRenamingMember({uid:m.uid,name:m.name});setNameInput(m.name);}}>✏️</button>
+              <button title="修改名字" onClick={()=>{setRenamingMember({uid:m.uid,name:m.name});setNameInput(m.name);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:"12px",padding:"0 2px",opacity:0.4,lineHeight:1,flexShrink:0}}>✏️</button>
             </div>
             {editingBirthday === m.uid
               ? <span style={{display:"flex",alignItems:"center",gap:"4px",justifyContent:"center"}}>
