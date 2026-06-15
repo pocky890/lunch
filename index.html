@@ -370,7 +370,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 14:51";
+  const BUILD_TIME = "2026-06-15 15:26";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2761,9 +2761,9 @@ function App() {
         if (isWinnerOf(rec, result.winner.name)) { preservedStreak++; } else { break; }
       }
     }
-    const soloTreatPerPerson = result.soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
     const soloWinners = result.winners || [result.winner];
     const birthdayWinnerEntry = soloWinners.find(w => todayBirthdays.some(b => b.name === w.name));
+    const soloTreatPerPerson = result.soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) * (birthdayWinnerEntry ? 2 : 1) : 50;
     const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(birthdayWinnerEntry && {birthdayWinner: birthdayWinnerEntry.name})};
     (async () => {
       let didWrite = false;
@@ -3323,7 +3323,8 @@ function App() {
     const soloWinners = result.winners || [winner];
     const streak = computeStreak(weekly, winner.name, todayStr(), pts.length);
     const treatAmount = streak >= 3 ? streak * 10 : 0;
-    const soloTreatPerPerson = soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
+    const isBirthdaySoloWin = soloWin && todayBirthdays.some(b => b.name === winner.name);
+    const soloTreatPerPerson = soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) * (isBirthdaySoloWin ? 2 : 1) : 50;
     const nonWinnerCount = allSorted.length - soloWinners.length;
     const maxTotal = nonWinnerCount * soloTreatPerPerson;
     const perWinner = soloWinners.length > 1 ? Math.floor(maxTotal / soloWinners.length) : maxTotal;
@@ -3358,9 +3359,9 @@ function App() {
                   <div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px",marginTop:"4px"}}>{winner.rest}{soloWinners.length > 1 && <span style={{fontSize:"12px",color:oc.p,marginLeft:"8px"}}>（抽籤決定）</span>}</div>
                   <div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} />
                   {streak>=3 ? (
-                    <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {streak} 連勝加成</span>每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，合計 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
+                    <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {streak} 連勝加成</span>{isBirthdaySoloWin && <span className="badge" style={{marginRight:"6px",background:"rgba(236,72,153,0.15)",border:"1px solid rgba(236,72,153,0.4)",color:"#9D174D"}}>🎂 生日加倍</span>}每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，合計 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
                   ) : (
-                    <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · 每人最多 <strong style={{color:oc.str}}>50 元</strong> · 共 {nonWinnerCount} 人，上限 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
+                    <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · {isBirthdaySoloWin && <span className="badge" style={{marginRight:"6px",background:"rgba(236,72,153,0.15)",border:"1px solid rgba(236,72,153,0.4)",color:"#9D174D"}}>🎂 生日加倍</span>}每人最多 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，上限 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
                   )}
                 </div>
               ) : (

@@ -212,7 +212,17 @@ async function main() {
       if (rec.winner === result.winner.name && !rec.soloWin) { preservedStreak++; } else { break; }
     }
   }
-  const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) : 50;
+  let isBirthdaySoloWin = false;
+  if (result.soloWin) {
+    const userNames = await fbGet("userNames");
+    const winnerUid = Object.entries(userNames || {}).find(([, n]) => n === result.winner.name)?.[0];
+    if (winnerUid) {
+      const birthday = await fbGet(`userBirthdays/${winnerUid}`);
+      const todayMMDD = `${String(new Date(Date.now() + 8*3600000).getUTCMonth()+1).padStart(2,"0")}-${String(new Date(Date.now() + 8*3600000).getUTCDate()).padStart(2,"0")}`;
+      isBirthdaySoloWin = birthday === todayMMDD;
+    }
+  }
+  const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) * (isBirthdaySoloWin ? 2 : 1) : 50;
   const rec = {
     winner: result.winner.name, rest: result.winner.rest,
     soloWin: result.soloWin, drawnNumber, streak,
