@@ -231,7 +231,7 @@
        放在 ::before 而非按鈕本身，避開 .ghost 的 !important box-shadow 遮蔽 */
     .has-news { position: relative; }
     .has-news::before {
-      content: ""; position: absolute; inset: 0; border-radius: 50%;
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
       pointer-events: none; animation: newsPulse 1.6s ease-in-out infinite;
     }
     .has-news::after {
@@ -370,7 +370,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 14:18";
+  const BUILD_TIME = "2026-06-15 14:40";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
