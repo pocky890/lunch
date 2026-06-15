@@ -66,7 +66,10 @@ session/                當日設定（numMax 等）
 任何卡牌或遊戲規則的改動，commit 前必須同步更新以下四個地方，不等使用者提醒：
 1. `index.html` 的 `CardHelpModal`（卡牌說明彈窗）或 `HelpModal`（遊戲說明彈窗）
 2. Notion 頁面（午餐大樂透，ID: `3618dfd5-5a4d-8085-a434-fa1f457cd47c`）
-3. `index.html` 頂部的 `WHATSNEW_VERSION`：卡牌說明改動 → `cards` +1，遊戲規則改動 → `rules` +1（觸發紫光通知）
+3. `index.html` 頂部的版號與 history（觸發紫光通知與 NEW 標籤）：
+   - 卡牌說明改動 → `WHATSNEW_VERSION.cards` +1，並在 `WHATSNEW_CARDS_HISTORY` 加 `{ 新版號: ["card_key", ...] }`
+   - 遊戲規則改動 → `WHATSNEW_VERSION.rules` +1，並在 `WHATSNEW_RULES_HISTORY` 加 `{ 新版號: ["section_key", ...] }`
+   - NEW 標籤會顯示使用者「上次看過的版本到現在」所有版本的累積變動，確保長時間未上線的人看到所有缺席期間的更新
 4. `CLAUDE.md` 的卡牌系統描述（若有新增/移除卡種）
 
 ## 注意事項
