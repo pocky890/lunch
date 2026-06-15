@@ -378,7 +378,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 16:48";
+  const BUILD_TIME = "2026-06-15 19:19";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -400,6 +400,7 @@
     { key:"fatedTie",   emoji:"🔗", name:"命運的糾纏",   desc:"開獎時與他人距離完全相同",   rarity:2 },
     { key:"stealSteal",  emoji:"🎭", name:"神偷怪盜",   desc:"用盜牌卡偷到了盜牌卡",                     rarity:3 },
     { key:"bloodyLeech", emoji:"🥤", name:"嗜血水蛭", desc:"同一天使用口渴卡，並且獨贏",                rarity:4 },
+    { key:"cardKing",    emoji:"👑", name:"遊戲王",   desc:"手牌同時持有 5 張以上",                    rarity:4 },
   ];
 </script>
 
@@ -629,6 +630,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const fatedTie   = recs.some(r => r.tiedParticipants?.includes(name));
   const stealSteal  = !!specialAchievements.stealSteal;
   const bloodyLeech = !!specialAchievements.bloodyLeech;
+  const cardKing    = !!specialAchievements.cardKing;
   const pc = participationCount || 0;
   const unlocked = [];
   if (pc >= 50)        unlocked.push("join50");
@@ -650,6 +652,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (fatedTie)        unlocked.push("fatedTie");
   if (stealSteal)      unlocked.push("stealSteal");
   if (bloodyLeech)     unlocked.push("bloodyLeech");
+  if (cardKing)        unlocked.push("cardKing");
   return unlocked;
 }
 
@@ -2490,6 +2493,12 @@ function App() {
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, [form.name]);
+
+  useEffect(() => {
+    const name = form.name.trim();
+    if (!name || myCards.length < 5) return;
+    fRef(`specialAchievements/${sanitizeKey(name)}/cardKing`).set(true);
+  }, [myCards]);
 
   // 結果頁：免付卡自動觸發（被動卡，連勝請客時免付）
   useEffect(() => {
