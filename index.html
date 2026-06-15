@@ -378,7 +378,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 23:13";
+  const BUILD_TIME = "2026-06-15 23:19";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -717,8 +717,10 @@ async function ensureDailyCards(today, maxNum = 99) {
   if (cards.length === 0) { await fSet(`dailyCards/${today}`, {}); return {}; }
   const positions = {};
   const used = new Set();
+  const shuffledCards = [...cards];
+  for (let i = shuffledCards.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [shuffledCards[i], shuffledCards[j]] = [shuffledCards[j], shuffledCards[i]]; }
   // 卡牌只藏在使用者可選範圍內（Lucky Day 號碼池減半時，避免卡牌落在無法選取的號碼）
-  for (const type of cards.sort(() => Math.random()-0.5)) {
+  for (const type of shuffledCards) {
     let n, tries = 0;
     do { n = Math.floor(Math.random()*maxNum)+1; tries++; } while (used.has(n) && tries < 300);
     if (!used.has(n)) { used.add(n); positions[n] = { type, pickedBy: null }; }
@@ -2809,7 +2811,8 @@ function App() {
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
         await ensureDailyCards(today, effectiveNumMax);
         const won = [];
-        const shuffledPts = [...pts].sort(() => Math.random() - 0.5);
+        const shuffledPts = [...pts];
+        for (let i = shuffledPts.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [shuffledPts[i], shuffledPts[j]] = [shuffledPts[j], shuffledPts[i]]; }
         for (const p of shuffledPts) {
           const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
           for (const n of numbers) {
