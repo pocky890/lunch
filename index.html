@@ -342,7 +342,7 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：之後內容有改動時把對應數字 +1，動畫與紅點會對所有人重新出現一次
-  const WHATSNEW_VERSION  = { cards: 2, rules: 2 };
+  const WHATSNEW_VERSION  = { cards: 3, rules: 3 };
   const WHATSNEW_NEW_CARDS = ["thirsty_card"]; // 當版 cards 有更新的卡種
   const WHATSNEW_NEW_RULES = ["solo"];          // 當版 rules 有更新的段落 key
   const DB_PREFIX         = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
@@ -372,7 +372,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 15:49";
+  const BUILD_TIME = "2026-06-15 15:56";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -793,7 +793,7 @@ function determineResultWithCards(pts, drawnNumber) {
 }
 
 /* ── Help Modal ── */
-const NewDot = () => <span style={{display:"inline-block",width:"7px",height:"7px",borderRadius:"50%",background:"#EF4444",marginLeft:"5px",verticalAlign:"middle",flexShrink:0}} />;
+const NewDot = () => <span style={{display:"inline-block",background:"#EF4444",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"2px 6px",borderRadius:"4px",marginLeft:"7px",letterSpacing:"0.5px",verticalAlign:"middle",flexShrink:0,lineHeight:"16px"}}>NEW</span>;
 
 function HelpModal({ onClose, numMax = 99, newSections = [] }) {
   return (
