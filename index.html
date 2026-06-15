@@ -341,10 +341,16 @@
     appId:             "1:992662799993:web:3bc3c1c3fd78dd7f8fb6a8"
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
-  // 「有更新」提示版本：之後內容有改動時把對應數字 +1，動畫與紅點會對所有人重新出現一次
-  const WHATSNEW_VERSION  = { cards: 5, rules: 4 };
-  const WHATSNEW_NEW_CARDS = ["thirsty_card"]; // 當版 cards 有更新的卡種
-  const WHATSNEW_NEW_RULES = ["solo"];          // 當版 rules 有更新的段落 key
+  // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
+  const WHATSNEW_VERSION       = { cards: 5, rules: 4 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"] };
+  const getUnseenItems = (history, seenVer, currentVer) => {
+    const seen = parseInt(seenVer) || 0;
+    const unseen = new Set();
+    for (let v = seen + 1; v <= currentVer; v++) (history[v] || []).forEach(k => unseen.add(k));
+    return [...unseen];
+  };
   const DB_PREFIX         = new URLSearchParams(location.search).has("test") ? "lunch_test" : "lunch";
   const TEST_DRAWN_NUMBER = 78; // 測試模式固定開獎號碼
   const TEST_MOCK_DATE    = "2026-12-25"; // 測試模式模擬日期（節日橫幅用）
@@ -372,7 +378,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 16:40";
+  const BUILD_TIME = "2026-06-15 16:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2275,8 +2281,8 @@ function App() {
   const [rulesNews, setRulesNews] = useState(() => seenWhatsnew("lunch_seen_rules") !== String(WHATSNEW_VERSION.rules));
   const [helpNewSections, setHelpNewSections] = useState([]);
   const [cardHelpNewTypes, setCardHelpNewTypes] = useState([]);
-  const openCardHelp = () => { setCardHelpNewTypes(cardNews ? WHATSNEW_NEW_CARDS : []); setShowCardHelp(true); setCardNews(false); try { localStorage.setItem("lunch_seen_cards", String(WHATSNEW_VERSION.cards)); } catch(e) {} };
-  const openHelp     = () => { setHelpNewSections(rulesNews ? WHATSNEW_NEW_RULES : []); setShowHelp(true);     setRulesNews(false); try { localStorage.setItem("lunch_seen_rules", String(WHATSNEW_VERSION.rules)); } catch(e) {} };
+  const openCardHelp = () => { const seen = seenWhatsnew("lunch_seen_cards"); setCardHelpNewTypes(cardNews ? getUnseenItems(WHATSNEW_CARDS_HISTORY, seen, WHATSNEW_VERSION.cards) : []); setShowCardHelp(true); setCardNews(false); try { localStorage.setItem("lunch_seen_cards", String(WHATSNEW_VERSION.cards)); } catch(e) {} };
+  const openHelp     = () => { const seen = seenWhatsnew("lunch_seen_rules"); setHelpNewSections(rulesNews ? getUnseenItems(WHATSNEW_RULES_HISTORY, seen, WHATSNEW_VERSION.rules) : []); setShowHelp(true); setRulesNews(false); try { localStorage.setItem("lunch_seen_rules", String(WHATSNEW_VERSION.rules)); } catch(e) {} };
   const [animResult, setAnimResult] = useState(null);
   const [absent, setAbsent] = useState([]);
   const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
