@@ -310,6 +310,9 @@
     body.dark-mode .pt-row > * { color: var(--t2) !important; }
     body.dark-mode .pt-row .pt-num { color: var(--a) !important; }
 
+    #app-loading { display:flex; justify-content:center; align-items:center; height:100vh; }
+    .app-spinner { width:48px; height:48px; border:5px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
     /* ─── 開獎動畫 ─── */
     @keyframes numFlash { 0%,100%{opacity:1;}50%{opacity:0.2;} }
     @keyframes revealPop { 0%{transform:scale(0.7);opacity:0;}60%{transform:scale(1.18);}100%{transform:scale(1);opacity:1;} }
@@ -378,7 +381,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 23:19";
+  const BUILD_TIME = "2026-06-15 23:23";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -407,6 +410,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<div id="app-loading"><div class="app-spinner"></div></div>
 <div id="root"></div>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -3474,6 +3478,7 @@ function App() {
 }
 
 ReactDOM.render(<App />, document.getElementById("root"));
+document.getElementById("app-loading")?.remove();
 </script>
 </body>
 </html>
