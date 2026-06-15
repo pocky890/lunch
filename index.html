@@ -384,7 +384,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 23:48";
+  const BUILD_TIME = "2026-06-15 23:55";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -409,6 +409,8 @@
     { key:"cardKing",    emoji:"👑", name:"遊戲王",   desc:"手牌同時持有 5 張以上",                    rarity:3 },
     { key:"cornerCreature",   emoji:"🐚", name:"角落生物",   desc:"???", rarity:4, hidden:true },
     { key:"lastMinuteDriver", emoji:"🚌", name:"末班車司機", desc:"???", rarity:3, hidden:true },
+    { key:"obsessed",         emoji:"🎲", name:"執迷不悟",   desc:"???", rarity:3, hidden:true },
+    { key:"lateJustice",      emoji:"⚖️", name:"遲來的正義", desc:"???", rarity:5, hidden:true },
   ];
 </script>
 
@@ -642,6 +644,8 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const cardKing         = !!specialAchievements.cardKing;
   const cornerCreature   = !!specialAchievements.cornerCreature;
   const lastMinuteDriver = !!specialAchievements.lastMinuteDriver;
+  const obsessed         = !!specialAchievements.obsessed;
+  const lateJustice      = !!specialAchievements.lateJustice;
   const pc = participationCount || 0;
   const unlocked = [];
   if (pc >= 50)        unlocked.push("join50");
@@ -666,6 +670,8 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (cardKing)         unlocked.push("cardKing");
   if (cornerCreature)   unlocked.push("cornerCreature");
   if (lastMinuteDriver) unlocked.push("lastMinuteDriver");
+  if (obsessed)         unlocked.push("obsessed");
+  if (lateJustice)      unlocked.push("lateJustice");
   return unlocked;
 }
 
@@ -2612,6 +2618,35 @@ function App() {
     })();
   }, [phase, result, myCards, weekly]);
 
+  // 結果頁：執迷不悟 / 遲來的正義 隱藏成就
+  useEffect(() => {
+    if (phase !== "results" || !result) { sameNumAchRef.current = false; return; }
+    if (sameNumAchRef.current) return;
+    const myName = form.name.trim();
+    if (!myName) return;
+    const myPt = result.sorted?.find(p => p.name === myName);
+    if (!myPt) return;
+    sameNumAchRef.current = true;
+    const sKey = sanitizeKey(myName);
+    (async () => {
+      try {
+        const streak = await fGet(`sameNumberStreak/${sKey}`);
+        if (!streak || (streak.count || 0) < 10) return;
+        const iWon = (result.winners || [result.winner]).some(w => w?.name === myName);
+        if (!iWon && !mySpecialAchievements?.obsessed) {
+          await fRef(`specialAchievements/${sKey}/obsessed`).set(true);
+          showToast("🎉 隱藏成就解鎖：🎲 執迷不悟！", 5000);
+          setHasNewAchievement(true);
+        }
+        if (iWon && !mySpecialAchievements?.lateJustice) {
+          await fRef(`specialAchievements/${sKey}/lateJustice`).set(true);
+          showToast("🎉 隱藏成就解鎖：⚖️ 遲來的正義！", 5000);
+          setHasNewAchievement(true);
+        }
+      } catch(e) { sameNumAchRef.current = false; }
+    })();
+  }, [phase, result, mySpecialAchievements]);
+
   useEffect(() => {
     if (phase !== "results") return;
     const today = todayStr();
@@ -2630,6 +2665,7 @@ function App() {
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
   const streakAutoProtectedRef = useRef(false);
   const cheapskateAutoUsedRef = useRef(false);
+  const sameNumAchRef = useRef(false);
   const logoClickRef = useRef(0); const logoClickTimerRef = useRef(null);
   const [sugarRush, setSugarRush] = useState(false);
   function handleLogoClick() {
@@ -2647,6 +2683,7 @@ function App() {
   useEffect(() => {
     streakAutoProtectedRef.current = false;
     cheapskateAutoUsedRef.current = false;
+    sameNumAchRef.current = false;
   }, [currentUser]);
 
   function showToast(msg, duration=3000) {
@@ -3045,6 +3082,15 @@ function App() {
         await fSet(`revealNumbers/${todayStr()}`, true);
       }
 
+      // 隱藏成就：sameNumberStreak 追蹤（新加入時）
+      if (!myEntry) {
+        const sKey = sanitizeKey(name);
+        const prevStreak = await fGet(`sameNumberStreak/${sKey}`) || { number: null, count: 0 };
+        const newStreak = (num === prevStreak.number)
+          ? { number: num, count: (prevStreak.count || 0) + 1 }
+          : { number: num, count: 1 };
+        await fSet(`sameNumberStreak/${sKey}`, newStreak);
+      }
       // 隱藏成就：角落生物（新加入且押 1 或最大號碼，累計 5 次）
       if (!myEntry && (num === 1 || num === effectiveNumMax)) {
         const sKey = sanitizeKey(name);
