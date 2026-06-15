@@ -384,7 +384,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 23:39";
+  const BUILD_TIME = "2026-06-15 23:48";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -407,6 +407,8 @@
     { key:"stealSteal",  emoji:"🎭", name:"神偷怪盜",   desc:"用盜牌卡偷到了盜牌卡",                     rarity:4 },
     { key:"bloodyLeech", emoji:"🥤", name:"嗜血水蛭", desc:"同一天使用口渴卡，並且獨贏",                rarity:5 },
     { key:"cardKing",    emoji:"👑", name:"遊戲王",   desc:"手牌同時持有 5 張以上",                    rarity:3 },
+    { key:"cornerCreature",   emoji:"🐚", name:"角落生物",   desc:"???", rarity:4, hidden:true },
+    { key:"lastMinuteDriver", emoji:"🚌", name:"末班車司機", desc:"???", rarity:3, hidden:true },
   ];
 </script>
 
@@ -635,9 +637,11 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const bdWin      = recs.some(r => r.birthdayWinner === name);
   const sharedWin  = recs.some(r => r.winners?.length > 1 && r.winners.includes(name));
   const fatedTie   = recs.some(r => r.tiedParticipants?.includes(name));
-  const stealSteal  = !!specialAchievements.stealSteal;
-  const bloodyLeech = !!specialAchievements.bloodyLeech;
-  const cardKing    = !!specialAchievements.cardKing;
+  const stealSteal       = !!specialAchievements.stealSteal;
+  const bloodyLeech      = !!specialAchievements.bloodyLeech;
+  const cardKing         = !!specialAchievements.cardKing;
+  const cornerCreature   = !!specialAchievements.cornerCreature;
+  const lastMinuteDriver = !!specialAchievements.lastMinuteDriver;
   const pc = participationCount || 0;
   const unlocked = [];
   if (pc >= 50)        unlocked.push("join50");
@@ -657,9 +661,11 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (bdWin)           unlocked.push("birthday");
   if (sharedWin)       unlocked.push("sharedWin");
   if (fatedTie)        unlocked.push("fatedTie");
-  if (stealSteal)      unlocked.push("stealSteal");
-  if (bloodyLeech)     unlocked.push("bloodyLeech");
-  if (cardKing)        unlocked.push("cardKing");
+  if (stealSteal)       unlocked.push("stealSteal");
+  if (bloodyLeech)      unlocked.push("bloodyLeech");
+  if (cardKing)         unlocked.push("cardKing");
+  if (cornerCreature)   unlocked.push("cornerCreature");
+  if (lastMinuteDriver) unlocked.push("lastMinuteDriver");
   return unlocked;
 }
 
@@ -2159,7 +2165,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
           }
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:"6px",overflowY:"auto",flex:1}}>
-          {ACHIEVEMENTS.map(a => {
+          {ACHIEVEMENTS.filter(a => !a.hidden).map(a => {
             const isUnlocked = unlocked.has(a.key);
             const isChosen = chosenKey === a.key;
             return (
@@ -2176,6 +2182,28 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
               </div>
             );
           })}
+          {(() => {
+            const unlockedHidden = ACHIEVEMENTS.filter(a => a.hidden && unlocked.has(a.key));
+            if (unlockedHidden.length === 0) return null;
+            return <>
+              <div style={{marginTop:"10px",marginBottom:"2px",padding:"6px 14px",fontSize:"11px",fontWeight:"700",color:"#a855f7",letterSpacing:"1px",textTransform:"uppercase",borderTop:"1px solid var(--b1)"}}>✨ 隱藏成就</div>
+              {unlockedHidden.map(a => {
+                const isChosen = chosenKey === a.key;
+                return (
+                  <div key={a.key} onClick={() => onTitleChange(isChosen ? null : a.key)}
+                    style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"#a855f7":"rgba(168,85,247,0.3)"}`,background:isChosen?"rgba(168,85,247,0.1)":"rgba(168,85,247,0.05)",cursor:"pointer"}}>
+                    <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{a.emoji}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"#a855f7":"var(--t1)"}}>{a.name}</div>
+                      <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{a.desc}</div>
+                      <div style={{fontSize:"11px",color:"#a855f7",marginTop:"2px",letterSpacing:"1px"}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)} · 隱藏</div>
+                    </div>
+                    {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"#a855f7",flexShrink:0}}>使用中</span>}
+                  </div>
+                );
+              })}
+            </>;
+          })()}
         </div>
         {participationCount > 0 && <div style={{marginTop:"12px",textAlign:"center",fontSize:"12px",color:"var(--t3)"}}>累積參與 {participationCount} 次</div>}
       </div>
@@ -3015,6 +3043,28 @@ function App() {
       // 公開卡：所有人號碼立即公開
       if (activeCard?.type === "reveal_numbers") {
         await fSet(`revealNumbers/${todayStr()}`, true);
+      }
+
+      // 隱藏成就：角落生物（新加入且押 1 或最大號碼，累計 5 次）
+      if (!myEntry && (num === 1 || num === effectiveNumMax)) {
+        const sKey = sanitizeKey(name);
+        await fRef(`specialAchievements/${sKey}/cornerCount`).transaction(n => (n || 0) + 1);
+        const count = await fGet(`specialAchievements/${sKey}/cornerCount`);
+        if (!mySpecialAchievements?.cornerCreature && (count || 0) >= 5) {
+          await fRef(`specialAchievements/${sKey}/cornerCreature`).set(true);
+          showToast("🎉 隱藏成就解鎖：🐚 角落生物！", 5000);
+          setHasNewAchievement(true);
+        }
+      }
+      // 隱藏成就：末班車司機（截止前 60 秒內送出）
+      if (!mySpecialAchievements?.lastMinuteDriver) {
+        const [h, m] = s.deadline.split(":"); const target = new Date(); target.setHours(+h, +m, 0, 0);
+        const remaining = target - new Date();
+        if (remaining > 0 && remaining <= 60000) {
+          await fRef(`specialAchievements/${sanitizeKey(name)}/lastMinuteDriver`).set(true);
+          showToast("🎉 隱藏成就解鎖：🚌 末班車司機！", 5000);
+          setHasNewAchievement(true);
+        }
       }
 
       try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
