@@ -63,9 +63,11 @@ session/                當日設定（numMax 等）
 `userStatus/{uid} === "resigned"` → `authState = "resigned"` → 顯示封鎖畫面，無法使用任何功能。
 
 ## 說明同步原則（必須遵守）
-任何卡牌或遊戲規則的改動，commit 前必須同步更新以下四個地方，不等使用者提醒：
+任何卡牌、遊戲規則、或成就的改動，commit 前必須同步更新以下地方，不等使用者提醒：
 1. `index.html` 的 `CardHelpModal`（卡牌說明彈窗）或 `HelpModal`（遊戲說明彈窗）
 2. Notion 頁面（午餐大樂透，ID: `3618dfd5-5a4d-8085-a434-fa1f457cd47c`）
+   - 卡牌或規則改動 → 更新對應說明段落
+   - 成就新增/移除 → 更新「共 N 種成就」的數字
 3. `index.html` 頂部的版號與 history（觸發紫光通知與 NEW 標籤）：
    - 卡牌說明改動 → `WHATSNEW_VERSION.cards` +1，並在 `WHATSNEW_CARDS_HISTORY` 加 `{ 新版號: ["card_key", ...] }`
    - 遊戲規則改動 → `WHATSNEW_VERSION.rules` +1，並在 `WHATSNEW_RULES_HISTORY` 加 `{ 新版號: ["section_key", ...] }`
