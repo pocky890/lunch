@@ -378,7 +378,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 16:45";
+  const BUILD_TIME = "2026-06-15 16:48";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1790,7 +1790,7 @@ function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
     <div className="card">
       <div style={{display:"flex",alignItems:"center",marginBottom:"14px"}}>
         <p className="section-label" style={{marginBottom:0,flex:1}}>開獎號碼分佈</p>
-        {hasData && <span style={{fontSize:"10px",color:"var(--t3)"}}>深色 = 出現較多次</span>}
+        {hasData && <span style={{fontSize:"10px",color:"var(--t3)"}}>{isDark ? "淺色" : "深色"} = 出現較多次</span>}
       </div>
       {!hasData
         ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p>
