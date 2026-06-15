@@ -378,7 +378,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-15 19:19";
+  const BUILD_TIME = "2026-06-15 19:27";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2134,6 +2134,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"var(--a)":"var(--t1)"}}>{a.name}</div>
                   <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{a.desc}</div>
+                  <div style={{fontSize:"11px",color:"var(--amber)",marginTop:"2px",letterSpacing:"1px"}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)}</div>
                 </div>
                 {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"var(--a)",flexShrink:0}}>使用中</span>}
                 {!isUnlocked && <span style={{fontSize:"11px",color:"var(--t3)",flexShrink:0}}>🔒</span>}
