@@ -404,7 +404,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-16 22:39";
+  const BUILD_TIME = "2026-06-16 22:46";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1566,9 +1566,8 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
             {isDark ? "☀️" : "🌙"}
           </button>
           {userName && (
-            <div style={{display:"flex",alignItems:"center",gap:"8px",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
+            <div style={{display:"flex",alignItems:"center",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
               <button className={`ghost btn-sm${achievementNews ? " has-news" : ""}`} onClick={onProfile} style={{marginBottom:0,fontSize:"13px",fontWeight:"600",color:"var(--t1)",padding:"4px 8px",borderRadius:"4px"}}>{userName}</button>
-              <button className="ghost btn-sm header-logout" onClick={()=>auth.signOut()} style={{marginBottom:0,fontSize:"12px",color:"var(--t3)",padding:"4px 8px"}}>登出</button>
             </div>
           )}
         </div>
@@ -2167,7 +2166,7 @@ function LoginScreen({ isDark, toggleDark }) {
 }
 
 /* ── My Profile Modal ── */
-function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose, specialAchievements = {} }) {
+function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose, onLogout, specialAchievements = {} }) {
   const [participationCount, setParticipationCount] = React.useState(0);
   React.useEffect(() => {
     fGet(`participationCount/${sanitizeKey(boundName)}`).then(n => setParticipationCount(n || 0));
@@ -2232,6 +2231,9 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
           })()}
         </div>
         {participationCount > 0 && <div style={{marginTop:"12px",textAlign:"center",fontSize:"12px",color:"var(--t3)"}}>累積參與 {participationCount} 次</div>}
+        <div style={{marginTop:"16px",borderTop:"1px solid var(--b1)",paddingTop:"12px"}}>
+          <button className="ghost btn-danger" onClick={onLogout} style={{width:"100%",marginBottom:0}}>登出</button>
+        </div>
       </div>
     </div>
   );
@@ -3280,7 +3282,7 @@ function App() {
         const unlocked = computeAchievements(boundName, weekly, pc || 0, sa || {});
         localStorage.setItem(`lunch_seen_ach_${sKey}`, JSON.stringify(unlocked));
       });
-    }} />}
+    }} onLogout={() => { setShowProfile(false); auth.signOut(); }} />}
     <TestModeBanner />
   </>;
 
