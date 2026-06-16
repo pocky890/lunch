@@ -24,7 +24,7 @@
       --b3:   #C7C7CC;
       --t1:   #1D1D1F;
       --t2:   #515154;
-      --t3:   #86868B;
+      --t3:   #6C6C70;
       
       /* Accents */
       --a:    #0071E3;
@@ -160,6 +160,15 @@
       .header-dark-toggle { display: none; }
       .header-actions { gap: 4px !important; }
       .header-actions > div { border-left: none !important; padding-left: 4px !important; }
+      input, select { font-size: 16px; }
+      .page { padding: 0 16px 48px; }
+      .modal-bg { padding: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up { animation: none; opacity: 1; transform: none; }
+      .has-news::before { animation: none; box-shadow: 0 0 6px 2px rgba(175,82,222,0.55); }
+      .status-dot { animation: none; }
+      .app-spinner { animation-duration: 1.5s; }
     }
     .logo { font-size: 16px; font-weight: 700; color: var(--t1); display: flex; align-items: center; gap: 10px; }
     .logo-icon { width: 28px; height: 28px; border-radius: 8px; background: #1D1D1F; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; }
@@ -395,7 +404,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-16 22:10";
+  const BUILD_TIME = "2026-06-16 22:39";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
