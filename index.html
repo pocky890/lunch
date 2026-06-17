@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 10:20";
+  const BUILD_TIME = "2026-06-17 10:57";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1603,19 +1603,6 @@ function StatCards({deadline, ptsCount}) {
   );
 }
 
-function WeatherBar({ weather }) {
-  if (!weather || weather.loading || weather.error || (weather.temp === null && weather.pop === null)) return null;
-  const pop = weather.pop;
-  const popIcon = pop >= 70 ? "🌧️" : pop >= 40 ? "🌦️" : "☀️";
-  const popColor = pop >= 70 ? "var(--red)" : pop >= 40 ? "#f59e0b" : "var(--t2)";
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"8px 14px",background:"var(--card)",borderRadius:"10px",fontSize:"13px",color:"var(--t2)",marginBottom:"12px",border:"1px solid var(--border)",flexWrap:"wrap"}}>
-      <span style={{color:"var(--t3)",fontSize:"12px"}}>新店 12–14時</span>
-      {weather.temp !== null && <span>🌡️ <strong style={{color:"var(--t1)"}}>{weather.temp}°C</strong></span>}
-      {pop !== null && <span style={{color:popColor}}>{popIcon} 降雨 <strong>{pop}%</strong></span>}
-    </div>
-  );
-}
 
 function HolidayBanner() {
   const h = getTodayHoliday();
@@ -3320,7 +3307,6 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
-        <WeatherBar weather={weather} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <StreakWarning pts={pts} weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} />
@@ -3465,7 +3451,6 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
-        <WeatherBar weather={weather} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
         <div className="grid-3">
           <div className="col">
