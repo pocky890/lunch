@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 19:55";
+  const BUILD_TIME = "2026-06-17 20:02";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1649,7 +1649,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                 </div>
                 {Object.keys(editTitleShop).length === 0
                   ? <div style={{textAlign:"center",padding:"12px",color:"var(--t3)",fontSize:"13px"}}>尚未設定購買稱號</div>
-                  : Object.entries(editTitleShop).map(([key, cfg]) => (
+                  : Object.entries(editTitleShop).filter(([,v]) => !v.deleted).map(([key, cfg]) => (
                     <div key={key} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid var(--b1)",flexWrap:"wrap"}}>
                       <span style={{fontSize:"18px",width:"24px",textAlign:"center"}}>{cfg.emoji}</span>
                       <span style={{flex:1,fontSize:"13px",fontWeight:"600",minWidth:"60px"}}>{cfg.name}</span>
@@ -1665,7 +1665,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                           {cfg.enabled?"上架":"下架"}
                         </button>
                         <button className="btn-sm ghost" style={{marginBottom:0,fontSize:"11px",padding:"3px 8px",color:"var(--red)",border:"1px solid var(--red)"}} onClick={async()=>{
-                          await fRef(`titleShopConfig/${key}`).remove();
+                          await fRef(`titleShopConfig/${key}`).set({...cfg, enabled:false, deleted:true});
                           setTitleMsg("已移除 ✓"); setTimeout(()=>setTitleMsg(""),2000);
                         }}>移除</button>
                       </div>
@@ -1907,7 +1907,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
   if (!open) return null;
   const pts = userPoints ?? 0;
   const cardEntries = Object.entries(shopConfig || {}).filter(([, v]) => v.enabled && v.stock > 0).sort(([,a],[,b]) => a.price - b.price);
-  const titleAll = Object.entries(titleShopConfig || {}).filter(([, v]) => v.enabled).sort(([,a],[,b]) => a.price - b.price);
+  const titleAll = Object.entries(titleShopConfig || {}).filter(([, v]) => v.enabled && !v.deleted).sort(([,a],[,b]) => a.price - b.price);
   const titleEntries = titleAll.filter(([, v]) => v.stock === -1 || v.stock > 0);
   const titleSoldOut = titleAll.filter(([, v]) => v.stock !== -1 && v.stock <= 0);
   const tabBtn = (id, label) => (
@@ -3528,6 +3528,7 @@ function App() {
       const expiresAt = `${expDate.getFullYear()}-${String(expDate.getMonth()+1).padStart(2,"0")}-${String(expDate.getDate()).padStart(2,"0")}`;
       const fakeId = `test_shop_${Date.now()}`;
       setMyCards(prev => [...prev, { id: fakeId, type: cardType, expiresAt, obtainedAt: todayStr() }]);
+      setUserPoints(prev => (prev || 0) - price);
       return showToast(`已購買 ${ct.emoji}${ct.name}！`);
     }
     try {
@@ -3559,6 +3560,7 @@ function App() {
     try {
       if (TEST_MODE) {
         setUserOwnedTitles(prev => ({ ...prev, [titleKey]: true }));
+        setUserPoints(prev => (prev || 0) - price);
         return showToast(`已購買稱號 ${cfg.emoji}${cfg.name}！`);
       }
       if (stock !== -1) {
