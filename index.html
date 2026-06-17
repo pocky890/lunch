@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 16:49";
+  const BUILD_TIME = "2026-06-17 17:11";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -460,7 +460,7 @@ function fRef(p) {
   if (!TEST_MODE) return real;
   const noop = () => Promise.resolve();
   return {
-    set: noop, update: noop, remove: noop, transaction: noop,
+    set: noop, update: noop, remove: noop, transaction: (fn) => { fn(999); return Promise.resolve(); },
     push: () => ({ key: `test_${Math.random().toString(36).slice(2)}`, set: noop }),
     on: real.on.bind(real), off: real.off.bind(real), once: real.once.bind(real),
   };
