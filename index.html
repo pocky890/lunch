@@ -109,6 +109,7 @@
     }
     button:hover { background: #333336; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
     button:active { transform: scale(0.98); }
+    .card-item:active { transform: scale(0.97); }
     button:disabled { opacity: 0.7; cursor: not-allowed; transform: none !important; }
     
     .ghost { background: #FFFFFF !important; border: 1px solid var(--b2) !important; color: var(--t1) !important; box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important; transition: all 0.2s; }
@@ -404,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-16 22:46";
+  const BUILD_TIME = "2026-06-17 10:20";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1210,7 +1211,7 @@ function MembersTab() {
               style={{width:"100%",fontSize:"14px",padding:"8px 10px",borderRadius:"8px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)",boxSizing:"border-box",marginBottom:"12px"}} />
             <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
               <button className="ghost btn-sm" onClick={()=>setRenamingMember(null)} disabled={renaming} style={{marginBottom:0}}>取消</button>
-              <button className="btn-sm" onClick={renameMember} disabled={renaming||!nameInput.trim()} style={{marginBottom:0,background:"var(--a)",color:"#fff",border:"none",borderRadius:"8px",padding:"6px 16px",cursor:"pointer",opacity:renaming||!nameInput.trim()?0.5:1}}>
+              <button className="btn-sm" onClick={renameMember} disabled={renaming||!nameInput.trim()} style={{marginBottom:0,background:"var(--a)",color:"#fff",border:"none",borderRadius:"8px",padding:"6px 16px",opacity:renaming||!nameInput.trim()?0.5:1}}>
                 {renaming ? "更新中…" : "確認"}
               </button>
             </div>
@@ -1719,7 +1720,7 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
         const daysRaw = Math.ceil((new Date(nearest.expiresAt)-new Date(today))/86400000);
         const days = daysRaw > 999 ? "∞" : daysRaw;
         return (
-          <div key={type} onClick={() => onSelectCard(active ? "" : nearest.id)}
+          <div key={type} className="card-item" onClick={() => onSelectCard(active ? "" : nearest.id)}
             style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:"pointer",marginBottom:"4px",
               background:active?"var(--a)":"var(--s1)",border:`1px solid ${active?"var(--a)":"var(--b1)"}`,
               color:active?"#fff":"var(--t1)",transition:"all 0.15s"}}>
