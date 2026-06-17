@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 17:45";
+  const BUILD_TIME = "2026-06-17 18:00";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1565,15 +1565,15 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                 <div style={{fontSize:"13px",fontWeight:"600",marginBottom:"10px",color:"var(--t2)"}}>新增商店卡牌</div>
                 <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center"}}>
                   <select value={newShopType} onChange={e=>setNewShopType(e.target.value)}
-                    style={{flex:"1 1 120px",fontSize:"13px",padding:"6px 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}}>
+                    style={{flex:"1 1 120px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}}>
                     <option value="">選擇卡牌</option>
                     {Object.entries(CARD_TYPES).map(([k,v])=><option key={k} value={k}>{v.emoji} {v.name}</option>)}
                   </select>
                   <input type="number" placeholder="價格(點)" value={newShopPrice} onChange={e=>setNewShopPrice(e.target.value)}
-                    style={{width:"90px",fontSize:"13px",padding:"6px 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
+                    style={{width:"90px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
                   <input type="number" placeholder="數量" value={newShopStock} onChange={e=>setNewShopStock(e.target.value)}
-                    style={{width:"70px",fontSize:"13px",padding:"6px 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
-                  <button className="btn-sm" style={{marginBottom:0,fontSize:"12px"}} onClick={async()=>{
+                    style={{width:"70px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
+                  <button className="btn-sm" style={{marginBottom:0,fontSize:"12px",height:"34px"}} onClick={async()=>{
                     if (!newShopType||!newShopPrice||!newShopStock) return setShopMsg("請填寫完整");
                     await fRef(`shopConfig/${newShopType}`).set({ price:parseInt(newShopPrice), stock:parseInt(newShopStock), enabled:true });
                     setNewShopType(""); setNewShopPrice(""); setNewShopStock("");
