@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 23:27";
+  const BUILD_TIME = "2026-06-17 23:32";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3521,8 +3521,11 @@ function App() {
     }
   }
 
+  const isBuyingRef = React.useRef(false);
+
   async function buyFromShop(cardType, price) {
-    if (!boundName) return;
+    if (!boundName || isBuyingRef.current) return;
+    isBuyingRef.current = true;
     const key = sanitizeKey(boundName);
     const ct = CARD_TYPES[cardType];
     if (!ct) return;
@@ -3552,11 +3555,14 @@ function App() {
       showToast(`已購買 ${ct.emoji}${ct.name}！`);
     } catch(e) {
       showToast("購買失敗，請重試");
+    } finally {
+      isBuyingRef.current = false;
     }
   }
 
   async function buyTitle(titleKey, price, stock) {
-    if (!boundName) return;
+    if (!boundName || isBuyingRef.current) return;
+    isBuyingRef.current = true;
     const key = sanitizeKey(boundName);
     if (userOwnedTitles[titleKey]) return showToast("你已擁有此稱號");
     const cfg = titleShopConfig[titleKey];
@@ -3582,6 +3588,8 @@ function App() {
       showToast(`已購買稱號 ${cfg.emoji}${cfg.name}！`);
     } catch(e) {
       showToast("購買失敗，請重試");
+    } finally {
+      isBuyingRef.current = false;
     }
   }
 
