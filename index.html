@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 18:00";
+  const BUILD_TIME = "2026-06-17 18:15";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -428,6 +428,7 @@
     { key:"stealSteal",  emoji:"🎭", name:"神偷怪盜",   desc:"用盜牌卡偷到了盜牌卡",                     rarity:4 },
     { key:"bloodyLeech", emoji:"🥤", name:"嗜血水蛭", desc:"同一天使用口渴卡，並且獨贏",                rarity:5 },
     { key:"cardKing",    emoji:"🃏", name:"遊戲王",   desc:"手牌同時持有 5 張以上",                    rarity:3 },
+    { key:"firstBlood",  emoji:"🩸", name:"第一滴血", desc:"全遊戲首位獨贏者，唯一解鎖",               rarity:5 },
     { key:"cornerCreature",   emoji:"🐚", name:"角落生物",   desc:"???", rarity:4, hidden:true },
     { key:"lastMinuteDriver", emoji:"🚌", name:"末班車司機", desc:"???", rarity:3, hidden:true },
     { key:"obsessed",         emoji:"🎲", name:"執迷不悟",   desc:"???", rarity:3, hidden:true },
@@ -671,6 +672,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const stealSteal       = !!specialAchievements.stealSteal;
   const bloodyLeech      = !!specialAchievements.bloodyLeech;
   const cardKing         = !!specialAchievements.cardKing;
+  const firstBlood       = !!specialAchievements.firstBlood;
   const cornerCreature   = !!specialAchievements.cornerCreature;
   const lastMinuteDriver = !!specialAchievements.lastMinuteDriver;
   const obsessed         = !!specialAchievements.obsessed;
@@ -697,6 +699,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (stealSteal)       unlocked.push("stealSteal");
   if (bloodyLeech)      unlocked.push("bloodyLeech");
   if (cardKing)         unlocked.push("cardKing");
+  if (firstBlood)       unlocked.push("firstBlood");
   if (cornerCreature)   unlocked.push("cornerCreature");
   if (lastMinuteDriver) unlocked.push("lastMinuteDriver");
   if (obsessed)         unlocked.push("obsessed");
@@ -3158,6 +3161,11 @@ function App() {
         }
         if (won.length > 0) await fRef(`weekly/${today}`).update({ cardsAwarded: won });
         if (result.soloWin) {
+          let isFirstBlood = false;
+          await fRef("gameFlags/firstBlood").transaction(cur => { if (cur) return; isFirstBlood = true; return today; });
+          if (isFirstBlood) {
+            for (const w of soloWinners) await fRef(`specialAchievements/${sanitizeKey(w.name)}/firstBlood`).set(true);
+          }
           for (const w of soloWinners) {
             const pt = pts.find(p => p.id === w.id);
             if (pt?.cardUsed === "thirsty_card") {
