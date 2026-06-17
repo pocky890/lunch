@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 18:15";
+  const BUILD_TIME = "2026-06-17 18:29";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -705,6 +705,12 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (obsessed)         unlocked.push("obsessed");
   if (lateJustice)      unlocked.push("lateJustice");
   return unlocked;
+}
+
+function getTitleDisplay(key, titleShopConfig) {
+  if (!key) return null;
+  if (key.startsWith("t_")) return (titleShopConfig || {})[key] || null;
+  return ACHIEVEMENTS.find(x => x.key === key) || null;
 }
 
 function managedToRests(managed) {
@@ -1263,7 +1269,7 @@ function MembersTab() {
 }
 
 /* ── Admin Panel ── */
-function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool, shopConfig }) {
+function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool, shopConfig, titleShopConfig }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
   const [newRest, setNewRest] = React.useState("");
@@ -1277,6 +1283,12 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [newShopPrice, setNewShopPrice] = React.useState("");
   const [newShopStock, setNewShopStock] = React.useState("");
   const [shopMsg, setShopMsg] = React.useState("");
+  const [editTitleShop, setEditTitleShop] = React.useState({});
+  const [newTitleEmoji, setNewTitleEmoji] = React.useState("");
+  const [newTitleName, setNewTitleName] = React.useState("");
+  const [newTitlePrice, setNewTitlePrice] = React.useState("");
+  const [newTitleStock, setNewTitleStock] = React.useState("0");
+  const [titleMsg, setTitleMsg] = React.useState("");
   React.useEffect(() => {
     if (tab !== "points") return;
     fGet("userPoints").then(v => setAllPoints(v || {}));
@@ -1286,7 +1298,10 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
     const merged = {};
     for (const [k, v] of Object.entries(shopConfig || {})) merged[k] = { ...v };
     setEditShop(merged);
-  }, [tab, shopConfig]);
+    const mergedT = {};
+    for (const [k, v] of Object.entries(titleShopConfig || {})) mergedT[k] = { ...v };
+    setEditTitleShop(mergedT);
+  }, [tab, shopConfig, titleShopConfig]);
   const [todayWinner, setTodayWinner] = React.useState("");
   const [todayRest, setTodayRest] = React.useState("");
   const [saveMsg, setSaveMsg] = React.useState("");
@@ -1613,6 +1628,52 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                   })
               }
               {shopMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"8px"}}>{shopMsg}</p>}
+              <div style={{marginTop:"20px",paddingTop:"16px",borderTop:"2px solid var(--b1)"}}>
+                <div style={{fontSize:"13px",fontWeight:"600",marginBottom:"10px",color:"var(--t2)"}}>新增購買稱號</div>
+                <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center",marginBottom:"12px"}}>
+                  <input placeholder="emoji" value={newTitleEmoji} onChange={e=>setNewTitleEmoji(e.target.value)}
+                    style={{width:"60px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)",textAlign:"center"}} />
+                  <input placeholder="稱號名稱" value={newTitleName} onChange={e=>setNewTitleName(e.target.value)}
+                    style={{flex:"1 1 100px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
+                  <input type="number" placeholder="價格(點)" value={newTitlePrice} onChange={e=>setNewTitlePrice(e.target.value)}
+                    style={{width:"90px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
+                  <input type="number" placeholder="數量(0=∞)" value={newTitleStock} onChange={e=>setNewTitleStock(e.target.value)}
+                    style={{width:"90px",fontSize:"13px",height:"34px",padding:"0 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
+                  <button className="btn-sm" style={{marginBottom:0,fontSize:"12px",height:"34px"}} onClick={async()=>{
+                    if (!newTitleEmoji||!newTitleName||!newTitlePrice) return setTitleMsg("請填寫完整");
+                    const key = `t_${sanitizeKey(newTitleName)}`;
+                    await fRef(`titleShopConfig/${key}`).set({ emoji:newTitleEmoji.trim(), name:newTitleName.trim(), price:parseInt(newTitlePrice), stock:parseInt(newTitleStock)||0, enabled:true });
+                    setNewTitleEmoji(""); setNewTitleName(""); setNewTitlePrice(""); setNewTitleStock("0");
+                    setTitleMsg("已新增 ✓"); setTimeout(()=>setTitleMsg(""),2000);
+                  }}>新增</button>
+                </div>
+                {Object.keys(editTitleShop).length === 0
+                  ? <div style={{textAlign:"center",padding:"12px",color:"var(--t3)",fontSize:"13px"}}>尚未設定購買稱號</div>
+                  : Object.entries(editTitleShop).map(([key, cfg]) => (
+                    <div key={key} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 0",borderBottom:"1px solid var(--b1)",flexWrap:"wrap"}}>
+                      <span style={{fontSize:"18px",width:"24px",textAlign:"center"}}>{cfg.emoji}</span>
+                      <span style={{flex:1,fontSize:"13px",fontWeight:"600",minWidth:"60px"}}>{cfg.name}</span>
+                      <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                        <input type="number" value={cfg.price||""} onChange={e=>setEditTitleShop(p=>({...p,[key]:{...p[key],price:parseInt(e.target.value)||0}}))}
+                          onBlur={async()=>{ await fRef(`titleShopConfig/${key}`).set({emoji:cfg.emoji,name:cfg.name,price:cfg.price,stock:cfg.stock,enabled:cfg.enabled}); setTitleMsg("已儲存 ✓"); setTimeout(()=>setTitleMsg(""),2000); }}
+                          style={{width:"70px",fontSize:"12px",padding:"4px 6px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} placeholder="價格" />
+                        <input type="number" value={cfg.stock===undefined?"":cfg.stock} onChange={e=>setEditTitleShop(p=>({...p,[key]:{...p[key],stock:parseInt(e.target.value)||0}}))}
+                          onBlur={async()=>{ await fRef(`titleShopConfig/${key}`).set({emoji:cfg.emoji,name:cfg.name,price:cfg.price,stock:cfg.stock,enabled:cfg.enabled}); setTitleMsg("已儲存 ✓"); setTimeout(()=>setTitleMsg(""),2000); }}
+                          style={{width:"70px",fontSize:"12px",padding:"4px 6px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} placeholder="數量(0=∞)" />
+                        <button className="btn-sm ghost" style={{marginBottom:0,fontSize:"11px",padding:"3px 8px",background:cfg.enabled?"var(--a)":"transparent",color:cfg.enabled?"#fff":"var(--t2)",border:"1px solid var(--b2)"}}
+                          onClick={async()=>{ const en=!cfg.enabled; setEditTitleShop(p=>({...p,[key]:{...p[key],enabled:en}})); await fRef(`titleShopConfig/${key}`).set({emoji:cfg.emoji,name:cfg.name,price:cfg.price,stock:cfg.stock,enabled:en}); setTitleMsg("已儲存 ✓"); setTimeout(()=>setTitleMsg(""),2000); }}>
+                          {cfg.enabled?"上架":"下架"}
+                        </button>
+                        <button className="btn-sm ghost" style={{marginBottom:0,fontSize:"11px",padding:"3px 8px",color:"var(--red)",border:"1px solid var(--red)"}} onClick={async()=>{
+                          await fRef(`titleShopConfig/${key}`).remove();
+                          setTitleMsg("已移除 ✓"); setTimeout(()=>setTitleMsg(""),2000);
+                        }}>移除</button>
+                      </div>
+                    </div>
+                  ))
+                }
+                {titleMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"8px"}}>{titleMsg}</p>}
+              </div>
             </div>
           )}
           {tab==="record" && (
@@ -1841,9 +1902,24 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   );
 }
 
-function ShopModal({ open, onClose, shopConfig, userPoints, onBuy }) {
+function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, userOwnedTitles, onBuy, onBuyTitle }) {
+  const [shopTab, setShopTab] = React.useState("cards");
   if (!open) return null;
-  const entries = Object.entries(shopConfig || {}).filter(([, v]) => v.enabled && v.stock > 0);
+  const pts = userPoints ?? 0;
+  const cardEntries = Object.entries(shopConfig || {}).filter(([, v]) => v.enabled && v.stock > 0);
+  const titleEntries = Object.entries(titleShopConfig || {}).filter(([, v]) => v.enabled);
+  const tabBtn = (id, label) => (
+    <button key={id} onClick={()=>setShopTab(id)} style={{flex:1,padding:"7px",fontSize:"13px",fontWeight:"600",borderRadius:"6px",border:"none",cursor:"pointer",
+      background:shopTab===id?"var(--a)":"transparent",color:shopTab===id?"#fff":"var(--t2)"}}>
+      {label}
+    </button>
+  );
+  const itemRow = (left, right) => (
+    <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",borderRadius:"10px",border:"1px solid var(--b1)",marginBottom:"8px",background:"var(--card)"}}>
+      {left}
+      {right}
+    </div>
+  );
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal" style={{maxWidth:"460px",width:"95vw",maxHeight:"85vh",overflowY:"auto"}}>
@@ -1851,40 +1927,63 @@ function ShopModal({ open, onClose, shopConfig, userPoints, onBuy }) {
           <div style={{fontSize:"18px",fontWeight:"700"}}>🛒 點數商店</div>
           <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
         </div>
-        <div style={{background:"var(--s2)",borderRadius:"8px",padding:"10px 14px",marginBottom:"16px",display:"flex",alignItems:"center",gap:"8px"}}>
+        <div style={{background:"var(--s2)",borderRadius:"8px",padding:"10px 14px",marginBottom:"12px",display:"flex",alignItems:"center",gap:"8px"}}>
           <span style={{fontSize:"15px"}}>🪙</span>
           <span style={{fontSize:"14px",color:"var(--t2)"}}>你的點數</span>
-          <span style={{fontSize:"18px",fontWeight:"700",color:"var(--a)",marginLeft:"auto"}}>{userPoints ?? 0}</span>
+          <span style={{fontSize:"18px",fontWeight:"700",color:"var(--a)",marginLeft:"auto"}}>{pts}</span>
         </div>
-        {entries.length === 0
-          ? <div className="empty-state"><p style={{color:"var(--t2)"}}>目前商店沒有可購買的卡牌</p></div>
-          : entries.map(([type, cfg]) => {
+        <div style={{display:"flex",gap:"4px",background:"var(--s2)",borderRadius:"8px",padding:"4px",marginBottom:"16px"}}>
+          {tabBtn("cards","🃏 卡牌")}
+          {tabBtn("titles","🏷️ 稱號")}
+        </div>
+        {shopTab === "cards" && (cardEntries.length === 0
+          ? <div className="empty-state"><p style={{color:"var(--t2)"}}>目前沒有可購買的卡牌</p></div>
+          : cardEntries.map(([type, cfg]) => {
               const ct = CARD_TYPES[type];
               if (!ct) return null;
-              const canAfford = (userPoints ?? 0) >= cfg.price;
-              return (
-                <div key={type} style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",borderRadius:"10px",border:"1px solid var(--b1)",marginBottom:"8px",background:"var(--card)"}}>
-                  <span style={{fontSize:"22px"}}>{ct.emoji}</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:"14px",fontWeight:"600"}}>{ct.name}</div>
-                    <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{ct.desc}</div>
-                    <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"3px"}}>剩 {cfg.stock} 張</div>
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px",flexShrink:0}}>
-                    <span style={{fontSize:"15px",fontWeight:"700",color:"var(--a)"}}>🪙 {cfg.price}</span>
-                    <button className="btn-sm" disabled={!canAfford} onClick={()=>onBuy(type,cfg.price)} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
-                  </div>
+              const canAfford = pts >= cfg.price;
+              return itemRow(
+                <><span style={{fontSize:"22px"}}>{ct.emoji}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:"14px",fontWeight:"600"}}>{ct.name}</div>
+                  <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{ct.desc}</div>
+                  <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"3px"}}>剩 {cfg.stock} 張</div>
+                </div></>,
+                <div key={type} style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px",flexShrink:0}}>
+                  <span style={{fontSize:"15px",fontWeight:"700",color:"var(--a)"}}>🪙 {cfg.price}</span>
+                  <button className="btn-sm" disabled={!canAfford} onClick={()=>onBuy(type,cfg.price)} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
                 </div>
               );
             })
-        }
+        )}
+        {shopTab === "titles" && (titleEntries.length === 0
+          ? <div className="empty-state"><p style={{color:"var(--t2)"}}>目前沒有可購買的稱號</p></div>
+          : titleEntries.map(([key, cfg]) => {
+              const owned = !!(userOwnedTitles || {})[key];
+              const canAfford = pts >= cfg.price;
+              return itemRow(
+                <><span style={{fontSize:"22px"}}>{cfg.emoji}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:"14px",fontWeight:"600"}}>{cfg.name}</div>
+                  <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"3px"}}>{cfg.stock > 0 ? `剩 ${cfg.stock} 份` : "無限量"}</div>
+                </div></>,
+                <div key={key} style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px",flexShrink:0}}>
+                  <span style={{fontSize:"15px",fontWeight:"700",color:"var(--a)"}}>🪙 {cfg.price}</span>
+                  {owned
+                    ? <span style={{fontSize:"12px",color:"var(--a)",fontWeight:"600"}}>已擁有</span>
+                    : <button className="btn-sm" disabled={!canAfford} onClick={()=>onBuyTitle(key,cfg.price,cfg.stock||0)} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
+                  }
+                </div>
+              );
+            })
+        )}
         <p style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"12px",marginBottom:0}}>每日參加 +10 點 ／ 標記不參加 +2 點</p>
       </div>
     </div>
   );
 }
 
-function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles = {}}) {
+function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles = {}, titleShopConfig = {}}) {
   const empty = (!list || list.length === 0) && absent.length === 0;
   if (empty) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
   return (
@@ -1899,7 +1998,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
             <div style={{width:"24px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
             <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"8px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-              {(() => { const a = ACHIEVEMENTS.find(x => x.key === userTitles[sanitizeKey(p.name)]); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
+              {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
             </span>
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.rest}</span>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
@@ -2033,7 +2132,7 @@ function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
   );
 }
 
-function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleChange, mySpecialAchievements = {}}) {
+function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleChange, mySpecialAchievements = {}, titleShopConfig = {}}) {
   const chartRef = useRef(null); const chartInstanceRef = useRef(null);
   const [participationCounts, setParticipationCounts] = useState({});
   useEffect(() => { fGet("participationCount").then(d => setParticipationCounts(d || {})); }, []);
@@ -2082,7 +2181,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span>
               <span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
                 {name}
-                {chosenKey && (() => { const a = ACHIEVEMENTS.find(x => x.key === chosenKey); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
+                {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
               {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
@@ -2108,7 +2207,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
   );
 }
 
-function HistoryModal({ weekly, onClose }) {
+function HistoryModal({ weekly, onClose, userTitles = {}, titleShopConfig = {} }) {
   const [weekIdx, setWeekIdx] = React.useState(0);
   function getMondayStr(dateStr) {
     const d = new Date(dateStr+"T00:00:00"), dow = d.getDay();
@@ -2256,7 +2355,7 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
           </div>
         );
       })}
-      {showStats && <StatsPanel weekly={weekly} isDark={isDark} userTitles={userTitles} boundName={boundName} onTitleChange={onTitleChange} mySpecialAchievements={mySpecialAchievements} />}
+      {showStats && <StatsPanel weekly={weekly} isDark={isDark} userTitles={userTitles} boundName={boundName} onTitleChange={onTitleChange} mySpecialAchievements={mySpecialAchievements} titleShopConfig={titleShopConfig} />}
     </div>
   );
 }
@@ -2311,7 +2410,7 @@ function LoginScreen({ isDark, toggleDark }) {
 }
 
 /* ── My Profile Modal ── */
-function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose, onLogout, specialAchievements = {}, myCards = [] }) {
+function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose, onLogout, specialAchievements = {}, myCards = [], userOwnedTitles = {}, titleShopConfig = {} }) {
   const [participationCount, setParticipationCount] = React.useState(0);
   const [tab, setTab] = React.useState("achievements");
   React.useEffect(() => {
@@ -2342,7 +2441,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
         <div style={{marginBottom:"16px",padding:"12px 14px",background:"var(--s3)",borderRadius:"var(--r)",border:"1px solid var(--b1)"}}>
           <div style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",marginBottom:"6px"}}>目前稱號</div>
           {chosenKey
-            ? (() => { const a = ACHIEVEMENTS.find(x => x.key === chosenKey); return <span style={{fontSize:"15px",fontWeight:"600",color:"var(--t1)"}}>{a.emoji} {a.name}</span>; })()
+            ? (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span style={{fontSize:"15px",fontWeight:"600",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()
             : <span style={{fontSize:"14px",color:"var(--t3)"}}>尚未選擇，點選下方成就來設定</span>
           }
         </div>
@@ -2381,6 +2480,27 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
                       <div style={{fontSize:"11px",color:"#a855f7",marginTop:"2px",letterSpacing:"1px"}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)} · 隱藏</div>
                     </div>
                     {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"#a855f7",flexShrink:0}}>使用中</span>}
+                  </div>
+                );
+              })}
+            </>;
+          })()}
+          {(() => {
+            const ownedEntries = Object.entries(userOwnedTitles).map(([key]) => ({ key, ...(titleShopConfig[key] || {}) })).filter(t => t.emoji && t.name);
+            if (ownedEntries.length === 0) return null;
+            return <>
+              <div style={{marginTop:"10px",marginBottom:"2px",padding:"6px 14px",fontSize:"11px",fontWeight:"700",color:"var(--a)",letterSpacing:"1px",textTransform:"uppercase",borderTop:"1px solid var(--b1)"}}>🛒 購買稱號</div>
+              {ownedEntries.map(t => {
+                const isChosen = chosenKey === t.key;
+                return (
+                  <div key={t.key} onClick={() => onTitleChange(isChosen ? null : t.key)}
+                    style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"var(--a)":"var(--b1)"}`,background:isChosen?"var(--a-dim,rgba(99,102,241,0.08))":"var(--s3)",cursor:"pointer"}}>
+                    <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{t.emoji}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"var(--a)":"var(--t1)"}}>{t.name}</div>
+                      <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>點數商店購買</div>
+                    </div>
+                    {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"var(--a)",flexShrink:0}}>使用中</span>}
                   </div>
                 );
               })}
@@ -2574,6 +2694,8 @@ function App() {
   const [userPoints, setUserPoints] = useState(null);
   const [showShop, setShowShop] = useState(false);
   const [shopConfig, setShopConfig] = useState({});
+  const [titleShopConfig, setTitleShopConfig] = useState({});
+  const [userOwnedTitles, setUserOwnedTitles] = useState({});
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try { return localStorage.getItem("lunch_theme") === "dark"; }
@@ -2713,6 +2835,22 @@ function App() {
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
+
+  useEffect(() => {
+    if (TEST_MODE) { setTitleShopConfig({ "t_測試稱號": { emoji:"🧪", name:"測試稱號", price:100, stock:0, enabled:true } }); return; }
+    const ref = fRef("titleShopConfig");
+    const handler = snap => setTitleShopConfig(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!boundName) return;
+    const ref = fRef(`userOwnedTitles/${sanitizeKey(boundName)}`);
+    const handler = snap => setUserOwnedTitles(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, [boundName]);
 
   // 生日資料載入（過濾離職者）
   useEffect(() => {
@@ -3395,6 +3533,35 @@ function App() {
     }
   }
 
+  async function buyTitle(titleKey, price, stock) {
+    if (!boundName) return;
+    const key = sanitizeKey(boundName);
+    if (userOwnedTitles[titleKey]) return showToast("你已擁有此稱號");
+    const cfg = titleShopConfig[titleKey];
+    if (!cfg) return;
+    try {
+      if (TEST_MODE) {
+        setUserOwnedTitles(prev => ({ ...prev, [titleKey]: true }));
+        return showToast(`已購買稱號 ${cfg.emoji}${cfg.name}！`);
+      }
+      if (stock > 0) {
+        let stockOk = false;
+        await fRef(`titleShopConfig/${titleKey}/stock`).transaction(n => { if (!n || n <= 0) return; stockOk = true; return n - 1; });
+        if (!stockOk) return showToast("稱號已售完");
+      }
+      let pointsOk = false;
+      await fRef(`userPoints/${key}`).transaction(n => { if ((n||0) < price) return; pointsOk = true; return (n||0) - price; });
+      if (!pointsOk) {
+        if (stock > 0) await fRef(`titleShopConfig/${titleKey}/stock`).transaction(n => (n||0) + 1);
+        return showToast("點數不足");
+      }
+      await fRef(`userOwnedTitles/${key}/${titleKey}`).set(true);
+      showToast(`已購買稱號 ${cfg.emoji}${cfg.name}！`);
+    } catch(e) {
+      showToast("購買失敗，請重試");
+    }
+  }
+
   async function doAbsent() {
     const name = form.name.trim();
     if (!name) return showToast("請先輸入姓名");
@@ -3522,11 +3689,11 @@ function App() {
     {sugarRush && <SugarRush onDone={() => { setSugarRush(false); document.body.classList.remove("sugar-rush-active"); }} />}
     {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} newSections={helpNewSections} />}
     {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} newCardTypes={cardHelpNewTypes} />}
-    {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} />}
-    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} shopConfig={shopConfig} />
+    {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} userTitles={userTitles} titleShopConfig={titleShopConfig} />}
+    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} shopConfig={shopConfig} titleShopConfig={titleShopConfig} />
     {birthdayModal}
-    <ShopModal open={showShop} onClose={()=>setShowShop(false)} shopConfig={shopConfig} userPoints={userPoints} onBuy={buyFromShop} />
-    {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} onClose={()=>{
+    <ShopModal open={showShop} onClose={()=>setShowShop(false)} shopConfig={shopConfig} titleShopConfig={titleShopConfig} userPoints={userPoints} userOwnedTitles={userOwnedTitles} onBuy={buyFromShop} onBuyTitle={buyTitle} />
+    {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} userOwnedTitles={userOwnedTitles} titleShopConfig={titleShopConfig} onClose={()=>{
       setShowProfile(false);
       setHasNewAchievement(false);
       const sKey = sanitizeKey(boundName);
@@ -3669,7 +3836,7 @@ function App() {
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -3700,7 +3867,7 @@ function App() {
               </div>
             </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={handleCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
-            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} /></div>
+            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
           </div>
         </div>
         <Footer />
@@ -3731,7 +3898,7 @@ function App() {
               <button onClick={doCancelAbsent} className="ghost">改變心意，我要參加！</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
         </div>
       </div>
       <Footer />
@@ -3851,7 +4018,7 @@ function App() {
                       <div style={{flex:1,display:"flex",flexDirection:"column",gap:"2px",minWidth:0}}>
                         <span style={{fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)",display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
                           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                          {(() => { const a = ACHIEVEMENTS.find(x => x.key === userTitles[sanitizeKey(p.name)]); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
+                          {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
                       </div>
