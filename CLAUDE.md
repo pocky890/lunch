@@ -30,6 +30,12 @@ session/                當日設定（numMax 等）
 - `?testmode&testresult` — 直接顯示假開獎結果（跳過 Firebase listener）
 - testresult 模式下 `userTitles` listener 不執行，避免蓋掉假資料
 
+### ⚠️ TESTMODE Firebase 鐵則（絕不可違反）
+**`TEST_MODE` 下任何程式碼都不能寫入 Firebase。**
+- `fRef(path)` 在 TEST_MODE 下已是 mock（set/update/remove/transaction 全為 noop），絕對不能用 `db.ref(...)` 直接繞過 mock
+- 若需要讓測試資料反映在 UI，改用 React state（`setMyCards`、`setUserPoints` 等）直接更新本地狀態
+- `DB_PREFIX` 在 `?testmode` 下仍是 `"lunch"`（正式 DB），用 `db.ref(DB_PREFIX/...)` 就是寫正式資料
+
 ## 成就系統（ACHIEVEMENTS）
 15 個成就，key / emoji / name / desc / rarity(1-5)：
 - join50/100/300/1000 — 參與次數
