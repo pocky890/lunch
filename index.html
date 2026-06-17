@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 17:36";
+  const BUILD_TIME = "2026-06-17 17:37";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -597,7 +597,7 @@ async function givePointsForDay(ptsList, absentList, dateStr) {
   await fRef(`pointsAwarded/${dateStr}`).transaction(cur => { if (cur) return; claimed = true; return true; });
   if (!claimed) return;
   for (const p of ptsList) await fRef(`userPoints/${sanitizeKey(p.name)}`).transaction(n => (n||0) + 10);
-  for (const name of absentList) await fRef(`userPoints/${sanitizeKey(name)}`).transaction(n => (n||0) + 5);
+  for (const name of absentList) await fRef(`userPoints/${sanitizeKey(name)}`).transaction(n => (n||0) + 2);
 }
 
 // 包含你的同分取餘數邏輯
@@ -1877,7 +1877,7 @@ function ShopModal({ open, onClose, shopConfig, userPoints, onBuy }) {
               );
             })
         }
-        <p style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"12px",marginBottom:0}}>每日參加 +10 點 ／ 標記不參加 +5 點</p>
+        <p style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"12px",marginBottom:0}}>每日參加 +10 點 ／ 標記不參加 +2 點</p>
       </div>
     </div>
   );
