@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 17:11";
+  const BUILD_TIME = "2026-06-17 17:18";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2652,6 +2652,7 @@ function App() {
   // 點數即時監聽
   useEffect(() => {
     if (!boundName) return;
+    if (TEST_MODE) { setUserPoints(999); return; }
     const ref = fRef(`userPoints/${sanitizeKey(boundName)}`);
     const handler = snap => setUserPoints(snap.val() ?? 0);
     ref.on("value", handler);
