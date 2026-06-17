@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 17:37";
+  const BUILD_TIME = "2026-06-17 17:38";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3365,8 +3365,8 @@ function App() {
       const expireDays = CARD_DEFAULTS[cardType]?.expireDays ?? 30;
       const expDate = new Date(Date.now() + expireDays * 86400000);
       const expiresAt = `${expDate.getFullYear()}-${String(expDate.getMonth()+1).padStart(2,"0")}-${String(expDate.getDate()).padStart(2,"0")}`;
-      const newRef = db.ref(`${DB_PREFIX}/userCards/${key}`).push();
-      await newRef.set({ type: cardType, expiresAt, obtainedAt: todayStr() });
+      const fakeId = `test_shop_${Date.now()}`;
+      setMyCards(prev => [...prev, { id: fakeId, type: cardType, expiresAt, obtainedAt: todayStr() }]);
       return showToast(`已購買 ${ct.emoji}${ct.name}！`);
     }
     try {
