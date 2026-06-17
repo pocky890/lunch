@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 20:11";
+  const BUILD_TIME = "2026-06-17 23:27";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2047,7 +2047,8 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
 
 // slots: [{num, color, outline}], maxSlots, onSlotsChange
 // takenBy: nums taken by others; weekly: for heatmap
-function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark, nukeZone = [] }) {
+function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark, nukeZone = [] }) {
+  const renderMax = fullNumMax || numMax;
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
   const maxCount = Math.max(0, ...Object.values(numCounts));
@@ -2058,7 +2059,10 @@ function NumberPicker({ numMax, slots = [], maxSlots = 1, onSlotsChange, takenBy
   slots.forEach(s => { if (s.num) slotMap[Number(s.num)] = s; });
   return (
     <div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:"3px",marginBottom:"8px"}}>
-      {Array.from({length:numMax},(_,i)=>i+1).map(n => {
+      {Array.from({length:renderMax},(_,i)=>i+1).map(n => {
+        if (n > numMax) return (
+          <div key={n} title="Lucky Day：此號碼今日停用" style={{aspectRatio:"1",borderRadius:"4px",background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.04)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:isDark?"rgba(255,255,255,0.12)":"rgba(0,0,0,0.15)",fontWeight:"500",cursor:"not-allowed"}}>{n}</div>
+        );
         const slot = slotMap[n];
         const selected = !!slot;
         const inNuke = nukeSet.has(n) && !selected;
@@ -3835,7 +3839,7 @@ function App() {
                       </div>
                       {isNukeCard && nukeCenter && <div style={{fontSize:"12px",fontWeight:"600",color:"rgb(220,38,38)",marginBottom:"4px"}}>☢️ 紅色格子（共 {nukeZone.length} 格）將在開獎時清除</div>}
                       {legends.length > 0 && <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"4px"}}>{legends}</div>}
-                      <NumberPicker numMax={effectiveNumMax} slots={slots} maxSlots={slots.length}
+                      <NumberPicker numMax={effectiveNumMax} fullNumMax={effectiveNumMax < numMax ? numMax : undefined} slots={slots} maxSlots={slots.length}
                         onSlotsChange={handleSlotsChange}
                         takenBy={[]}
                         weekly={weekly} isDark={isDarkMode} nukeZone={nukeZone} />
