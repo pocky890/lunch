@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 17:38";
+  const BUILD_TIME = "2026-06-17 17:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1563,7 +1563,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
             <div>
               <div style={{marginBottom:"16px",padding:"12px",background:"var(--s2)",borderRadius:"8px"}}>
                 <div style={{fontSize:"13px",fontWeight:"600",marginBottom:"10px",color:"var(--t2)"}}>新增商店卡牌</div>
-                <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"flex-end"}}>
+                <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center"}}>
                   <select value={newShopType} onChange={e=>setNewShopType(e.target.value)}
                     style={{flex:"1 1 120px",fontSize:"13px",padding:"6px 8px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}}>
                     <option value="">選擇卡牌</option>
@@ -1591,17 +1591,15 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                         <span style={{flex:1,fontSize:"13px",fontWeight:"600",minWidth:"80px"}}>{ct?.name||type}</span>
                         <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
                           <input type="number" value={cfg.price||""} onChange={e=>setEditShop(p=>({...p,[type]:{...p[type],price:parseInt(e.target.value)||0}}))}
+                            onBlur={async()=>{ await fRef(`shopConfig/${type}`).set({ price:cfg.price, stock:cfg.stock, enabled:cfg.enabled }); setShopMsg("已儲存 ✓"); setTimeout(()=>setShopMsg(""),2000); }}
                             style={{width:"70px",fontSize:"12px",padding:"4px 6px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} placeholder="價格" />
                           <input type="number" value={cfg.stock||""} onChange={e=>setEditShop(p=>({...p,[type]:{...p[type],stock:parseInt(e.target.value)||0}}))}
+                            onBlur={async()=>{ await fRef(`shopConfig/${type}`).set({ price:cfg.price, stock:cfg.stock, enabled:cfg.enabled }); setShopMsg("已儲存 ✓"); setTimeout(()=>setShopMsg(""),2000); }}
                             style={{width:"60px",fontSize:"12px",padding:"4px 6px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} placeholder="庫存" />
                           <button className="btn-sm ghost" style={{marginBottom:0,fontSize:"11px",padding:"3px 8px",background:cfg.enabled?"var(--a)":"transparent",color:cfg.enabled?"#fff":"var(--t2)",border:"1px solid var(--b2)"}}
-                            onClick={()=>setEditShop(p=>({...p,[type]:{...p[type],enabled:!p[type].enabled}}))}>
+                            onClick={async()=>{ const en=!cfg.enabled; setEditShop(p=>({...p,[type]:{...p[type],enabled:en}})); await fRef(`shopConfig/${type}`).set({ price:cfg.price, stock:cfg.stock, enabled:en }); setShopMsg("已儲存 ✓"); setTimeout(()=>setShopMsg(""),2000); }}>
                             {cfg.enabled?"上架":"下架"}
                           </button>
-                          <button className="btn-sm" style={{marginBottom:0,fontSize:"11px",padding:"3px 10px"}} onClick={async()=>{
-                            await fRef(`shopConfig/${type}`).set({ price:cfg.price, stock:cfg.stock, enabled:cfg.enabled });
-                            setShopMsg("已儲存 ✓"); setTimeout(()=>setShopMsg(""),2000);
-                          }}>儲存</button>
                           <button className="btn-sm ghost" style={{marginBottom:0,fontSize:"11px",padding:"3px 8px",color:"var(--red)",border:"1px solid var(--red)"}} onClick={async()=>{
                             await fRef(`shopConfig/${type}`).remove();
                             setShopMsg("已移除 ✓"); setTimeout(()=>setShopMsg(""),2000);
