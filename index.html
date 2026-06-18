@@ -217,6 +217,7 @@
     .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
     .badge-gold  { background: var(--c-amber-bg);  color: var(--c-amber-tx);  border: 1px solid var(--c-amber-bd); }
     .badge-green { background: var(--c-green-bg);  color: var(--c-green-tx);  border: 1px solid var(--c-green-bd); }
+    .badge-title { background: rgba(124,58,237,0.1); color: #6d28d9; border: 1px solid rgba(124,58,237,0.4); border-radius: 5px; padding: 2px 7px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 
     .page-footer { border-top: 1px solid var(--b1); margin-top: 64px; padding: 32px 0; text-align: center; }
     
@@ -325,6 +326,7 @@
     body.dark-mode .week-row.today { background: rgba(0, 113, 227, 0.15); border-color: rgba(0, 113, 227, 0.35); }
     body.dark-mode .badge-gold  { background: rgba(194, 65, 12, 0.18); color: #FDBA74; border-color: rgba(194, 65, 12, 0.35); }
     body.dark-mode .badge-green { background: rgba(21, 128, 61, 0.18); color: #86EFAC; border-color: rgba(21, 128, 61, 0.35); }
+    body.dark-mode .badge-title { background: rgba(167,139,250,0.22); color: #c4b5fd; border-color: rgba(167,139,250,0.55); }
     body.dark-mode .num-chip.taken { background: rgba(153, 27, 27, 0.2); border-color: rgba(239, 68, 68, 0.3); color: #FCA5A5; }
     /* RAMPS 參加者列表：覆蓋 inline 的 pastel 背景與深色文字 */
     body.dark-mode .pt-row { background: var(--s3) !important; border-color: var(--b1) !important; }
@@ -405,7 +407,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-18 16:22";
+  const BUILD_TIME = "2026-06-18 16:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2015,7 +2017,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
             <div style={{width:"24px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
             <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"8px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-              {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
+              {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
             </span>
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲 ?" : p.rest}</span>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
@@ -2202,7 +2204,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span>
               <span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
                 {name}
-                {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
+                {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
               {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
@@ -4072,7 +4074,7 @@ function App() {
                       <div style={{flex:1,display:"flex",flexDirection:"column",gap:"2px",minWidth:0}}>
                         <span style={{fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)",display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
                           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                          {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
+                          {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
                       </div>
