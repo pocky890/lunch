@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-18 16:19";
+  const BUILD_TIME = "2026-06-18 16:22";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -429,10 +429,10 @@
     { key:"bloodyLeech", emoji:"🥤", name:"嗜血水蛭", desc:"同一天使用口渴卡，並且獨贏",                rarity:5 },
     { key:"cardKing",    emoji:"🃏", name:"遊戲王",   desc:"手牌同時持有 5 張以上",                    rarity:3 },
     { key:"firstBlood",  emoji:"🩸", name:"第一滴血", desc:"全遊戲首位獨贏者，唯一解鎖",               rarity:5 },
-    { key:"cornerCreature",   emoji:"🐚", name:"角落生物",   desc:"???", rarity:4, hidden:true },
-    { key:"lastMinuteDriver", emoji:"🚌", name:"末班車司機", desc:"???", rarity:3, hidden:true },
-    { key:"obsessed",         emoji:"🎲", name:"執迷不悟",   desc:"???", rarity:3, hidden:true },
-    { key:"lateJustice",      emoji:"⚖️", name:"遲來的正義", desc:"???", rarity:5, hidden:true },
+    { key:"cornerCreature",   emoji:"🐚", name:"角落生物",   desc:"加入時押 1 號或最大號碼，累計 5 次",       rarity:4, hidden:true },
+    { key:"lastMinuteDriver", emoji:"🚌", name:"末班車司機", desc:"在截止時間前最後 60 秒內送出",               rarity:3, hidden:true },
+    { key:"obsessed",         emoji:"🎲", name:"執迷不悟",   desc:"押同一號碼至少 10 次，始終沒贏",           rarity:3, hidden:true },
+    { key:"lateJustice",      emoji:"⚖️", name:"遲來的正義", desc:"押同一號碼至少 10 次後，終於贏了",         rarity:5, hidden:true },
   ];
 </script>
 
@@ -2483,22 +2483,23 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
             );
           })}
           {(() => {
-            const unlockedHidden = ACHIEVEMENTS.filter(a => a.hidden && unlocked.has(a.key));
-            if (unlockedHidden.length === 0) return null;
+            const hiddenAll = ACHIEVEMENTS.filter(a => a.hidden);
             return <>
               <div style={{marginTop:"10px",marginBottom:"2px",padding:"6px 14px",fontSize:"11px",fontWeight:"700",color:"#a855f7",letterSpacing:"1px",textTransform:"uppercase",borderTop:"1px solid var(--b1)"}}>✨ 隱藏成就</div>
-              {unlockedHidden.map(a => {
+              {hiddenAll.map(a => {
+                const isUnlocked = unlocked.has(a.key);
                 const isChosen = chosenKey === a.key;
                 return (
-                  <div key={a.key} onClick={() => onTitleChange(isChosen ? null : a.key)}
-                    style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"#a855f7":"rgba(168,85,247,0.3)"}`,background:isChosen?"rgba(168,85,247,0.1)":"rgba(168,85,247,0.05)",cursor:"pointer"}}>
+                  <div key={a.key} onClick={isUnlocked ? () => onTitleChange(isChosen ? null : a.key) : undefined}
+                    style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"#a855f7":isUnlocked?"rgba(168,85,247,0.3)":"var(--b1)"}`,background:isChosen?"rgba(168,85,247,0.1)":isUnlocked?"rgba(168,85,247,0.05)":"transparent",opacity:isUnlocked?1:0.45,cursor:isUnlocked?"pointer":"default"}}>
                     <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{a.emoji}</span>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"#a855f7":"var(--t1)"}}>{a.name}</div>
-                      <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{a.desc}</div>
+                      <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{isUnlocked ? a.desc : "???"}</div>
                       <div style={{fontSize:"11px",color:"#a855f7",marginTop:"2px",letterSpacing:"1px"}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)} · 隱藏</div>
                     </div>
                     {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"#a855f7",flexShrink:0}}>使用中</span>}
+                    {!isUnlocked && <span style={{fontSize:"11px",color:"var(--t3)",flexShrink:0}}>🔒</span>}
                   </div>
                 );
               })}
