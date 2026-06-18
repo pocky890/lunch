@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-17 23:32";
+  const BUILD_TIME = "2026-06-18 11:34";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2017,7 +2017,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
               {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span style={{fontSize:"12px",fontWeight:"600",flexShrink:0,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.35)",borderRadius:"5px",padding:"2px 7px",whiteSpace:"nowrap",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()}
             </span>
-            <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.rest}</span>
+            <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"12px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲 ?" : p.rest}</span>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
           </div>
         );
@@ -2763,6 +2763,7 @@ function App() {
   const [number2, setNumber2] = useState("");        // second number for 加號卡
   const [bdNumbers, setBdNumbers] = useState(["","","",""]); // birthday extra numbers [n2..n5]
   const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
+  const [isRandom, setIsRandom] = useState(false);
   const [awardedCards, setAwardedCards] = useState([]); // [{name, type}] earned this draw
   const [mySpecialAchievements, setMySpecialAchievements] = useState({});
   const [cheapskateUsers, setCheapskateUsers] = useState([]);
@@ -3462,11 +3463,11 @@ function App() {
       const bdExtra = bdNums ? { birthdayNumbers: bdNums } : {};
 
       if (myEntry) {
-        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest});
+        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest, isRandomRest: isRandom||false});
         setIsEditing(false);
       } else {
         const newRef = fRef("participants").push();
-        await newRef.set({id:newRef.key, name, category:form.category, rest, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
+        await newRef.set({id:newRef.key, name, category:form.category, rest, isRandomRest: isRandom||false, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
         await fRef(`participationCount/${sanitizeKey(name)}`).transaction(n => (n || 0) + 1);
       }
       if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
@@ -3788,8 +3789,22 @@ function App() {
                 <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",color:"var(--t3)",fontWeight:"500"}}>Google 帳號</span>
               </div>
               <label>餐廳類型</label>
-              <select value={form.category} onChange={e=>setForm({...form,category:e.target.value,rest:"",cust:""})}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
-              {form.category && (<><label>想吃的店家</label><select value={form.rest} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>{form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" />}</>)}
+              <select value={form.category} onChange={e=>{setIsRandom(false);setForm({...form,category:e.target.value,rest:"",cust:""}); }}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
+              {form.category && (<><label>想吃的店家</label>
+                {isRandom
+                  ? <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"16px"}}>
+                      <span style={{fontSize:"18px"}}>🎲</span>
+                      <span style={{flex:1,fontSize:"13px",color:"var(--t2)",fontWeight:"500"}}>隨機選擇（開獎後揭曉）</span>
+                      <button type="button" className="btn-sm ghost" style={{marginBottom:0,fontSize:"12px",padding:"3px 10px"}} onClick={()=>{setIsRandom(false);setForm(f=>({...f,rest:"",cust:""}));}}>✕ 取消</button>
+                    </div>
+                  : <><div style={{display:"flex",gap:"8px",marginBottom:form.rest==="cust"?"8px":"16px"}}>
+                      <select value={form.rest} style={{flex:1,marginBottom:0}} onChange={e=>{setIsRandom(false);setForm({...form,rest:e.target.value,cust:""}); }}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>
+                      <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const opts=rests[form.category]||[];if(!opts.length)return showToast("此類型沒有可用的餐廳");const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
+                    </div>
+                    {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" style={{marginBottom:"16px"}} />}
+                  </>
+                }
+              </>)}
               {isEditing ? (
                 <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
                   號碼已鎖定：<strong style={{color:"var(--t1)"}}>#{form.number}</strong>
@@ -3876,7 +3891,7 @@ function App() {
   );
 
   if (phase==="joined") {
-    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setIsEditing(true); setPhase("join"); }
+    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) { setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setIsRandom(myEntry.isRandomRest||false); } setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setIsEditing(true); setPhase("join"); }
     const myJoinedEntry = pts.find(p=>p.name===form.name);
     const usedCardName = myJoinedEntry?.cardUsed ? (CARD_TYPES[myJoinedEntry.cardUsed]?.name || "卡牌") : null;
     function handleCancel() { if (usedCardName) setCancelConfirm(true); else doCancel(); }
