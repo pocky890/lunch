@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-18 15:23";
+  const BUILD_TIME = "2026-06-18 16:19";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2207,13 +2207,12 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
               {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
             </div>
-            {isMe && unlocked.length > 0 && (
+            {isMe && unlocked.filter(k => k !== chosenKey).length > 0 && (
               <div style={{marginTop:"8px",marginLeft:"30px",display:"flex",flexWrap:"wrap",gap:"4px"}}>
-                {unlocked.map(key => {
+                {unlocked.filter(k => k !== chosenKey).map(key => {
                   const a = ACHIEVEMENTS.find(x => x.key === key);
-                  const isChosen = chosenKey === key;
                   return <span key={key} title={a.desc}
-                    style={{fontSize:"12px",padding:"2px 7px",borderRadius:"5px",border:`1px solid ${isChosen?"rgba(124,58,237,0.7)":"rgba(124,58,237,0.35)"}`,background:isChosen?"rgba(124,58,237,0.25)":"rgba(124,58,237,0.15)",color:"var(--t1)",fontWeight:isChosen?"700":"500",outline:isChosen?"2px solid rgba(124,58,237,0.4)":"none",outlineOffset:"1px"}}>
+                    style={{fontSize:"12px",padding:"2px 7px",borderRadius:"5px",border:"1px solid rgba(124,58,237,0.35)",background:"rgba(124,58,237,0.15)",color:"var(--t1)",fontWeight:"500"}}>
                     {a.emoji} {a.name}
                   </span>;
                 })}
