@@ -405,7 +405,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-18 11:34";
+  const BUILD_TIME = "2026-06-18 14:13";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3789,22 +3789,22 @@ function App() {
                 <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",color:"var(--t3)",fontWeight:"500"}}>Google 帳號</span>
               </div>
               <label>餐廳類型</label>
-              <select value={form.category} onChange={e=>{setIsRandom(false);setForm({...form,category:e.target.value,rest:"",cust:""}); }}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
-              {form.category && (<><label>想吃的店家</label>
-                {isRandom
-                  ? <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"16px"}}>
-                      <span style={{fontSize:"18px"}}>🎲</span>
-                      <span style={{flex:1,fontSize:"13px",color:"var(--t2)",fontWeight:"500"}}>隨機選擇（開獎後揭曉）</span>
-                      <button type="button" className="btn-sm ghost" style={{marginBottom:0,fontSize:"12px",padding:"3px 10px"}} onClick={()=>{setIsRandom(false);setForm(f=>({...f,rest:"",cust:""}));}}>✕ 取消</button>
-                    </div>
-                  : <><div style={{display:"flex",gap:"8px",marginBottom:form.rest==="cust"?"8px":"16px"}}>
-                      <select value={form.rest} style={{flex:1,marginBottom:0}} onChange={e=>{setIsRandom(false);setForm({...form,rest:e.target.value,cust:""}); }}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>
-                      <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const opts=rests[form.category]||[];if(!opts.length)return showToast("此類型沒有可用的餐廳");const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
-                    </div>
+              {isRandom
+                ? <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"16px"}}>
+                    <span style={{fontSize:"18px"}}>🎲</span>
+                    <span style={{flex:1,fontSize:"13px",color:"var(--t2)",fontWeight:"500"}}>隨機選擇（開獎後揭曉）</span>
+                    <button type="button" className="btn-sm ghost" style={{marginBottom:0,fontSize:"12px",padding:"3px 10px"}} onClick={()=>{setIsRandom(false);setForm(f=>({...f,category:"",rest:"",cust:""}));}}>✕ 取消</button>
+                  </div>
+                : <><div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
+                    <select value={form.category} style={{flex:1,marginBottom:0}} onChange={e=>{setIsRandom(false);setForm({...form,category:e.target.value,rest:"",cust:""}); }}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
+                    <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const cats=CATEGORIES.filter(c=>(rests[c]||[]).length>0);if(!cats.length)return showToast("沒有可用的餐廳");const cat=cats[Math.floor(Math.random()*cats.length)];const opts=rests[cat]||[];const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,category:cat,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
+                  </div>
+                  {form.category && (<><label>想吃的店家</label>
+                    <select value={form.rest} style={{marginBottom:form.rest==="cust"?"8px":"16px"}} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>
                     {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" style={{marginBottom:"16px"}} />}
-                  </>
-                }
-              </>)}
+                  </>)}
+                </>
+              }
               {isEditing ? (
                 <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
                   號碼已鎖定：<strong style={{color:"var(--t1)"}}>#{form.number}</strong>
