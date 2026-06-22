@@ -407,7 +407,7 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
-  const BUILD_TIME = "2026-06-22 16:34";
+  const BUILD_TIME = "2026-06-22 16:36";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1744,7 +1744,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           {userName && <button className="ghost theme-toggle" onClick={onShop} title="點數商店">🛒</button>}
           {userName && (
             <div style={{display:"flex",alignItems:"center",gap:"6px",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
-              <button className={`ghost${achievementNews ? " has-news" : ""}`} onClick={onProfile} style={{width:"auto",marginBottom:0,fontSize:"13px",fontWeight:"600",padding:"5px 14px",borderRadius:"20px"}}>{userName}</button>
+              <button className={`ghost${achievementNews ? " has-news" : ""}`} onClick={onProfile} style={{width:"auto",marginBottom:0,fontSize:"13px",fontWeight:"600",padding:"5px 14px",borderRadius:"20px"}}>{userName} <span style={{fontSize:"10px",opacity:0.6}}>▾</span></button>
               {userPoints !== null && <span style={{fontSize:"11px",color:"var(--t3)",fontWeight:"500",whiteSpace:"nowrap"}}>🪙 {userPoints >= 1000 ? `${(userPoints/1000).toFixed(userPoints%1000===0?0:1)}k` : userPoints}</span>}
             </div>
           )}
