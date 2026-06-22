@@ -2104,7 +2104,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
                 const price = cfg.price ?? pt.defaultPrice;
                 const canAfford = pts >= price;
                 return itemRow(
-                  <><img src={PET_GIFS[key]} style={{width:52,height:52,imageRendering:"pixelated",flexShrink:0}} />
+                  <><img src={PET_GIFS[key]} style={{width:72,height:72,imageRendering:"pixelated",flexShrink:0}} />
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"14px",fontWeight:"600"}}>{pt.emoji} {pt.name}</div>
                     <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>在你的畫面上閒逛</div>
@@ -2662,7 +2662,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
                   return (
                     <div key={key} onClick={() => onSetActivePet(key)}
                       style={{display:"flex",alignItems:"center",gap:"14px",padding:"12px 14px",borderRadius:"var(--r)",border:`1px solid ${isActive?"var(--a)":"var(--b1)"}`,background:isActive?"var(--a-dim,rgba(99,102,241,0.08))":"var(--s3)",cursor:"pointer"}}>
-                      <img src={PET_GIFS[key]} style={{width:52,height:52,imageRendering:"pixelated",flexShrink:0}} />
+                      <img src={PET_GIFS[key]} style={{width:72,height:72,imageRendering:"pixelated",flexShrink:0}} />
                       <div style={{flex:1}}>
                         <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{pt.emoji} {pt.name}</div>
                         <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{isActive ? "在畫面上閒逛中 ✦" : "點擊讓它出現"}</div>
