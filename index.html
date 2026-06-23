@@ -437,7 +437,7 @@
         pochita_01: 'gif/pochita_01.gif',
         penguin_01: 'gif/penguin_01.gif',
   };
-  const BUILD_TIME = "2026-06-23 16:05";
+  const BUILD_TIME = "2026-06-23 16:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2083,7 +2083,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
   const titleSoldOut = titleAll.filter(([, v]) => v.stock !== -1 && v.stock <= 0);
   const tabBtn = (id, label) => (
     <button key={id} onClick={()=>setShopTab(id)} style={{flex:1,padding:"7px",fontSize:"13px",fontWeight:"600",borderRadius:"6px",border:"none",cursor:"pointer",
-      background:shopTab===id?"var(--a)":"transparent",color:shopTab===id?"#fff":"var(--t2)"}}>
+      background:shopTab===id?"var(--a)":"var(--s3)",color:shopTab===id?"#fff":"var(--t2)",border:shopTab===id?"none":"1px solid var(--b2)"}}>
       {label}
     </button>
   );
