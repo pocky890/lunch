@@ -371,9 +371,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 5, rules: 4 };
+  const WHATSNEW_VERSION       = { cards: 5, rules: 5 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
     const unseen = new Set();
@@ -437,7 +437,7 @@
         pochita_01: 'gif/pochita_01.gif',
         penguin_01: 'gif/penguin_01.gif',
   };
-  const BUILD_TIME = "2026-06-23 15:21";
+  const BUILD_TIME = "2026-06-23 15:50";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -991,6 +991,10 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎂 生日特權</div>
             <div>當天生日的成員可以額外多選 <strong style={{color:"var(--t1)"}}>4 個號碼</strong>（共 5 個），系統取最接近幸運號碼的那個計算。若同時持有加號卡，最多可選 <strong style={{color:"var(--t1)"}}>6 個號碼</strong>。</div>
             <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-pink-tx)"}}>🎂 生日當天頁面頂端會出現祝賀 Banner，提醒所有人今天是誰的生日。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🛒 發薪日優惠{newSections.includes("payday") && <NewDot />}</div>
+            <div>每月<strong style={{color:"var(--t1)"}}>最後一個工作日</strong>（遇假日自動提前），點數商店全館 <strong style={{color:"var(--t1)"}}>8 折</strong>。購物車按鈕上方會出現紅色「On Sale!」標語提示。</div>
           </div>
 
         </div>
