@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 14:42";
+  const BUILD_TIME = "2026-06-24 14:43";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1668,7 +1668,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                     <span style={{flex:1,fontSize:"14px"}}>{key}</span>
                     <span style={{fontWeight:"700",color:"var(--a)",minWidth:"40px",textAlign:"right"}}>🪙 {pts}</span>
                     <input type="number" placeholder="+10 / -5" value={pointsAdj[key]||""} onChange={e=>setPointsAdj(p=>({...p,[key]:e.target.value}))}
-                      style={{width:"70px",fontSize:"13px",padding:"4px 6px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
+                      style={{width:"90px",fontSize:"13px",padding:"4px 6px",borderRadius:"6px",border:"1px solid var(--b2)",background:"var(--bg)",color:"var(--t1)"}} />
                     <button className="btn-sm" style={{marginBottom:0,fontSize:"12px",padding:"4px 10px"}} onClick={async()=>{
                       const adj = parseInt(pointsAdj[key]);
                       if (!adj) return;
