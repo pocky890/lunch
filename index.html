@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 14:51";
+  const BUILD_TIME = "2026-06-24 15:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2101,6 +2101,7 @@ function PetOverlay({ petKey }) {
 
 function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, userOwnedTitles, onBuy, onBuyTitle, petShopConfig = {}, userOwnedPets = {}, onBuyPet, discountRate = 1 }) {
   const [shopTab, setShopTab] = React.useState("cards");
+  const [pendingBuy, setPendingBuy] = React.useState(null);
   if (!open) return null;
   const pts = userPoints ?? 0;
   const ep = p => Math.floor(p * discountRate);
@@ -2109,7 +2110,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
   const titleEntries = titleAll.filter(([, v]) => v.stock === -1 || v.stock > 0);
   const titleSoldOut = titleAll.filter(([, v]) => v.stock !== -1 && v.stock <= 0);
   const tabBtn = (id, label) => (
-    <button key={id} onClick={()=>setShopTab(id)} style={{flex:1,padding:"7px",fontSize:"13px",fontWeight:"600",borderRadius:"6px",border:"none",cursor:"pointer",
+    <button key={id} onClick={()=>{setShopTab(id);setPendingBuy(null);}} style={{flex:1,padding:"7px",fontSize:"13px",fontWeight:"600",borderRadius:"6px",border:"none",cursor:"pointer",
       background:shopTab===id?"var(--a)":"var(--s3)",color:shopTab===id?"#fff":"var(--t2)",border:shopTab===id?"none":"1px solid var(--b2)"}}>
       {label}
     </button>
@@ -2157,7 +2158,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
                 <div key={type} style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px",flexShrink:0}}>
                   {discountRate < 1 && <span style={{fontSize:"12px",color:"var(--t3)",textDecoration:"line-through"}}>🪙 {cfg.price}</span>}
                   <span style={{fontSize:"15px",fontWeight:"700",color:discountRate<1?"#c0392b":"var(--a)"}}>🪙 {ep(cfg.price)}</span>
-                  <button className="btn-sm" disabled={!canAfford} onClick={()=>onBuy(type,ep(cfg.price))} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
+                  <button className="btn-sm" disabled={!canAfford} onClick={()=>setPendingBuy({label:`${CARD_TYPES[type]?.emoji||""}${CARD_TYPES[type]?.name||type}（🪙 ${ep(cfg.price)}）`,action:()=>onBuy(type,ep(cfg.price))})} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
                 </div>
               );
             })
@@ -2179,7 +2180,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
                   <span style={{fontSize:"15px",fontWeight:"700",color:discountRate<1?"#c0392b":"var(--a)"}}>🪙 {ep(cfg.price)}</span>
                   {owned
                     ? <span style={{fontSize:"12px",color:"var(--a)",fontWeight:"600"}}>已擁有</span>
-                    : <button className="btn-sm" disabled={!canAfford} onClick={()=>onBuyTitle(key,ep(cfg.price),cfg.stock)} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
+                    : <button className="btn-sm" disabled={!canAfford} onClick={()=>setPendingBuy({label:`${cfg.emoji||""}${cfg.name}（🪙 ${ep(cfg.price)}）`,action:()=>onBuyTitle(key,ep(cfg.price),cfg.stock)})} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
                   }
                 </div>
               );
@@ -2219,13 +2220,22 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
                     <span style={{fontSize:"15px",fontWeight:"700",color:discountRate<1?"#c0392b":"var(--a)"}}>🪙 {ep(price)}</span>
                     {owned
                       ? <span style={{fontSize:"12px",color:"var(--a)",fontWeight:"600"}}>已擁有</span>
-                      : <button className="btn-sm" disabled={!canAfford} onClick={()=>onBuyPet(key,ep(price))} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
+                      : <button className="btn-sm" disabled={!canAfford} onClick={()=>setPendingBuy({label:`${PET_TYPES[key]?.name||key}（🪙 ${ep(price)}）`,action:()=>onBuyPet(key,ep(price))})} style={{marginBottom:0,opacity:canAfford?1:0.45,fontSize:"12px",padding:"4px 12px"}}>購買</button>
                     }
                   </div>
                 );
               })}</>;
         })()}
         <p style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"12px",marginBottom:0}}>每日參加 +10 點 ／ 標記不參加 +5 點</p>
+        {pendingBuy && (
+          <div style={{position:"sticky",bottom:0,background:"var(--bg)",borderTop:"1px solid var(--b1)",padding:"14px 0 4px",marginTop:"16px"}}>
+            <div style={{fontSize:"13px",color:"var(--t1)",marginBottom:"10px",textAlign:"center"}}>確定購買 <b>{pendingBuy.label}</b>？</div>
+            <div style={{display:"flex",gap:"8px"}}>
+              <button className="btn-sm" style={{flex:1,marginBottom:0,background:"var(--s3)",color:"var(--t1)",border:"1px solid var(--b2)"}} onClick={()=>setPendingBuy(null)}>取消</button>
+              <button className="btn-sm" style={{flex:1,marginBottom:0}} onClick={()=>{pendingBuy.action();setPendingBuy(null);}}>確定購買</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
