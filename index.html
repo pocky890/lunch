@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 10:28";
+  const BUILD_TIME = "2026-06-24 14:01";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2899,6 +2899,129 @@ function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
   );
 }
 
+/* ── 聊天室 + 在線人數（右下浮動） ── */
+function ChatWidget({ boundName }) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [online, setOnline] = useState({});
+  const [text, setText] = useState("");
+  const [unread, setUnread] = useState(0);
+  const listRef = useRef(null);
+  const seenTsRef = useRef(null);
+
+  // TEST_MODE 假資料
+  useEffect(() => {
+    if (!TEST_MODE) return;
+    setOnline({ Pocky: "Pocky", Eason: "Eason", Mina: "Mina" });
+    setMessages([
+      { id: "t1", name: "Eason", text: "今天吃雞肉飯有人要一起嗎", ts: 1 },
+      { id: "t2", name: "Mina", text: "+1 我也想吃", ts: 2 },
+    ]);
+  }, []);
+
+  // 在線狀態（presence）
+  useEffect(() => {
+    if (!boundName || TEST_MODE) return;
+    const key = sanitizeKey(boundName);
+    const myRef = db.ref(`${DB_PREFIX}/presence/${key}`);
+    const connRef = db.ref(".info/connected");
+    const onConn = snap => {
+      if (snap.val() === true) {
+        myRef.onDisconnect().remove();
+        myRef.set(boundName);
+      }
+    };
+    connRef.on("value", onConn);
+    const presRef = db.ref(`${DB_PREFIX}/presence`);
+    const onPres = snap => setOnline(snap.val() || {});
+    presRef.on("value", onPres);
+    return () => {
+      connRef.off("value", onConn);
+      presRef.off("value", onPres);
+      myRef.onDisconnect().cancel();
+      myRef.remove();
+    };
+  }, [boundName]);
+
+  // 聊天訊息（最近 50 筆）
+  useEffect(() => {
+    if (TEST_MODE) return;
+    const ref = db.ref(`${DB_PREFIX}/chat`).limitToLast(50);
+    const handler = snap => {
+      const val = snap.val() || {};
+      const arr = Object.entries(val).map(([id, m]) => ({ id, ...m })).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+      setMessages(arr);
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  // 未讀計數
+  useEffect(() => {
+    if (!messages.length) return;
+    const latestTs = messages[messages.length - 1].ts || 0;
+    if (seenTsRef.current === null) { seenTsRef.current = latestTs; return; }
+    if (open) { seenTsRef.current = latestTs; setUnread(0); }
+    else setUnread(messages.filter(m => (m.ts || 0) > seenTsRef.current && m.name !== boundName).length);
+  }, [messages, open, boundName]);
+
+  // 自動捲到底
+  useEffect(() => {
+    if (open && listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages, open]);
+
+  const send = () => {
+    const t = text.trim();
+    if (!t || !boundName) return;
+    setText("");
+    if (TEST_MODE) { setMessages(m => [...m, { id: "t" + m.length, name: boundName, text: t, ts: Date.now() }]); return; }
+    db.ref(`${DB_PREFIX}/chat`).push().set({ name: boundName, text: t, ts: firebase.database.ServerValue.TIMESTAMP });
+  };
+
+  if (!boundName) return null;
+  const onlineNames = Object.values(online);
+  const onlineCount = onlineNames.length;
+
+  if (!open) return (
+    <button onClick={() => setOpen(true)} style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 900, height: "48px", width: "auto", padding: "0 18px", borderRadius: "999px", background: "var(--a)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: 0 }}>
+      💬 聊天
+      <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34C759", display: "inline-block" }}></span>
+      <span style={{ fontSize: "12px", opacity: 0.9 }}>{onlineCount}</span>
+      {unread > 0 && <span style={{ background: "#FF3B30", color: "#fff", borderRadius: "999px", minWidth: "18px", height: "18px", padding: "0 5px", fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</span>}
+    </button>
+  );
+
+  return (
+    <div style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 900, width: "330px", maxWidth: "calc(100vw - 32px)", height: "460px", maxHeight: "calc(100vh - 100px)", background: "var(--s1)", border: "1px solid var(--b1)", borderRadius: "16px", boxShadow: "0 8px 32px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--b1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontWeight: "700", fontSize: "15px", color: "var(--t1)" }}>💬 聊天室</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "var(--t3)" }}><span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34C759" }}></span>{onlineCount} 人在線</span>
+          <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--t3)", padding: 0, width: "auto", marginBottom: 0, boxShadow: "none" }}>✕</button>
+        </div>
+      </div>
+      {onlineNames.length > 0 && <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--b1)", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+        {onlineNames.map((n, i) => <span key={i} style={{ fontSize: "11px", color: "var(--t2)", background: "var(--s3)", border: "1px solid var(--b1)", borderRadius: "999px", padding: "2px 8px" }}>🟢 {n}</span>)}
+      </div>}
+      <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+        {messages.length === 0 && <div style={{ textAlign: "center", color: "var(--t3)", fontSize: "13px", marginTop: "20px" }}>還沒有訊息，來說點什麼吧</div>}
+        {messages.map((m, i) => {
+          const mine = m.name === boundName;
+          const showName = !mine && (i === 0 || messages[i - 1].name !== m.name);
+          return <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start", gap: "2px" }}>
+            {showName && <span style={{ fontSize: "11px", color: "var(--t3)", marginLeft: "2px" }}>{m.name}</span>}
+            <span style={{ background: mine ? "var(--a)" : "var(--s3)", color: mine ? "#fff" : "var(--t1)", border: mine ? "none" : "1px solid var(--b1)", padding: "7px 11px", borderRadius: "12px", fontSize: "14px", maxWidth: "85%", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>{m.text}</span>
+          </div>;
+        })}
+      </div>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid var(--b1)", display: "flex", gap: "8px" }}>
+        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} maxLength={500} placeholder="輸入訊息…" style={{ flex: 1, marginBottom: 0 }} />
+        <button onClick={send} disabled={!text.trim()} style={{ width: "auto", padding: "0 16px", marginBottom: 0, flexShrink: 0 }}>送出</button>
+      </div>
+    </div>
+  );
+}
+
 /* ── App 主程式 ── */
 function App() {
   const [authState, setAuthState] = useState("loading"); // loading | login | setname | ready
@@ -4033,6 +4156,7 @@ function App() {
       });
     }} onLogout={() => { setShowProfile(false); auth.signOut(); }} />}
     {userActivePet && PET_GIFS[userActivePet] && <PetOverlay petKey={userActivePet} />}
+    <ChatWidget boundName={boundName} />
     <TestModeBanner />
   </>;
 
