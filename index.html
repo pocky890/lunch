@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 16:31";
+  const BUILD_TIME = "2026-06-24 16:38";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4239,7 +4239,7 @@ function App() {
     ...(p.number2 ? [{ num: p.number2, name: p.name }] : [])
   ]).filter(x => x.num);
 
-  if (authState === "loading") return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div></div>;
+  if (authState === "loading") return <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)",gap:"12px"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div><span style={{fontSize:"13px",color:"var(--t3)"}}>連線中…</span></div>;
   if (authState === "login") return <LoginScreen isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} />;
   if (authState === "setname") return <SetNameScreen user={currentUser} isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
   if (authState === "resigned") return (
@@ -4644,6 +4644,9 @@ function App() {
   return null;
 }
 
+window.onerror = (msg, src, line, col, err) => {
+  document.getElementById("root").innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center"><p style="color:#e53e3e;font-size:16px;margin-bottom:8px">⚠️ 載入失敗</p><p style="font-size:12px;color:#666;margin-bottom:4px">${msg}</p><p style="font-size:11px;color:#999;margin-bottom:20px">${src} :${line}</p><button onclick="location.reload()" style="padding:8px 20px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;font-size:14px">重新整理</button></div>`;
+};
 ReactDOM.render(<App />, document.getElementById("root"));
 document.getElementById("app-loading")?.remove();
 </script>
