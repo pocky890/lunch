@@ -448,7 +448,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 23:31";
+  const BUILD_TIME = "2026-06-24 23:35";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2065,13 +2065,15 @@ function OtherPetOverlay({ petKey, name }) {
 
   React.useEffect(() => {
     if (!gif) return;
-    let raf, timer;
-    const loop = () => {
+    let raf, timer, last = 0;
+    const loop = (t) => {
       raf = requestAnimationFrame(loop);
-      if (pausedRef.current) return;
+      if (pausedRef.current) { last = t; return; }
+      const dt = last ? Math.min((t - last) / 16.67, 3) : 1;
+      last = t;
       let { x, y } = posRef.current;
       let { x: vx, y: vy } = velRef.current;
-      x += vx; y += vy;
+      x += vx * dt; y += vy * dt;
       const maxX = window.innerWidth - SIZE;
       const maxY = window.innerHeight - SIZE - 60;
       if (x <= 0) { x = 0; vx = Math.abs(vx); }
@@ -2172,13 +2174,15 @@ function PetOverlay({ petKey }) {
 
   React.useEffect(() => {
     if (!gif) return;
-    let raf, timer;
-    const loop = () => {
+    let raf, timer, last = 0;
+    const loop = (t) => {
       raf = requestAnimationFrame(loop);
-      if (pausedRef.current || draggingRef.current) return;
+      if (pausedRef.current || draggingRef.current) { last = t; return; }
+      const dt = last ? Math.min((t - last) / 16.67, 3) : 1;
+      last = t;
       let { x, y } = posRef.current;
       let { x: vx, y: vy } = velRef.current;
-      x += vx; y += vy;
+      x += vx * dt; y += vy * dt;
       const maxX = window.innerWidth - SIZE, maxY = window.innerHeight - SIZE;
       if (x <= 0) { x = 0; vx = Math.abs(vx); }
       if (x >= maxX) { x = maxX; vx = -Math.abs(vx); }
