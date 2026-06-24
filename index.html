@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 15:12";
+  const BUILD_TIME = "2026-06-24 15:13";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1873,7 +1873,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           {userName && (
             <div style={{display:"flex",alignItems:"center",gap:"6px",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
               <button className={`ghost${achievementNews ? " has-news" : ""}`} onClick={onProfile} style={{width:"auto",maxWidth:"160px",flexShrink:0,marginBottom:0,fontSize:"13px",fontWeight:"600",padding:"5px 12px",borderRadius:"20px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{userName} <span style={{fontSize:"12px",opacity:0.8}}>▾</span></button>
-              {userPoints !== null && <button onClick={onPointsHistory} style={{marginBottom:0,fontSize:"11px",color:"var(--t3)",fontWeight:"500",whiteSpace:"nowrap",padding:"3px 6px",borderRadius:"10px",background:"var(--s2)",border:"none",cursor:"pointer",lineHeight:1}}>🪙 {userPoints >= 1000 ? `${(userPoints/1000).toFixed(userPoints%1000===0?0:1)}k` : userPoints}</button>}
+              {userPoints !== null && <button onClick={onPointsHistory} style={{marginBottom:0,fontSize:"11px",color:"var(--a)",fontWeight:"600",whiteSpace:"nowrap",padding:"3px 6px",borderRadius:"10px",background:"var(--s2)",border:"none",cursor:"pointer",lineHeight:1}}>🪙 {userPoints >= 1000 ? `${(userPoints/1000).toFixed(userPoints%1000===0?0:1)}k` : userPoints}</button>}
             </div>
           )}
         </div>
