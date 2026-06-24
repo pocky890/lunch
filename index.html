@@ -446,7 +446,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 19:55";
+  const BUILD_TIME = "2026-06-24 20:05";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2033,39 +2033,97 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   );
 }
 
-function OthersPetsBar({ boundName }) {
+function OtherPetOverlay({ petKey, name }) {
+  const gif = PET_GIFS[petKey];
+  const SIZE = 80;
+  const [pos, setPos] = React.useState(() => ({ x: Math.random() * (window.innerWidth - 200) + 100, y: Math.random() * (window.innerHeight - 300) + 80 }));
+  const [flipX, setFlipX] = React.useState(false);
+  const velRef = React.useRef({ x: (Math.random() < 0.5 ? 1 : -1) * (0.8 + Math.random() * 0.5), y: (Math.random() - 0.5) * 0.6 });
+  const pausedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!gif) return;
+    const move = setInterval(() => {
+      if (pausedRef.current) return;
+      setPos(p => {
+        let { x, y } = p;
+        let { x: vx, y: vy } = velRef.current;
+        x += vx; y += vy;
+        const maxX = window.innerWidth - SIZE;
+        const maxY = window.innerHeight - SIZE - 60;
+        if (x <= 0) { x = 0; vx = Math.abs(vx); }
+        if (x >= maxX) { x = maxX; vx = -Math.abs(vx); }
+        if (y <= 0) { y = 0; vy = Math.abs(vy); }
+        if (y >= maxY) { y = maxY; vy = -Math.abs(vy); }
+        velRef.current = { x: vx, y: vy };
+        setFlipX(vx < 0);
+        return { x, y };
+      });
+    }, 16);
+    let timer;
+    const scheduleNext = () => { timer = setTimeout(changeDir, 3000 + Math.random() * 4000); };
+    const changeDir = () => {
+      if (Math.random() < 0.3) { pausedRef.current = true; setTimeout(() => { pausedRef.current = false; scheduleNext(); }, 1500 + Math.random() * 2000); }
+      else { const angle = (Math.random() - 0.5) * Math.PI * 0.8; const speed = 0.7 + Math.random() * 0.6; velRef.current = { x: Math.cos(angle) * speed * (Math.random() < 0.5 ? 1 : -1), y: Math.sin(angle) * speed }; scheduleNext(); }
+    };
+    scheduleNext();
+    return () => { clearInterval(move); clearTimeout(timer); };
+  }, [gif]);
+  if (!gif) return null;
+  const flipped = (flipX !== !!(PET_TYPES[petKey] || {}).flipDefault);
+  return (
+    <div style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 9996, pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+      <span style={{ fontSize: "10px", color: "var(--bg)", background: "var(--t1)", borderRadius: "999px", padding: "1px 6px", whiteSpace: "nowrap" }}>{name}</span>
+      <img src={gif} draggable={false} style={{ width: SIZE, height: "auto", imageRendering: "pixelated", transform: flipped ? "scaleX(-1)" : "none", transition: "transform 0.1s" }} />
+    </div>
+  );
+}
+
+function OthersPets({ boundName }) {
   const [allPets, setAllPets] = React.useState({});
+  const [presence, setPresence] = React.useState({});
   React.useEffect(() => {
     if (!boundName) return;
     if (TEST_MODE) {
-      setAllPets({
-        Eason: { pet: "godzilla_01", name: "Eason" },
-        Jerry: { pet: "penguin_01", name: "Jerry" },
-        Mina:  { pet: "ghost_01",  name: "Mina"  },
-      });
+      setPresence({ Eason: { name: "Eason", active: true }, Jerry: { name: "Jerry", active: false }, Mina: { name: "Mina", active: true } });
+      setAllPets({ Eason: { pet: "godzilla_01", name: "Eason" }, Jerry: { pet: "penguin_01", name: "Jerry" }, Mina: { pet: "ghost_01", name: "Mina" } });
       return;
     }
-    const ref = db.ref(`${DB_PREFIX}/userActivePet`);
-    const handler = snap => setAllPets(snap.val() || {});
-    ref.on("value", handler);
-    return () => ref.off("value", handler);
+    const petsRef = db.ref(`${DB_PREFIX}/userActivePet`);
+    const petsH = snap => setAllPets(snap.val() || {});
+    petsRef.on("value", petsH);
+    const presRef = db.ref(`${DB_PREFIX}/presence`);
+    const presH = snap => setPresence(snap.val() || {});
+    presRef.on("value", presH);
+    return () => { petsRef.off("value", petsH); presRef.off("value", presH); };
   }, [boundName]);
+
   const mySanitized = sanitizeKey(boundName);
   const others = Object.entries(allPets)
     .filter(([key, val]) => key !== mySanitized && val)
-    .map(([key, val]) => typeof val === "string" ? { key, petKey: val, name: key } : { key, petKey: val.pet, name: val.name })
-    .filter(({ petKey }) => PET_GIFS[petKey]);
-  if (others.length === 0) return null;
-  return (
-    <div className="others-pets-bar" style={{ position: "fixed", bottom: "20px", left: "20px", zIndex: 800, display: "flex", gap: "10px", alignItems: "flex-start", flexWrap: "wrap", maxWidth: "calc(50vw - 20px)" }}>
-      {others.map(({ key, petKey, name }) => (
-        <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-          <span style={{ fontSize: "10px", color: "var(--bg)", background: "var(--t1)", borderRadius: "999px", padding: "1px 6px", whiteSpace: "nowrap" }}>{name}</span>
-          <img src={PET_GIFS[petKey]} style={{ width: "90px", height: "auto", imageRendering: "pixelated" }} />
-        </div>
-      ))}
-    </div>
-  );
+    .map(([key, val]) => {
+      const petData = typeof val === "string" ? { pet: val, name: key } : val;
+      const pres = presence[key];
+      if (!pres) return null;
+      return { key, petKey: petData.pet, name: petData.name || pres.name, active: pres.active };
+    })
+    .filter(v => v && PET_GIFS[v.petKey]);
+
+  const walking = others.filter(p => p.active);
+  const fixed = others.filter(p => !p.active);
+
+  return <>
+    {walking.map(p => <OtherPetOverlay key={p.key} petKey={p.petKey} name={p.name} />)}
+    {fixed.length > 0 && (
+      <div className="others-pets-bar" style={{ position: "fixed", bottom: "20px", left: "20px", zIndex: 800, display: "flex", gap: "10px", alignItems: "flex-start", flexWrap: "wrap", maxWidth: "calc(50vw - 20px)" }}>
+        {fixed.map(p => (
+          <div key={p.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
+            <span style={{ fontSize: "10px", color: "var(--bg)", background: "var(--t1)", borderRadius: "999px", padding: "1px 6px", whiteSpace: "nowrap" }}>{p.name}</span>
+            <img src={PET_GIFS[p.petKey]} style={{ width: "90px", height: "auto", imageRendering: "pixelated" }} />
+          </div>
+        ))}
+      </div>
+    )}
+  </>;
 }
 
 function PetOverlay({ petKey }) {
@@ -4327,7 +4385,7 @@ function App() {
       });
     }} onLogout={() => { setShowProfile(false); auth.signOut(); }} />}
     {userActivePet && PET_GIFS[userActivePet] && <PetOverlay petKey={userActivePet} />}
-    <OthersPetsBar boundName={boundName} />
+    <OthersPets boundName={boundName} />
     <ChatWidget boundName={boundName} />
     <PointsHistoryModal open={showPointsHistory} onClose={()=>setShowPointsHistory(false)} boundName={boundName} />
     <TestModeBanner />
