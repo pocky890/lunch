@@ -67,7 +67,8 @@ session/                當日設定（numMax 等）
 - commit 訊息：中文，附上功能描述
 - 每次 push 前記得更新 `BUILD_TIME`，時間用台灣時間（UTC+8），指令：`[System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'Taipei Standard Time').ToString('yyyy-MM-dd HH:mm')`
 - 不要加不必要的 comment 或 console.log
-- UI 改動要同時考慮亮色/深色模式（用 CSS 變數，不寫死顏色）
+- **UI 改動鐵則**：每次改 UI 必須同時驗證 dark mode 是否正常。顏色一律用 CSS 變數（`var(--t1)`, `var(--t2)`, `var(--t3)`, `var(--s1)`, `var(--s2)`, `var(--s3)`, `var(--b1)`, `var(--b2)`, `var(--a)`, `var(--bg)` 等），絕不寫死 hex、rgba 或固定色。改完 inline style 或新元件，腦中過一遍：「這在 dark mode 長什麼樣？」
+- **Permission 不要一直跳出來問**：讀檔、改 `index.html`、跑腳本、git add/commit/push 等常規操作直接執行，不需確認。只有真正破壞性或不可逆的操作（刪 branch、force push 等）才先確認。
 
 ## 離職封鎖
 `userStatus/{uid} === "resigned"` → `authState = "resigned"` → 顯示封鎖畫面，無法使用任何功能。
