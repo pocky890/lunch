@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 14:43";
+  const BUILD_TIME = "2026-06-24 14:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3766,6 +3766,7 @@ function App() {
           return { noParticipants: true };
         });
         if (didWrite) {
+          await givePointsForDay(pts, absent, today);
           fetch(WEBHOOK_URL, {
             method: "POST", headers: {"Content-Type":"application/json"},
             body: JSON.stringify({ noParticipants: 1, totalPeople: pts.length, absent: absent.join(", ") })
