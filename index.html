@@ -48,6 +48,7 @@
       --c-pink-bg:  #FDF2F8; --c-pink-bd:  #F9A8D4; --c-pink-tx:  #9D174D;
       --c-blue-bg:  #EFF6FF; --c-blue-bd:  #BFDBFE; --c-blue-tx:  #1E40AF;
       --c-orange-bg:#FFF7ED; --c-orange-bd:#FED7AA; --c-orange-tx:#92400E;
+      --c-tip-bg:#FFF5F5; --c-tip-bd:#FFCCC7; --c-tip-tx:#9B2335;
       --c-amber-bg: #FFFBEB; --c-amber-bd: #FDE68A; --c-amber-tx: #92400E;
     }
     
@@ -287,6 +288,7 @@
       --c-pink-bg:  #2d0a1e; --c-pink-bd:  #9d174d; --c-pink-tx:  #f9a8d4;
       --c-blue-bg:  #0c1a4e; --c-blue-bd:  #1e40af; --c-blue-tx:  #93c5fd;
       --c-orange-bg:#2c1a00; --c-orange-bd:#92400e; --c-orange-tx:#fed7aa;
+      --c-tip-bg:#2d0808; --c-tip-bd:#7f1d1d; --c-tip-tx:#fca5a5;
       --c-amber-bg: #2c1f00; --c-amber-bd: #b45309; --c-amber-tx: #fde68a;
     }
     
@@ -443,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 10:20";
+  const BUILD_TIME = "2026-06-24 10:28";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -968,7 +970,7 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎯 獨贏（完全命中）{newSections.includes("solo") && <NewDot />}</div>
             <div>如果有人選的號碼<strong style={{color:"var(--t1)"}}>完全等於</strong>幸運號碼，就是「獨贏」！其他人每人最多補助 <strong style={{color:"var(--t1)"}}>50 元</strong>，讓他吃他選的店。若該人同時有連勝紀錄且連勝金額（N × 10 元）超過 50 元，則以<strong style={{color:"var(--t1)"}}>連勝金額為主</strong>。🎂 若獨贏者當天生日，所有金額<strong style={{color:"var(--t1)"}}>加倍</strong>（50 元 → 100 元，有連勝則連勝金額 × 2）。</div>
-            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>🤝 多人同時完全命中時，<strong style={{color:"var(--t2)"}}>所有人都算獨贏</strong>，補助金平分給每位贏家。餐廳從共贏者中隨機抽籤決定。</div>
+            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🤝 多人同時完全命中時，<strong style={{color:"var(--t2)"}}>所有人都算獨贏</strong>，補助金平分給每位贏家。餐廳從共贏者中隨機抽籤決定。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🤝 同分決勝</div>
@@ -978,8 +980,8 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客</div>
             <div>非獨贏的情況下，若同一人連續 3 次選中最接近，所有參加者每人補助 <strong style={{color:"var(--t1)"}}>30 元</strong>；連續 4 次補助 40 元，以此類推（N 連勝 × 10 元）。</div>
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"6px"}}>
-              <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
-              <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
+              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
+              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
             </div>
           </div>
           <div>
@@ -1030,7 +1032,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
           <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
-          <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
+          <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>
             每天系統會將 <strong style={{color:"var(--t1)"}}>{totalCards} 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
           </div>
           {cards.map(c => {
@@ -1046,7 +1048,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
               <div>{c.desc}</div>
             </div>
           )})}
-          <div style={{padding:"10px 12px",background:"var(--s3)",borderRadius:"8px",fontSize:"13px",color:"var(--t3)"}}>
+          <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>
             💡 卡牌池總量有限，用完就沒了。使用後卡牌歸還牌池，下次還有機會再抽到。未被領取的卡隔天重新分配位置。
           </div>
         </div>
