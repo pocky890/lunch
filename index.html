@@ -448,7 +448,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 23:40";
+  const BUILD_TIME = "2026-06-25 00:27";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2345,7 +2345,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
           </>
         )}
         {shopTab === "pets" && (() => {
-          const petEntries = Object.entries(PET_TYPES).filter(([k]) => (petShopConfig[k] || {}).enabled);
+          const petEntries = Object.entries(PET_TYPES).filter(([k]) => (petShopConfig[k] || {}).enabled !== false);
           return petEntries.length === 0
             ? <div className="empty-state"><p style={{color:"var(--t2)"}}>目前沒有可購買的寵物</p></div>
             : <>{petEntries.map(([key, pt]) => {
