@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 14:14";
+  const BUILD_TIME = "2026-06-24 14:33";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -676,12 +676,31 @@ async function getOrDrawNumber(dateStr, numMax = 99) {
   return drawn;
 }
 
+async function logPointsEntry(sanitizedName, type, delta, note) {
+  if (TEST_MODE) return;
+  const ref = db.ref(`${DB_PREFIX}/pointsLog/${sanitizedName}`);
+  await ref.push().set({ type, delta, note, ts: firebase.database.ServerValue.TIMESTAMP });
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  ref.orderByChild("ts").endAt(cutoff).once("value").then(snap => {
+    if (!snap.val()) return;
+    const updates = {};
+    snap.forEach(c => { updates[c.key] = null; });
+    ref.update(updates);
+  });
+}
+
 async function givePointsForDay(ptsList, absentList, dateStr) {
   let claimed = false;
   await fRef(`pointsAwarded/${dateStr}`).transaction(cur => { if (cur) return; claimed = true; return true; });
   if (!claimed) return;
-  for (const p of ptsList) await fRef(`userPoints/${sanitizeKey(p.name)}`).transaction(n => (n||0) + 10);
-  for (const name of absentList) await fRef(`userPoints/${sanitizeKey(name)}`).transaction(n => (n||0) + 5);
+  for (const p of ptsList) {
+    await fRef(`userPoints/${sanitizeKey(p.name)}`).transaction(n => (n||0) + 10);
+    logPointsEntry(sanitizeKey(p.name), "participate", 10, dateStr);
+  }
+  for (const name of absentList) {
+    await fRef(`userPoints/${sanitizeKey(name)}`).transaction(n => (n||0) + 5);
+    logPointsEntry(sanitizeKey(name), "absent", 5, dateStr);
+  }
 }
 
 // 包含你的同分取餘數邏輯
@@ -1654,6 +1673,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                       const adj = parseInt(pointsAdj[key]);
                       if (!adj) return;
                       await fRef(`userPoints/${key}`).transaction(n => Math.max(0,(n||0)+adj));
+                      logPointsEntry(key, "admin", adj, "管理員調整");
                       setPointsAdj(p=>({...p,[key]:""}));
                       fGet("userPoints").then(v=>setAllPoints(v||{}));
                       setPointsMsg("已調整 ✓"); setTimeout(()=>setPointsMsg(""),2000);
@@ -1821,7 +1841,7 @@ function SugarRush({ onDone }) {
   );
 }
 
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, onProfile, achievementNews, onLogoClick, userPoints, onShop}) {
+function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, onProfile, achievementNews, onLogoClick, userPoints, onShop, onPointsHistory}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   return (
     <div className="site-header">
@@ -1853,7 +1873,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           {userName && (
             <div style={{display:"flex",alignItems:"center",gap:"6px",borderLeft:"1px solid var(--b1)",paddingLeft:"16px"}}>
               <button className={`ghost${achievementNews ? " has-news" : ""}`} onClick={onProfile} style={{width:"auto",maxWidth:"120px",marginBottom:0,fontSize:"13px",fontWeight:"600",padding:"5px 14px",borderRadius:"20px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{userName} <span style={{fontSize:"12px",opacity:0.8}}>▾</span></button>
-              {userPoints !== null && <span style={{fontSize:"11px",color:"var(--t3)",fontWeight:"500",whiteSpace:"nowrap"}}>🪙 {userPoints >= 1000 ? `${(userPoints/1000).toFixed(userPoints%1000===0?0:1)}k` : userPoints}</span>}
+              {userPoints !== null && <button className="ghost" onClick={onPointsHistory} style={{marginBottom:0,fontSize:"11px",color:"var(--t3)",fontWeight:"500",whiteSpace:"nowrap",padding:"3px 8px",borderRadius:"12px"}}>🪙 {userPoints >= 1000 ? `${(userPoints/1000).toFixed(userPoints%1000===0?0:1)}k` : userPoints}</button>}
             </div>
           )}
         </div>
@@ -3034,6 +3054,83 @@ function ChatWidget({ boundName }) {
   );
 }
 
+function PointsHistoryModal({ open, onClose, boundName }) {
+  const [logs, setLogs] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  React.useEffect(() => {
+    if (!open || !boundName) return;
+    if (TEST_MODE) {
+      setLogs([
+        { type:"participate", delta:10, note:"2026-06-24", ts: Date.now()-1000 },
+        { type:"absent", delta:5, note:"2026-06-23", ts: Date.now()-86400000 },
+        { type:"buy_card", delta:-50, note:"🃏 加號卡", ts: Date.now()-90000000 },
+        { type:"admin", delta:20, note:"管理員調整", ts: Date.now()-172800000 },
+      ]);
+      return;
+    }
+    setLoading(true);
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    db.ref(`${DB_PREFIX}/pointsLog/${sanitizeKey(boundName)}`).orderByChild("ts").startAt(cutoff).limitToLast(200).once("value")
+      .then(snap => {
+        const val = snap.val() || {};
+        const arr = Object.values(val).sort((a,b) => (b.ts||0) - (a.ts||0));
+        setLogs(arr);
+        setLoading(false);
+      });
+  }, [open, boundName]);
+  if (!open) return null;
+  const TYPE_META = {
+    participate: { emoji:"🎯", label:"參加抽獎" },
+    absent: { emoji:"🏠", label:"標記不參加" },
+    admin: { emoji:"🎁", label:"管理員調整" },
+    buy_card: { emoji:"🃏", label:"購買卡牌" },
+    buy_title: { emoji:"🏅", label:"購買稱號" },
+    buy_pet: { emoji:"🐾", label:"購買寵物" },
+  };
+  const grouped = {};
+  for (const log of logs) {
+    const d = log.ts ? new Date(log.ts) : null;
+    const dateStr = d ? `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}` : "未知";
+    if (!grouped[dateStr]) grouped[dateStr] = [];
+    grouped[dateStr].push(log);
+  }
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:"400px",width:"95vw",maxHeight:"80vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+          <div style={{fontSize:"18px",fontWeight:"700"}}>🪙 點數記錄</div>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+        <div style={{fontSize:"12px",color:"var(--t3)",marginBottom:"12px"}}>顯示近 30 天記錄</div>
+        {loading ? (
+          <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>載入中…</div>
+        ) : logs.length === 0 ? (
+          <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>近 30 天無記錄</div>
+        ) : (
+          Object.entries(grouped).map(([date, entries]) => (
+            <div key={date} style={{marginBottom:"16px"}}>
+              <div style={{fontSize:"12px",fontWeight:"600",color:"var(--t3)",marginBottom:"6px"}}>{date}</div>
+              {entries.map((e,i) => {
+                const meta = TYPE_META[e.type] || { emoji:"🪙", label:e.type };
+                return (
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--s2)",marginBottom:"4px"}}>
+                    <span style={{fontSize:"16px"}}>{meta.emoji}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:"13px",fontWeight:"500"}}>{meta.label}</div>
+                      {e.note && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{e.note}</div>}
+                    </div>
+                    <span style={{fontSize:"14px",fontWeight:"700",color:e.delta>0?"var(--a)":"#e53e3e",whiteSpace:"nowrap"}}>{e.delta>0?"+":""}{e.delta}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── App 主程式 ── */
 function App() {
   const [authState, setAuthState] = useState("loading"); // loading | login | setname | ready
@@ -3072,6 +3169,7 @@ function App() {
   const [showBirthdayModal, setShowBirthdayModal] = useState(false);
   const [userTitles, setUserTitles] = useState({});
   const [showProfile, setShowProfile] = useState(false);
+  const [showPointsHistory, setShowPointsHistory] = useState(false);
   const [hasNewAchievement, setHasNewAchievement] = useState(false);
 
   // ✨ 確保 Loading 與 Toast 正常運作
@@ -3956,6 +4054,7 @@ function App() {
       const expDate = new Date(Date.now() + expireDays * 86400000);
       const expiresAt = `${expDate.getFullYear()}-${String(expDate.getMonth()+1).padStart(2,"0")}-${String(expDate.getDate()).padStart(2,"0")}`;
       await fRef(`userCards/${key}`).push().set({ type: cardType, expiresAt, obtainedAt: todayStr() });
+      logPointsEntry(key, "buy_card", -price, `${ct.emoji}${ct.name}`);
       showToast(`已購買 ${ct.emoji}${ct.name}！`);
     } catch(e) {
       showToast("購買失敗，請重試");
@@ -3989,6 +4088,7 @@ function App() {
         return showToast("點數不足");
       }
       await fRef(`userOwnedTitles/${key}/${titleKey}`).set(true);
+      logPointsEntry(key, "buy_title", -price, `${cfg.emoji}${cfg.name}`);
       showToast(`已購買稱號 ${cfg.emoji}${cfg.name}！`);
     } catch(e) {
       showToast("購買失敗，請重試");
@@ -4012,6 +4112,7 @@ function App() {
       await fRef(`userPoints/${key}`).transaction(n => { if ((n||0) < price) return; pointsOk = true; return (n||0) - price; });
       if (!pointsOk) return showToast("點數不足");
       await fRef(`userOwnedPets/${key}/${petKey}`).set(true);
+      logPointsEntry(key, "buy_pet", -price, PET_TYPES[petKey]?.name || petKey);
       showToast("已購買寵物 " + (PET_TYPES[petKey]?.name || "") + "！");
     } catch(e) { showToast("購買失敗，請重試"); }
     finally { isBuyingRef.current = false; }
@@ -4169,6 +4270,7 @@ function App() {
     }} onLogout={() => { setShowProfile(false); auth.signOut(); }} />}
     {userActivePet && PET_GIFS[userActivePet] && <PetOverlay petKey={userActivePet} />}
     <ChatWidget boundName={boundName} />
+    <PointsHistoryModal open={showPointsHistory} onClose={()=>setShowPointsHistory(false)} boundName={boundName} />
     <TestModeBanner />
   </>;
 
@@ -4177,7 +4279,7 @@ function App() {
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} />
+      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} onPointsHistory={()=>setShowPointsHistory(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
@@ -4201,7 +4303,7 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} onPointsHistory={()=>setShowPointsHistory(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
@@ -4333,7 +4435,7 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} onPointsHistory={()=>setShowPointsHistory(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
@@ -4359,7 +4461,7 @@ function App() {
   if (phase==="absent") return (
     <div>
       {AP}
-      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} />
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} onPointsHistory={()=>setShowPointsHistory(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
@@ -4402,7 +4504,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} />
+        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} onPointsHistory={()=>setShowPointsHistory(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
@@ -4430,7 +4532,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} />
+        <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={()=>setShowShop(true)} onPointsHistory={()=>setShowPointsHistory(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
