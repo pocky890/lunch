@@ -443,7 +443,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 10:10";
+  const BUILD_TIME = "2026-06-24 10:20";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -996,7 +996,6 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎂 生日特權</div>
             <div>當天生日的成員可以額外多選 <strong style={{color:"var(--t1)"}}>4 個號碼</strong>（共 5 個），系統取最接近幸運號碼的那個計算。若同時持有加號卡，最多可選 <strong style={{color:"var(--t1)"}}>6 個號碼</strong>。</div>
-            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-pink-tx)"}}>🎂 生日當天頁面頂端會出現祝賀 Banner，提醒所有人今天是誰的生日。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🛒 發薪日優惠{newSections.includes("payday") && <NewDot />}</div>
