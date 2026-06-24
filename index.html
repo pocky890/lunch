@@ -380,6 +380,7 @@
   const WHATSNEW_VERSION       = { cards: 5, rules: 5, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"] };
+  const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
     const unseen = new Set();
@@ -447,7 +448,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 21:21";
+  const BUILD_TIME = "2026-06-24 21:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2194,9 +2195,10 @@ function PetOverlay({ petKey }) {
       transform:(flipX !== !!(PET_TYPES[petKey]||{}).flipDefault)?'scaleX(-1)':'none',transition:dragging?'none':'transform 0.1s'}} />;
 }
 
-function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, userOwnedTitles, onBuy, onBuyTitle, petShopConfig = {}, userOwnedPets = {}, onBuyPet, discountRate = 1, petTabNew = false, onPetTabSeen }) {
+function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, userOwnedTitles, onBuy, onBuyTitle, petShopConfig = {}, userOwnedPets = {}, onBuyPet, discountRate = 1, unseenTabs = [] }) {
   const [shopTab, setShopTab] = React.useState("cards");
   const [pendingBuy, setPendingBuy] = React.useState(null);
+  const [seenTabs, setSeenTabs] = React.useState(new Set());
   if (!open) return null;
   const pts = userPoints ?? 0;
   const ep = p => Math.floor(p * discountRate);
@@ -2204,11 +2206,12 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
   const titleAll = Object.entries(titleShopConfig || {}).filter(([, v]) => v.enabled && !v.deleted).sort(([,a],[,b]) => a.price - b.price);
   const titleEntries = titleAll.filter(([, v]) => v.stock === -1 || v.stock > 0);
   const titleSoldOut = titleAll.filter(([, v]) => v.stock !== -1 && v.stock <= 0);
-  const tabBtn = (id, label, hasNew = false) => (
-    <button key={id} onClick={()=>{setShopTab(id);setPendingBuy(null);if(id==="pets"&&hasNew&&onPetTabSeen)onPetTabSeen();}} style={{flex:1,padding:"7px",fontSize:"13px",fontWeight:"600",borderRadius:"6px",border:"none",cursor:"pointer",position:"relative",
+  const hasNew = (id) => unseenTabs.includes(id) && !seenTabs.has(id);
+  const tabBtn = (id, label) => (
+    <button key={id} onClick={()=>{setShopTab(id);setPendingBuy(null);if(hasNew(id))setSeenTabs(prev=>new Set([...prev,id]));}} style={{flex:1,padding:"7px",fontSize:"13px",fontWeight:"600",borderRadius:"6px",border:"none",cursor:"pointer",position:"relative",
       background:shopTab===id?"var(--a)":"var(--s3)",color:shopTab===id?"#fff":"var(--t2)",border:shopTab===id?"none":"1px solid var(--b2)"}}>
       {label}
-      {hasNew&&<span style={{position:"absolute",top:"2px",right:"4px",fontSize:"9px",fontWeight:"700",background:"#e53e3e",color:"#fff",borderRadius:"20px",padding:"1px 4px",lineHeight:"1.4",pointerEvents:"none"}}>NEW</span>}
+      {hasNew(id)&&<span style={{position:"absolute",top:"2px",right:"4px",fontSize:"9px",fontWeight:"700",background:"#e53e3e",color:"#fff",borderRadius:"20px",padding:"1px 4px",lineHeight:"1.4",pointerEvents:"none"}}>NEW</span>}
     </button>
   );
   const itemRow = (left, right) => (
@@ -2236,7 +2239,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
         <div style={{display:"flex",gap:"4px",background:"var(--s2)",borderRadius:"8px",padding:"4px",marginBottom:"16px"}}>
           {tabBtn("cards","🃏 卡牌")}
           {tabBtn("titles","🏷️ 稱號")}
-          {tabBtn("pets","🐾 寵物",petTabNew)}
+          {tabBtn("pets","🐾 寵物")}
         </div>
         {shopTab === "cards" && (cardEntries.length === 0
           ? <div className="empty-state"><p style={{color:"var(--t2)"}}>目前沒有可購買的卡牌</p></div>
@@ -3278,13 +3281,17 @@ function App() {
   const [cardNews, setCardNews] = useState(() => seenWhatsnew("lunch_seen_cards") !== String(WHATSNEW_VERSION.cards));
   const [rulesNews, setRulesNews] = useState(() => seenWhatsnew("lunch_seen_rules") !== String(WHATSNEW_VERSION.rules));
   const [shopNews, setShopNews] = useState(() => seenWhatsnew("lunch_seen_shop") !== String(WHATSNEW_VERSION.shop));
-  const [petTabNew, setPetTabNew] = useState(() => seenWhatsnew("lunch_seen_shop_pets") !== String(WHATSNEW_VERSION.shop));
+  const [unseenShopTabs, setUnseenShopTabs] = useState([]);
   const [helpNewSections, setHelpNewSections] = useState([]);
   const [cardHelpNewTypes, setCardHelpNewTypes] = useState([]);
   const openCardHelp = () => { const seen = seenWhatsnew("lunch_seen_cards"); setCardHelpNewTypes(cardNews ? getUnseenItems(WHATSNEW_CARDS_HISTORY, seen, WHATSNEW_VERSION.cards) : []); setShowCardHelp(true); setCardNews(false); try { localStorage.setItem("lunch_seen_cards", String(WHATSNEW_VERSION.cards)); } catch(e) {} };
   const openHelp     = () => { const seen = seenWhatsnew("lunch_seen_rules"); setHelpNewSections(rulesNews ? getUnseenItems(WHATSNEW_RULES_HISTORY, seen, WHATSNEW_VERSION.rules) : []); setShowHelp(true); setRulesNews(false); try { localStorage.setItem("lunch_seen_rules", String(WHATSNEW_VERSION.rules)); } catch(e) {} };
-  const openShop     = () => { setShowShop(true); setShopNews(false); try { localStorage.setItem("lunch_seen_shop", String(WHATSNEW_VERSION.shop)); } catch(e) {} };
-  const onPetTabSeen = () => { setPetTabNew(false); try { localStorage.setItem("lunch_seen_shop_pets", String(WHATSNEW_VERSION.shop)); } catch(e) {} };
+  const openShop = () => {
+    const seen = seenWhatsnew("lunch_seen_shop");
+    setUnseenShopTabs(shopNews ? getUnseenItems(WHATSNEW_SHOP_HISTORY, seen, WHATSNEW_VERSION.shop) : []);
+    setShowShop(true); setShopNews(false);
+    try { localStorage.setItem("lunch_seen_shop", String(WHATSNEW_VERSION.shop)); } catch(e) {}
+  };
   const [animResult, setAnimResult] = useState(null);
   const [absent, setAbsent] = useState([]);
   const [todayBirthdays, setTodayBirthdays] = useState([]); // [{uid, name}]
@@ -4387,7 +4394,7 @@ function App() {
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} userTitles={userTitles} titleShopConfig={titleShopConfig} />}
     <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} shopConfig={shopConfig} titleShopConfig={titleShopConfig} petShopConfig={petShopConfig} />
     {birthdayModal}
-    <ShopModal open={showShop} onClose={()=>setShowShop(false)} shopConfig={shopConfig} titleShopConfig={titleShopConfig} userPoints={userPoints} userOwnedTitles={userOwnedTitles} onBuy={buyFromShop} onBuyTitle={buyTitle} petShopConfig={petShopConfig} userOwnedPets={userOwnedPets} onBuyPet={buyPet} discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1} petTabNew={petTabNew} onPetTabSeen={onPetTabSeen} />
+    <ShopModal open={showShop} onClose={()=>setShowShop(false)} shopConfig={shopConfig} titleShopConfig={titleShopConfig} userPoints={userPoints} userOwnedTitles={userOwnedTitles} onBuy={buyFromShop} onBuyTitle={buyTitle} petShopConfig={petShopConfig} userOwnedPets={userOwnedPets} onBuyPet={buyPet} discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1} unseenTabs={unseenShopTabs} />
     {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} userOwnedTitles={userOwnedTitles} titleShopConfig={titleShopConfig} userOwnedPets={userOwnedPets} userActivePet={userActivePet} onSetActivePet={handleSetActivePet} onClose={()=>{
       setShowProfile(false);
       setHasNewAchievement(false);
