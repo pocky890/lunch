@@ -448,7 +448,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 21:24";
+  const BUILD_TIME = "2026-06-24 23:25";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1301,6 +1301,18 @@ function MembersTab() {
       if (cards && oldKey !== newKey) {
         await fSet(`userCards/${newKey}`, cards);
         await fRef(`userCards/${oldKey}`).remove();
+      }
+      for (const path of ["userPoints","userOwnedTitles","userOwnedPets","specialAchievements","sameNumberStreak","pointsLog"]) {
+        const val = await fGet(`${path}/${oldKey}`);
+        if (val != null) {
+          await fSet(`${path}/${newKey}`, val);
+          if (oldKey !== newKey) await fRef(`${path}/${oldKey}`).remove();
+        }
+      }
+      const activePet = await fGet(`userActivePet/${oldKey}`);
+      if (activePet != null) {
+        await fSet(`userActivePet/${newKey}`, { ...activePet, name: newName });
+        if (oldKey !== newKey) await fRef(`userActivePet/${oldKey}`).remove();
       }
       const allWeekly = await fGet("weekly");
       for (const [date, rec] of Object.entries(allWeekly || {})) {
@@ -3586,86 +3598,6 @@ function App() {
     setMySpecialAchievements(prev => ({...prev, cardKing: true}));
   }, [myCards]);
 
-  // 結果頁：免付卡自動觸發（被動卡，連勝請客時免付）
-  useEffect(() => {
-    if (phase !== "results" || !result) { cheapskateAutoUsedRef.current = false; return; }
-    if (cheapskateAutoUsedRef.current) return;
-    if (result.soloWin) return; // 對獨贏無效
-    const today = todayStr();
-    const streak = weekly[today]?.streak || 0;
-    if (streak < 3) return;
-    const myName = form.name.trim();
-    if (!myName || result.winner?.name === myName) return; // cheapskate只看代表winner，獨贏時已return
-    const card = myCards.find(c => c.type === "cheapskate_card" && c.expiresAt >= today);
-    if (!card) return;
-    cheapskateAutoUsedRef.current = true;
-    (async () => {
-      try {
-        await fRef(`cheapskateUsers/${today}/${sanitizeKey(myName)}`).set(myName);
-        await returnCardToPool(myName, card.id);
-        showToast("🤑 免付卡自動啟動！免除本次連勝請客費", 10000);
-      } catch(e) { cheapskateAutoUsedRef.current = false; }
-    })();
-  }, [phase, result, myCards, weekly]);
-
-  // 結果頁：連勝保護卡自動觸發（被動卡）
-  useEffect(() => {
-    if (phase !== "results" || !result) { streakAutoProtectedRef.current = false; return; }
-    if (streakAutoProtectedRef.current) return;
-    const myName = form.name.trim();
-    if (!myName || (result.winners || [result.winner]).some(w => w?.name === myName)) return;
-    const today = todayStr();
-    if (!weekly[today]?.winner) return; // 等winner寫入後再觸發，避免蓋掉尚未完成的transaction
-    if (weekly[today]?.skipStreak) return; // 已保護或人數不足，不需觸發
-    if (getPreviousStreak(weekly, myName, today) < 2) return;
-    const card = myCards.find(c => c.type === "streak_protect" && c.expiresAt >= today);
-    if (!card) return;
-    streakAutoProtectedRef.current = true;
-    (async () => {
-      try {
-        await fRef(`weekly/${today}`).update({ skipStreak: true });
-        await returnCardToPool(myName, card.id);
-        const newWeekly = await fGet("weekly");
-        setWeekly(newWeekly || {});
-        showToast("🛡️ 連勝保護卡自動啟動！連勝保留中", 10000);
-      } catch(e) {
-        streakAutoProtectedRef.current = false;
-        showToast("連勝保護卡啟動失敗，請重試");
-      }
-    })();
-  }, [phase, result, myCards, weekly]);
-
-  // 結果頁：執迷不悟 / 遲來的正義 隱藏成就
-  useEffect(() => {
-    if (phase !== "results" || !result) { sameNumAchRef.current = false; return; }
-    if (sameNumAchRef.current) return;
-    const myName = form.name.trim();
-    if (!myName) return;
-    const myPt = result.sorted?.find(p => p.name === myName);
-    if (!myPt) return;
-    sameNumAchRef.current = true;
-    const sKey = sanitizeKey(myName);
-    (async () => {
-      try {
-        const streak = await fGet(`sameNumberStreak/${sKey}`);
-        if (!streak || (streak.count || 0) < 10) return;
-        const iWon = (result.winners || [result.winner]).some(w => w?.name === myName);
-        if (!iWon && !mySpecialAchievements?.obsessed) {
-          await fRef(`specialAchievements/${sKey}/obsessed`).set(true);
-          setMySpecialAchievements(prev => ({...prev, obsessed: true}));
-          showToast("🎉 隱藏成就解鎖：🎲 執迷不悟！", 5000);
-          setHasNewAchievement(true);
-        }
-        if (iWon && !mySpecialAchievements?.lateJustice) {
-          await fRef(`specialAchievements/${sKey}/lateJustice`).set(true);
-          setMySpecialAchievements(prev => ({...prev, lateJustice: true}));
-          showToast("🎉 隱藏成就解鎖：⚖️ 遲來的正義！", 5000);
-          setHasNewAchievement(true);
-        }
-      } catch(e) { sameNumAchRef.current = false; }
-    })();
-  }, [phase, result, mySpecialAchievements]);
-
   useEffect(() => {
     if (phase !== "results") return;
     const today = todayStr();
@@ -3682,9 +3614,6 @@ function App() {
   async function adminUpdateNumMax(n) { await fRef("session").update({ numMax: n }); setSess(prev => ({...prev, numMax: n})); }
 
   const sessRef = useRef(null); const savedRef = useRef(false); const timerRef = useRef(null);
-  const streakAutoProtectedRef = useRef(false);
-  const cheapskateAutoUsedRef = useRef(false);
-  const sameNumAchRef = useRef(false);
   const logoClickRef = useRef(0); const logoClickTimerRef = useRef(null);
   const [sugarRush, setSugarRush] = useState(false);
   function handleLogoClick() {
@@ -3698,12 +3627,6 @@ function App() {
     }
     logoClickTimerRef.current = setTimeout(() => { logoClickRef.current = 0; }, 2000);
   }
-
-  useEffect(() => {
-    streakAutoProtectedRef.current = false;
-    cheapskateAutoUsedRef.current = false;
-    sameNumAchRef.current = false;
-  }, [currentUser]);
 
   function showToast(msg, duration=3000) {
     setToastMsg(msg);
@@ -3935,6 +3858,40 @@ function App() {
         await givePointsForDay(pts, absent, today);
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
         await ensureDailyCards(today, effectiveNumMax);
+        // 集中結算被動卡與隱藏成就：由天選客戶端統一掃描所有參賽者，確保離線者也生效
+        const winnerNameSet = new Set(soloWinners.map(w => w.name));
+        if (!result.soloWin && streak >= 3) {
+          for (const p of pts) {
+            if (winnerNameSet.has(p.name)) continue;
+            const pKey = sanitizeKey(p.name);
+            const cardsObj = await fGet(`userCards/${pKey}`) || {};
+            const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
+            if (!entry) continue;
+            await fRef(`cheapskateUsers/${today}/${pKey}`).set(p.name);
+            await returnCardToPool(p.name, entry[0]);
+          }
+        }
+        if (!skipStreak) {
+          for (const p of pts) {
+            if (winnerNameSet.has(p.name)) continue;
+            if (getPreviousStreak(weekly, p.name, today) < 2) continue;
+            const pKey = sanitizeKey(p.name);
+            const cardsObj = await fGet(`userCards/${pKey}`) || {};
+            const entry = Object.entries(cardsObj).find(([,c]) => c.type === "streak_protect" && c.expiresAt >= today);
+            if (!entry) continue;
+            await fRef(`weekly/${today}`).update({ skipStreak: true });
+            await returnCardToPool(p.name, entry[0]);
+            break;
+          }
+        }
+        for (const p of pts) {
+          const pKey = sanitizeKey(p.name);
+          const sns = await fGet(`sameNumberStreak/${pKey}`);
+          if (!sns || (sns.count || 0) < 10) continue;
+          const achKey = winnerNameSet.has(p.name) ? "lateJustice" : "obsessed";
+          await fRef(`specialAchievements/${pKey}/${achKey}`).set(true);
+          if (p.name === boundName) setMySpecialAchievements(prev => ({...prev, [achKey]: true}));
+        }
         const won = [];
         const shuffledPts = [...pts];
         for (let i = shuffledPts.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [shuffledPts[i], shuffledPts[j]] = [shuffledPts[j], shuffledPts[i]]; }
@@ -4517,7 +4474,14 @@ function App() {
                   const doRandom = () => {
                     const avail = Array.from({length:effectiveNumMax},(_,i)=>i+1);
                     if (!avail.length) return;
+                    const mainPick = avail.splice(Math.floor(Math.random()*avail.length),1)[0];
+                    if (hasPetBonus) {
+                      const petPick = mainPick >= effectiveNumMax ? mainPick - 1 : mainPick + 1;
+                      const pi = avail.indexOf(petPick);
+                      if (pi >= 0) avail.splice(pi, 1);
+                    }
                     const filled = slots.map(s => {
+                      if (s.key === "main") return {...s, num: String(mainPick)};
                       if (s.key === "pet") return s;
                       if (!avail.length) return {...s, num:""};
                       const pick = avail.splice(Math.floor(Math.random()*avail.length),1)[0];
