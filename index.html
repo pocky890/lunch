@@ -448,7 +448,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 19:41";
+  const BUILD_TIME = "2026-06-24 19:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2059,7 +2059,7 @@ function OthersPetsBar({ boundName }) {
     .filter(({ petKey }) => PET_GIFS[petKey]);
   if (others.length === 0) return null;
   return (
-    <div className="others-pets-bar" style={{ position: "fixed", bottom: "20px", left: "20px", zIndex: 800, display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap", maxWidth: "calc(50vw - 20px)" }}>
+    <div className="others-pets-bar" style={{ position: "fixed", bottom: "20px", left: "20px", zIndex: 800, display: "flex", gap: "10px", alignItems: "flex-start", flexWrap: "wrap", maxWidth: "calc(50vw - 20px)" }}>
       {others.map(({ key, petKey, name }) => (
         <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
           <span style={{ fontSize: "10px", color: "var(--bg)", background: "var(--t1)", borderRadius: "999px", padding: "1px 6px", whiteSpace: "nowrap" }}>{name}</span>
