@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 15:13";
+  const BUILD_TIME = "2026-06-24 15:57";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2228,7 +2228,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
         })()}
         <p style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"12px",marginBottom:0}}>每日參加 +10 點 ／ 標記不參加 +5 點</p>
         {pendingBuy && (
-          <div style={{position:"sticky",bottom:0,background:"var(--bg)",borderTop:"1px solid var(--b1)",padding:"14px 0 4px",marginTop:"16px"}}>
+          <div style={{position:"sticky",bottom:0,background:"var(--s3)",borderTop:"2px solid var(--a)",boxShadow:"0 -4px 12px rgba(0,0,0,0.15)",borderRadius:"0 0 12px 12px",padding:"14px 0 4px",marginTop:"16px"}}>
             <div style={{fontSize:"13px",color:"var(--t1)",marginBottom:"10px",textAlign:"center"}}>確定購買 <b>{pendingBuy.label}</b>？</div>
             <div style={{display:"flex",gap:"8px"}}>
               <button className="btn-sm" style={{flex:1,marginBottom:0,background:"var(--s3)",color:"var(--t1)",border:"1px solid var(--b2)"}} onClick={()=>setPendingBuy(null)}>取消</button>
