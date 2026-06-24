@@ -445,7 +445,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 14:10";
+  const BUILD_TIME = "2026-06-24 14:14";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2946,7 +2946,7 @@ function ChatWidget({ boundName }) {
   // 聊天訊息（最近 50 筆）
   useEffect(() => {
     if (TEST_MODE) return;
-    const ref = db.ref(`${DB_PREFIX}/chat`).limitToLast(50);
+    const ref = db.ref(`${DB_PREFIX}/chat`).limitToLast(100);
     const handler = snap => {
       const val = snap.val() || {};
       const arr = Object.entries(val).map(([id, m]) => ({ id, ...m })).sort((a, b) => (a.ts || 0) - (b.ts || 0));
@@ -2977,13 +2977,13 @@ function ChatWidget({ boundName }) {
     if (TEST_MODE) { setMessages(m => [...m, { id: "t" + m.length, name: boundName, text: t, ts: Date.now() }]); return; }
     const chatRef = db.ref(`${DB_PREFIX}/chat`);
     chatRef.push().set({ name: boundName, text: t, ts: firebase.database.ServerValue.TIMESTAMP }).then(() => {
-      // 修剪舊訊息，避免 Firebase 無限增長（顯示 50 筆，DB 保留上限 100 筆）
+      // 修剪舊訊息，避免 Firebase 無限增長（顯示 100 筆，DB 保留上限 500 筆）
       chatRef.orderByKey().once("value").then(snap => {
         const keys = [];
         snap.forEach(c => { keys.push(c.key); });
-        if (keys.length > 100) {
+        if (keys.length > 500) {
           const updates = {};
-          keys.slice(0, keys.length - 100).forEach(k => { updates[k] = null; });
+          keys.slice(0, keys.length - 500).forEach(k => { updates[k] = null; });
           chatRef.update(updates);
         }
       });
