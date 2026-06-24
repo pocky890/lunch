@@ -414,7 +414,6 @@
   };
   const PET_TYPES = {
     dinotaeng_01: { name: 'Dinotaeng', emoji: '🐨', defaultPrice: 500 },
-    chick_01:     { name: '小雞', emoji: '🐥', defaultPrice: 300, flipDefault: true },
     ghost_01:     { name: '鬼鬼', emoji: '👻', defaultPrice: 300, flipDefault: true },
     cat_01:       { name: '氣球貓', emoji: '🐱', defaultPrice: 400 },
     mario_01:     { name: 'Mario', emoji: '🎮', defaultPrice: 500 },
@@ -432,7 +431,6 @@
   };
   const PET_GIFS = {
     dinotaeng_01: 'gif/dinotaeng_01.gif',
-    chick_01: 'gif/小雞_nobg.gif',
     ghost_01: 'gif/鬼鬼_nobg.gif',
     cat_01: 'gif/cat_nobg.gif',
     mario_01: 'gif/mario_nobg.gif',
@@ -448,7 +446,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 19:45";
+  const BUILD_TIME = "2026-06-24 19:47";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2042,7 +2040,7 @@ function OthersPetsBar({ boundName }) {
     if (TEST_MODE) {
       setAllPets({
         Eason: { pet: "godzilla_01", name: "Eason" },
-        Jerry: { pet: "chick_01", name: "Jerry" },
+        Jerry: { pet: "penguin_01", name: "Jerry" },
         Mina:  { pet: "ghost_01",  name: "Mina"  },
       });
       return;
