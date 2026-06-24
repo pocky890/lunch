@@ -447,7 +447,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 20:34";
+  const BUILD_TIME = "2026-06-24 21:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -937,14 +937,14 @@ function determineResultWithCards(pts, drawnNumber) {
   const nukedPts = [], partialNuked = [];
   const activePts = nukedSet.size===0 ? pts : pts.filter(p => {
     if (p.cardUsed==="nuke_card") return true;
-    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[])].filter(Boolean);
+    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[]), ...(p.hasPet&&p.petNumber?[p.petNumber]:[])].filter(Boolean);
     const surviving = allNums.filter(n=>!nukedSet.has(n));
     if (surviving.length===0) { nukedPts.push(p); return false; }
     if (surviving.length<allNums.length) partialNuked.push({...p, destroyedNumbers:allNums.filter(n=>nukedSet.has(n))});
     return true;
   });
   const effective = activePts.map(p => {
-    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[])].filter(Boolean);
+    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[]), ...(p.hasPet&&p.petNumber?[p.petNumber]:[])].filter(Boolean);
     const validNums = (nukedSet.size>0&&p.cardUsed!=="nuke_card") ? allNums.filter(n=>!nukedSet.has(n)) : allNums;
     if (validNums.length===1) return {...p, number:validNums[0]};
     if (validNums.includes(drawnNumber)) return {...p, number:drawnNumber};
@@ -3343,6 +3343,7 @@ function App() {
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
+  const [petNumber, setPetNumber] = useState("");    // auto adjacent number when hasPet
   const [bdNumbers, setBdNumbers] = useState(["","","",""]); // birthday extra numbers [n2..n5]
   const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
   const [isRandom, setIsRandom] = useState(false);
@@ -4019,12 +4020,16 @@ function App() {
         if (num2 === num) return showToast("兩個號碼不能相同");
       }
 
+      // 寵物相鄰號
+      const petN = (!!userActivePet && petNumber) ? parseInt(petNumber) : null;
+      if (petN && num2 && petN === num2) return showToast("寵物號碼與加號卡號碼重複，請重新選號");
+
       // 驗證生日額外號碼
       let bdNums = null;
       if (isBirthday && !isEditing) {
         const parsed = bdNumbers.map(v => parseInt(v));
         if (parsed.some(n => !n || n < 1 || n > effectiveNumMax)) return showToast(`生日號碼請填入 1 到 ${effectiveNumMax} 之間的整數`);
-        const allNums = [num, ...parsed, ...(num2 ? [num2] : [])];
+        const allNums = [num, ...parsed, ...(num2 ? [num2] : []), ...(petN ? [petN] : [])];
         if (new Set(allNums).size !== allNums.length) return showToast("號碼不能重複");
         bdNums = parsed;
       }
@@ -4077,13 +4082,14 @@ function App() {
         ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(nukedNumbers ? { nukedNumbers } : {}) }
         : {};
       const bdExtra = bdNums ? { birthdayNumbers: bdNums } : {};
+      const petExtra = petN ? { hasPet: true, petNumber: petN } : {};
 
       if (myEntry) {
         await fRef(`participants/${myEntry.id}`).update({category:form.category, rest, isRandomRest: isRandom||false});
         setIsEditing(false);
       } else {
         const newRef = fRef("participants").push();
-        await newRef.set({id:newRef.key, name, category:form.category, rest, isRandomRest: isRandom||false, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra});
+        await newRef.set({id:newRef.key, name, category:form.category, rest, isRandomRest: isRandom||false, number:num, joinedAt:Date.now(), ...cardExtra, ...bdExtra, ...petExtra});
         await fRef(`participationCount/${sanitizeKey(name)}`).transaction(n => (n || 0) + 1);
       }
       if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
@@ -4469,10 +4475,12 @@ function App() {
                 {(() => {
                   const isExtraCard = myCards.find(c=>c.id===cardToUse)?.type === "extra_number";
                   const isNukeCard  = myCards.find(c=>c.id===cardToUse)?.type === "nuke_card";
+                  const hasPetBonus = !!userActivePet;
                   const nukeCenter  = isNukeCard && form.number ? parseInt(form.number) : null;
                   const nukeZone    = nukeCenter ? getNukeZone(nukeCenter, effectiveNumMax) : [];
                   const slots = [
                     { key:"main",    color:"rgba(0,113,227,0.9)",   outline:"rgba(0,113,227,0.6)",   label:"主號碼",   num: form.number },
+                    ...(hasPetBonus ? [{ key:"pet",   color:"rgba(16,185,129,0.85)", outline:"rgba(16,185,129,0.5)",  label:"🐾",       num: petNumber }] : []),
                     ...(isExtraCard ? [{ key:"extra", color:"rgba(234,88,12,0.85)",  outline:"rgba(234,88,12,0.5)",   label:"加號卡",   num: number2 }] : []),
                     ...(isBirthday  ? [
                       { key:"bd0", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日", num: bdNumbers[0] },
@@ -4483,7 +4491,13 @@ function App() {
                   ];
                   const handleSlotsChange = (next) => {
                     const get = key => next.find(s=>s.key===key)?.num || "";
-                    setForm(f=>({...f, number: get("main")}));
+                    const mainNum = get("main");
+                    setForm(f=>({...f, number: mainNum}));
+                    if (hasPetBonus) {
+                      const mn = parseInt(mainNum);
+                      if (mn) setPetNumber(String(mn >= effectiveNumMax ? mn - 1 : mn + 1));
+                      else setPetNumber("");
+                    }
                     if (isExtraCard) setNumber2(get("extra"));
                     if (isBirthday) setBdNumbers([get("bd0"),get("bd1"),get("bd2"),get("bd3")]);
                   };
@@ -4491,6 +4505,7 @@ function App() {
                     const avail = Array.from({length:effectiveNumMax},(_,i)=>i+1);
                     if (!avail.length) return;
                     const filled = slots.map(s => {
+                      if (s.key === "pet") return s;
                       if (!avail.length) return {...s, num:""};
                       const pick = avail.splice(Math.floor(Math.random()*avail.length),1)[0];
                       return {...s, num: String(pick)};
@@ -4512,6 +4527,7 @@ function App() {
                           {isBirthday&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>🎂 生日+4</span>}
                           {isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>➕ 加號卡+1</span>}
                           {isNukeCard&&<span style={{fontSize:"11px",color:"rgba(239,68,68,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>☢️ 選核心號碼</span>}
+                          {hasPetBonus&&<span style={{fontSize:"11px",color:"rgba(16,185,129,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>🐾 寵物±1</span>}
                         </label>
                         <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
                       </div>
