@@ -447,7 +447,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 17:09";
+  const BUILD_TIME = "2026-06-24 17:17";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2944,7 +2944,7 @@ function ChatWidget({ boundName }) {
   // TEST_MODE 假資料
   useEffect(() => {
     if (!TEST_MODE) return;
-    setOnline({ Pocky: "Pocky", Eason: "Eason", Mina: "Mina" });
+    setOnline({ Pocky: { name: "Pocky", active: true }, Eason: { name: "Eason", active: false }, Mina: { name: "Mina", active: true } });
     setMessages([
       { id: "t1", name: "Eason", text: "今天吃雞肉飯有人要一起嗎", ts: 1 },
       { id: "t2", name: "Mina", text: "+1 我也想吃", ts: 2 },
@@ -2957,19 +2957,23 @@ function ChatWidget({ boundName }) {
     const key = sanitizeKey(boundName);
     const myRef = db.ref(`${DB_PREFIX}/presence/${key}`);
     const connRef = db.ref(".info/connected");
+    const writePresence = (active) => myRef.set({ name: boundName, active });
     const onConn = snap => {
       if (snap.val() === true) {
         myRef.onDisconnect().remove();
-        myRef.set(boundName);
+        writePresence(document.visibilityState !== "hidden");
       }
     };
     connRef.on("value", onConn);
+    const onVisibility = () => writePresence(document.visibilityState !== "hidden");
+    document.addEventListener("visibilitychange", onVisibility);
     const presRef = db.ref(`${DB_PREFIX}/presence`);
     const onPres = snap => setOnline(snap.val() || {});
     presRef.on("value", onPres);
     return () => {
       connRef.off("value", onConn);
       presRef.off("value", onPres);
+      document.removeEventListener("visibilitychange", onVisibility);
       myRef.onDisconnect().cancel();
       myRef.remove();
     };
@@ -3023,8 +3027,8 @@ function ChatWidget({ boundName }) {
   };
 
   if (!boundName) return null;
-  const onlineNames = Object.values(online);
-  const onlineCount = onlineNames.length;
+  const onlineEntries = Object.values(online).map(v => typeof v === "string" ? { name: v, active: true } : v);
+  const onlineCount = onlineEntries.length;
 
   if (!open) return (
     <button className="chat-bubble-btn" onClick={() => setOpen(true)} style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 9999, height: "48px", width: "auto", padding: "0 18px", borderRadius: "999px", background: "var(--a)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: 0 }}>
@@ -3044,8 +3048,8 @@ function ChatWidget({ boundName }) {
           <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--t3)", padding: 0, width: "auto", marginBottom: 0, boxShadow: "none" }}>✕</button>
         </div>
       </div>
-      {onlineNames.length > 0 && <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--b1)", display: "flex", gap: "6px", flexWrap: "wrap" }}>
-        {onlineNames.map((n, i) => <span key={i} style={{ fontSize: "11px", color: "var(--t2)", background: "var(--s3)", border: "1px solid var(--b1)", borderRadius: "999px", padding: "2px 8px" }}>🟢 {n}</span>)}
+      {onlineEntries.length > 0 && <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--b1)", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+        {onlineEntries.map((e, i) => <span key={i} style={{ fontSize: "11px", color: "var(--t2)", background: "var(--s3)", border: "1px solid var(--b1)", borderRadius: "999px", padding: "2px 8px", display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "7px", height: "7px", borderRadius: "50%", background: e.active ? "#34C759" : "#F5A623", flexShrink: 0 }}></span>{e.name}</span>)}
       </div>}
       <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "8px" }}>
         {messages.length === 0 && <div style={{ textAlign: "center", color: "var(--t3)", fontSize: "13px", marginTop: "20px" }}>還沒有訊息，來說點什麼吧</div>}
