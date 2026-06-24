@@ -160,6 +160,8 @@
       .logo-text { display: none; }
       .header-logout { display: none; }
       .header-dark-toggle { display: none; }
+      .header-hide-mobile { display: none; }
+      .chat-bubble-btn { bottom: 72px !important; }
       .header-actions { gap: 4px !important; }
       .header-actions > div { border-left: none !important; padding-left: 4px !important; }
       input, select { font-size: 16px; }
@@ -445,7 +447,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 16:38";
+  const BUILD_TIME = "2026-06-24 17:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1860,8 +1862,8 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
         </div>
         <div className="header-actions" style={{display:"flex",alignItems:"center",gap:"16px"}}>
           {title && <div className="header-title-area"><div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)"}}>{title}</div>{sub && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>{sub}</div>}</div>}
-          <button className={`ghost theme-toggle${cardNews?" has-news":""}`} onClick={onCardHelp} title="卡牌說明">🃏</button>
-          <button className={`ghost theme-toggle${rulesNews?" has-news":""}`} onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
+          <button className={`ghost theme-toggle header-hide-mobile${cardNews?" has-news":""}`} onClick={onCardHelp} title="卡牌說明">🃏</button>
+          <button className={`ghost theme-toggle header-hide-mobile${rulesNews?" has-news":""}`} onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
           {isAdmin && <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>}
           <button className="ghost theme-toggle header-dark-toggle" onClick={toggleDark} title="切換深淺色模式">
             {isDark ? "☀️" : "🌙"}
@@ -3025,7 +3027,7 @@ function ChatWidget({ boundName }) {
   const onlineCount = onlineNames.length;
 
   if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 900, height: "48px", width: "auto", padding: "0 18px", borderRadius: "999px", background: "var(--a)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: 0 }}>
+    <button className="chat-bubble-btn" onClick={() => setOpen(true)} style={{ position: "fixed", bottom: "20px", right: "20px", zIndex: 9999, height: "48px", width: "auto", padding: "0 18px", borderRadius: "999px", background: "var(--a)", color: "#fff", border: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: 0 }}>
       💬 聊天
       <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34C759", display: "inline-block" }}></span>
       <span style={{ fontSize: "12px", opacity: 0.9 }}>{onlineCount}</span>
