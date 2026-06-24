@@ -377,8 +377,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 5, rules: 5, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"] };
+  const WHATSNEW_VERSION       = { cards: 6, rules: 5, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -448,7 +448,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-24 23:35";
+  const BUILD_TIME = "2026-06-24 23:40";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -933,20 +933,28 @@ function getPreviousStreak(weekly, name, today) {
 }
 
 function determineResultWithCards(pts, drawnNumber) {
-  const nukedSet = new Set();
-  pts.forEach(p => { if (p.cardUsed==="nuke_card"&&p.nukedNumbers) p.nukedNumbers.forEach(n=>nukedSet.add(n)); });
+  // 核彈卡：只對自己的核彈免疫，別人的核彈仍可炸死你 → 每人各自計算「他人」的核彈威脅集合
+  const nukers = pts.filter(p => p.cardUsed==="nuke_card" && p.nukedNumbers && p.nukedNumbers.length>0);
+  const threatFor = p => {
+    const s = new Set();
+    for (const q of nukers) { if (q !== p) q.nukedNumbers.forEach(n=>s.add(n)); }
+    return s;
+  };
+  const numsOf = p => [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[]), ...(p.hasPet&&p.petNumber?[p.petNumber]:[])].filter(Boolean);
   const nukedPts = [], partialNuked = [];
-  const activePts = nukedSet.size===0 ? pts : pts.filter(p => {
-    if (p.cardUsed==="nuke_card") return true;
-    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[]), ...(p.hasPet&&p.petNumber?[p.petNumber]:[])].filter(Boolean);
-    const surviving = allNums.filter(n=>!nukedSet.has(n));
+  const activePts = nukers.length===0 ? pts : pts.filter(p => {
+    const threat = threatFor(p);
+    if (threat.size===0) return true;
+    const allNums = numsOf(p);
+    const surviving = allNums.filter(n=>!threat.has(n));
     if (surviving.length===0) { nukedPts.push(p); return false; }
-    if (surviving.length<allNums.length) partialNuked.push({...p, destroyedNumbers:allNums.filter(n=>nukedSet.has(n))});
+    if (surviving.length<allNums.length) partialNuked.push({...p, destroyedNumbers:allNums.filter(n=>threat.has(n))});
     return true;
   });
   const effective = activePts.map(p => {
-    const allNums = [p.number, ...(p.birthdayNumbers||[]), ...(p.cardUsed==="extra_number"&&p.number2?[p.number2]:[]), ...(p.hasPet&&p.petNumber?[p.petNumber]:[])].filter(Boolean);
-    const validNums = (nukedSet.size>0&&p.cardUsed!=="nuke_card") ? allNums.filter(n=>!nukedSet.has(n)) : allNums;
+    const threat = nukers.length>0 ? threatFor(p) : null;
+    const allNums = numsOf(p);
+    const validNums = (threat && threat.size>0) ? allNums.filter(n=>!threat.has(n)) : allNums;
     if (validNums.length===1) return {...p, number:validNums[0]};
     if (validNums.includes(drawnNumber)) return {...p, number:drawnNumber};
     const best = validNums.reduce((a,b)=>Math.abs(a-drawnNumber)<=Math.abs(b-drawnNumber)?a:b);
@@ -1042,7 +1050,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"steal_card",        desc:"加入時宣告使用。隨機從一名其他參加者手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效。" },
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
-    { type:"nuke_card",         desc:"加入時選一個號碼為核心。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者本人免疫。" },
+    { type:"nuke_card",         desc:"加入時選一個號碼為核心。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
     Object.values(CARD_DEFAULTS).reduce((s, c) => s + c.total, 0);
