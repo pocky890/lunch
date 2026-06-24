@@ -2308,7 +2308,8 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
                   <><img src={PET_GIFS[key]} style={{width:72,height:72,objectFit:"contain",imageRendering:"pixelated",flexShrink:0}} />
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"14px",fontWeight:"600"}}>{pt.emoji} {pt.name}</div>
-                    <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>在你的畫面上閒逛 · 選號時多一個相鄰數字</div>
+                    <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>在你的畫面上閒逛</div>
+                    <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>選號時多一個相鄰數字</div>
                   </div></>,
                   <div key={key} style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px",flexShrink:0}}>
                     {discountRate < 1 && <span style={{fontSize:"12px",color:"var(--t3)",textDecoration:"line-through"}}>🪙 {price}</span>}
