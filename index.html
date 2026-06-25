@@ -476,8 +476,9 @@
       bg:"radial-gradient(circle at 25% 25%, rgba(180,180,255,.4), transparent 40%), radial-gradient(circle at 75% 75%, rgba(160,160,255,.25), transparent 35%), #F5F5FF" },
     onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false,
       vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
-      bg:"url('theme/one_piece/background.jpg') center/cover fixed",
-      logoImg:"theme/one_piece/logo.png", headerWave:true },
+      bg:"url('theme/one_piece/bg_0.jpg') center/cover fixed",
+      logoImg:"theme/one_piece/logo.png", headerWave:true,
+      backgrounds:["bg_6.jpg","164963_c.jpg","714349_c.jpg","851034_c.jpg","851037_c.jpg","851071_c.jpg","851072_c.jpg","905284_c.jpg"] },
   };
 
   const PET_GIFS = {
@@ -497,7 +498,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 18:15";
+  const BUILD_TIME = "2026-06-25 21:34";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -721,7 +722,7 @@ function getWeekDates() {
 function snapToArr(val) { return Object.values(val||{}).sort((a,b)=>a.joinedAt-b.joinedAt); }
 
 const THEME_VAR_KEYS = ["--bg","--s1","--s2","--s3","--s4","--b1","--b2","--b3","--t1","--t2","--t3","--a","--a2","--ah","--abg","--abd"];
-function applyTheme(themeId) {
+function applyTheme(themeId, bgOverride) {
   const theme = THEMES[themeId] || THEMES.light;
   const body = document.body;
   THEME_VAR_KEYS.forEach(k => body.style.removeProperty(k));
@@ -729,7 +730,14 @@ function applyTheme(themeId) {
   if (theme.vars) Object.entries(theme.vars).forEach(([k,v]) => body.style.setProperty(k,v));
   if (theme.dark) body.classList.add("dark-mode");
   else body.classList.remove("dark-mode");
-  if (theme.bg) body.style.background = theme.bg;
+  if (theme.bg) {
+    if (bgOverride && theme.backgrounds?.includes(bgOverride)) {
+      const dir = theme.bg.match(/url\('([^']*\/)/)?.[1] || "";
+      body.style.background = `url('${dir}${bgOverride}') center/cover fixed`;
+    } else {
+      body.style.background = theme.bg;
+    }
+  }
   body.setAttribute("data-theme", themeId);
 }
 function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; } return m; }
@@ -1935,7 +1943,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
 }
 
 /* ── Theme Modal ── */
-function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose, discountRate = 1 }) {
+function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose, discountRate = 1, themeBgSelections = {}, onSelectBg }) {
   const ep = p => Math.floor(p * discountRate);
   const visibleThemes = Object.entries(THEMES).filter(([id, t]) => {
     if (t.free) return true;
@@ -1955,6 +1963,23 @@ function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, u
           <div style={{fontSize:"15px",fontWeight:"700",color:"var(--t1)"}}>🎨 主題</div>
           <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"2px"}}>選擇你的介面主題風格</div>
         </div>
+
+        {/* 背景切換列：已啟用主題且有多張背景時顯示 */}
+        {!previewTheme && THEMES[activeTheme]?.backgrounds && ownedThemes.has(activeTheme) && (
+          <div style={{padding:"8px 12px",borderBottom:"1px solid var(--b1)",flexShrink:0}}>
+            <div style={{fontSize:"11px",color:"var(--t3)",marginBottom:"6px"}}>背景</div>
+            <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+              {THEMES[activeTheme].backgrounds.map((bg, i) => {
+                const dir = THEMES[activeTheme].bg.match(/url\('([^']*\/)/)?.[1] || "";
+                const selected = (themeBgSelections[activeTheme] || THEMES[activeTheme].backgrounds[0]) === bg;
+                return (
+                  <div key={bg} onClick={() => onSelectBg(activeTheme, bg)}
+                    style={{width:"48px",height:"32px",borderRadius:"6px",cursor:"pointer",overflow:"hidden",border:`2px solid ${selected?"var(--a)":"var(--b1)"}`,flexShrink:0,backgroundImage:`url('${dir}${bg}')`,backgroundSize:"cover",backgroundPosition:"center",transition:"border-color .15s"}} />
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 預覽 banner */}
         {previewTheme && (
@@ -3541,12 +3566,23 @@ function App() {
     try { return new Set(JSON.parse(localStorage.getItem("lunch_seen_themes") || "[]")); }
     catch(e) { return new Set(); }
   });
+  const [themeBgSelections, setThemeBgSelections] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("lunch_theme_bg") || "{}"); }
+    catch(e) { return {}; }
+  });
 
   function openThemeModal() {
     const newSeen = new Set([...seenThemeIds, ...Object.entries(themeShopConfig).filter(([,cfg])=>cfg.enabled!==false).map(([id])=>id)]);
     setSeenThemeIds(newSeen);
     try { localStorage.setItem("lunch_seen_themes", JSON.stringify([...newSeen])); } catch(e) {}
     setShowThemeModal(true);
+  }
+
+  function selectThemeBg(themeId, bgFile) {
+    const next = {...themeBgSelections, [themeId]: bgFile};
+    setThemeBgSelections(next);
+    try { localStorage.setItem("lunch_theme_bg", JSON.stringify(next)); } catch(e) {}
+    applyTheme(themeId, bgFile);
   }
 
   // Auth 狀態監聽
@@ -3876,10 +3912,10 @@ function App() {
 
   useEffect(() => {
     try {
-      applyTheme(activeTheme);
+      applyTheme(activeTheme, themeBgSelections[activeTheme]);
       localStorage.setItem("lunch_active_theme", activeTheme);
     } catch(e) {}
-  }, [activeTheme]);
+  }, [activeTheme, themeBgSelections]);
 
   useEffect(() => { sessRef.current = sess; }, [sess]);
 
@@ -4632,10 +4668,12 @@ function App() {
       userPoints={userPoints}
       onActivate={activateTheme}
       onPreview={id => { setPreviewTheme(id); applyTheme(id); }}
-      onCancelPreview={() => { setPreviewTheme(null); applyTheme(activeTheme); }}
+      onCancelPreview={() => { setPreviewTheme(null); applyTheme(activeTheme, themeBgSelections[activeTheme]); }}
       onBuy={buyTheme}
       discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1}
-      onClose={() => { setShowThemeModal(false); if (previewTheme) { setPreviewTheme(null); applyTheme(activeTheme); } }}
+      themeBgSelections={themeBgSelections}
+      onSelectBg={selectThemeBg}
+      onClose={() => { setShowThemeModal(false); if (previewTheme) { setPreviewTheme(null); applyTheme(activeTheme, themeBgSelections[activeTheme]); } }}
     />}
     {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} userOwnedTitles={userOwnedTitles} titleShopConfig={titleShopConfig} userOwnedPets={userOwnedPets} userActivePet={userActivePet} onSetActivePet={handleSetActivePet} onClose={()=>{
       setShowProfile(false);
