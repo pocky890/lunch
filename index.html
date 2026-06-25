@@ -496,7 +496,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 18:08";
+  const BUILD_TIME = "2026-06-25 18:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4920,9 +4920,13 @@ function App() {
     // 深色模式下 winner 卡片 & 排名列替代色
     const gc = isDarkMode
       ? {bg:"rgba(34,197,94,0.10)",bd:"rgba(34,197,94,0.25)",top:"#22C55E",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
+      : activeTheme==="onepiece"
+      ? {bg:"rgba(220,252,231,.65)",bd:"rgba(134,239,172,.7)",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"}
       : {bg:"#F0FDF4",bd:"#DCFCE7",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"};
     const oc = isDarkMode
       ? {bg:"rgba(249,115,22,0.10)",bd:"rgba(249,115,22,0.25)",top:"#F97316",h:"#FDBA74",sub:"#FB923C",div:"rgba(249,115,22,0.25)",p:"#FDBA74",str:"#FB923C"}
+      : activeTheme==="onepiece"
+      ? {bg:"rgba(255,237,213,.65)",bd:"rgba(253,186,116,.7)",top:"#F97316",h:"#9A3412",sub:"#C2410C",div:"rgba(253,186,116,.7)",p:"#9A3412",str:"#7C2D12"}
       : {bg:"#FFF7ED",bd:"#FFEDD5",top:"#F97316",h:"#9A3412",sub:"#C2410C",div:"#FED7AA",p:"#9A3412",str:"#7C2D12"};
     return (
       <div>
