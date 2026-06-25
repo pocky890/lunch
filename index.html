@@ -441,6 +441,30 @@
     zombie_01:   { name: '殭屍', emoji: '🧟', defaultPrice: 300, flipDefault: true },
     godzilla_01: { name: '哥吉拉', emoji: '🦖', defaultPrice: 500 },
   };
+
+  const THEMES = {
+    light:      { name:"日光",     emoji:"☀️",  desc:"預設亮色主題",     free:true, dark:false, vars:{}, bg:"" },
+    dark:       { name:"深夜",     emoji:"🌙",  desc:"深藍夜空配色",     free:true, dark:true,  vars:{}, bg:"" },
+    strawberry: { name:"草莓拿鐵", emoji:"🌸",  desc:"甜蜜少女粉紅系",   defaultPrice:300, dark:false,
+      vars:{ "--bg":"#FFF5F8","--s1":"#FFFFFF","--s2":"#FFF0F5","--s3":"#FFE4EE","--s4":"#FFD6E7","--b1":"#FFC0D9","--b2":"#FF8FAF","--b3":"#FF5C83","--t1":"#2D0015","--t2":"#6B1535","--t3":"#A0405A","--a":"#E91E8C","--a2":"#C2186B","--ah":"#F06292","--abg":"rgba(233,30,140,.08)","--abd":"rgba(233,30,140,.25)" },
+      bg:"radial-gradient(circle at 80% 20%, rgba(255,182,210,.35), transparent 45%), #FFF5F8" },
+    matcha:     { name:"抹茶道場", emoji:"🍵",  desc:"日系和風抹茶綠",   defaultPrice:300, dark:false,
+      vars:{ "--bg":"#F3F8EE","--s1":"#FAFDF7","--s2":"#EAF3E0","--s3":"#D8EBCA","--s4":"#C4DFB2","--b1":"#A8CE8C","--b2":"#7AAD54","--b3":"#558A30","--t1":"#142808","--t2":"#2A4C14","--t3":"#4E7835","--a":"#4CAF50","--a2":"#388E3C","--ah":"#81C784","--abg":"rgba(76,175,80,.08)","--abd":"rgba(76,175,80,.25)" },
+      bg:"radial-gradient(circle at 20% 80%, rgba(120,180,80,.2), transparent 40%), #F3F8EE" },
+    neon:       { name:"霓虹都市", emoji:"🌃",  desc:"賽博朋克霓虹感",   defaultPrice:500, dark:true,
+      vars:{ "--bg":"#030312","--s1":"rgba(5,5,35,.88)","--s2":"rgba(5,5,35,.72)","--s3":"rgba(0,255,255,.04)","--s4":"rgba(0,255,255,.09)","--b1":"rgba(0,255,255,.14)","--b2":"rgba(0,255,255,.25)","--b3":"rgba(0,255,255,.45)","--t1":"#DFFFFD","--t2":"#A8DFDB","--t3":"#5AADAA","--a":"#00E5FF","--a2":"#00B8D4","--ah":"#84FFFF","--abg":"rgba(0,229,255,.12)","--abd":"rgba(0,229,255,.35)" },
+      bg:"radial-gradient(circle at 15% 35%, rgba(0,80,200,.28), transparent 40%), radial-gradient(circle at 85% 65%, rgba(0,220,180,.18), transparent 40%), #030312" },
+    hell:       { name:"地獄廚房", emoji:"💀",  desc:"暗黑血腥搞怪系",   defaultPrice:400, dark:true,
+      vars:{ "--bg":"#0A0000","--s1":"rgba(35,5,5,.9)","--s2":"rgba(35,5,5,.75)","--s3":"rgba(255,0,0,.05)","--s4":"rgba(255,0,0,.1)","--b1":"rgba(200,0,0,.2)","--b2":"rgba(200,0,0,.38)","--b3":"rgba(200,0,0,.6)","--t1":"#FFE8E8","--t2":"#FFAAAA","--t3":"#CC6666","--a":"#FF1744","--a2":"#D50000","--ah":"#FF616F","--abg":"rgba(255,23,68,.12)","--abd":"rgba(255,23,68,.38)" },
+      bg:"radial-gradient(circle at 50% 0%, rgba(200,0,0,.35), transparent 45%), radial-gradient(circle at 10% 90%, rgba(120,0,0,.25), transparent 35%), #0A0000" },
+    anime:      { name:"動漫學院", emoji:"🎌",  desc:"二次元校園制服風", defaultPrice:350, dark:false,
+      vars:{ "--bg":"#EEF2FF","--s1":"#FFFFFF","--s2":"#E8EEFF","--s3":"#D6DEFF","--s4":"#C0CCFF","--b1":"#A0B0F0","--b2":"#6878D8","--b3":"#3848B0","--t1":"#080E30","--t2":"#1C2860","--t3":"#3C50A0","--a":"#3F51B5","--a2":"#303F9F","--ah":"#7986CB","--abg":"rgba(63,81,181,.08)","--abd":"rgba(63,81,181,.25)" },
+      bg:"radial-gradient(circle at 90% 10%, rgba(100,120,255,.2), transparent 35%), #EEF2FF" },
+    cloud:      { name:"奶油雲朵", emoji:"☁️",  desc:"輕柔夢幻薰衣草",  defaultPrice:300, dark:false,
+      vars:{ "--bg":"#F5F5FF","--s1":"#FFFFFF","--s2":"#EEEFFF","--s3":"#E0E2FF","--s4":"#CECFFF","--b1":"#B0B4F5","--b2":"#8888DC","--b3":"#5C5CB8","--t1":"#1A1850","--t2":"#38367A","--t3":"#6060A8","--a":"#7C4DFF","--a2":"#651FFF","--ah":"#B388FF","--abg":"rgba(124,77,255,.08)","--abd":"rgba(124,77,255,.25)" },
+      bg:"radial-gradient(circle at 25% 25%, rgba(180,180,255,.4), transparent 40%), radial-gradient(circle at 75% 75%, rgba(160,160,255,.25), transparent 35%), #F5F5FF" },
+  };
+
   const PET_GIFS = {
     dinotaeng_01: 'gif/dinotaeng_01.gif',
     ghost_01: 'gif/鬼鬼_nobg.gif',
@@ -458,7 +482,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 15:25";
+  const BUILD_TIME = "2026-06-25 15:54";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -680,6 +704,18 @@ function getWeekDates() {
   return Array.from({length:5}, (_,i) => { const d = new Date(mon); d.setDate(mon.getDate()+i); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; });
 }
 function snapToArr(val) { return Object.values(val||{}).sort((a,b)=>a.joinedAt-b.joinedAt); }
+
+const THEME_VAR_KEYS = ["--bg","--s1","--s2","--s3","--s4","--b1","--b2","--b3","--t1","--t2","--t3","--a","--a2","--ah","--abg","--abd"];
+function applyTheme(themeId) {
+  const theme = THEMES[themeId] || THEMES.light;
+  const body = document.body;
+  THEME_VAR_KEYS.forEach(k => body.style.removeProperty(k));
+  body.style.removeProperty("background");
+  if (theme.vars) Object.entries(theme.vars).forEach(([k,v]) => body.style.setProperty(k,v));
+  if (theme.dark) body.classList.add("dark-mode");
+  else body.classList.remove("dark-mode");
+  if (theme.bg) body.style.background = theme.bg;
+}
 function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; } return m; }
 
 async function getOrDrawNumber(dateStr, numMax = 99) {
@@ -1408,7 +1444,7 @@ function MembersTab() {
 }
 
 /* ── Admin Panel ── */
-function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool, shopConfig, titleShopConfig, petShopConfig = {} }) {
+function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest, onDeleteRest, onRenameRest, onSaveTodayRecord, onUpdateNumMax, cardConfig, cardPool, shopConfig, titleShopConfig, petShopConfig = {}, themeShopConfig = {} }) {
   const [tab, setTab] = React.useState("restaurants");
   const [cat, setCat] = React.useState(CATEGORIES[0]);
   const [newRest, setNewRest] = React.useState("");
@@ -1546,6 +1582,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
           {tabBtn("members","👥 成員")}
           {tabBtn("points","🪙 點數")}
           {tabBtn("shop","🛒 商店")}
+          {tabBtn("themes","🎨 主題")}
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="restaurants" && <>
@@ -1836,6 +1873,33 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
             </div>
             </div>
           )}
+          {tab==="themes" && (
+            <div>
+              <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🎨 主題商店設定</p>
+              <p style={{fontSize:"12px",color:"var(--t3)",marginBottom:"16px"}}>日光、深夜為內建免費主題，無需設定。</p>
+              {Object.entries(THEMES).filter(([id,t])=>!t.free).map(([id, theme]) => {
+                const cfg = themeShopConfig[id] || {};
+                const price = cfg.price ?? theme.defaultPrice ?? 300;
+                const enabled = cfg.enabled !== false;
+                return (
+                  <div key={id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"10px 0",borderBottom:"1px solid var(--b1)",flexWrap:"wrap"}}>
+                    <span style={{fontSize:"20px",width:"28px",textAlign:"center"}}>{theme.emoji}</span>
+                    <div style={{flex:1,minWidth:"80px"}}>
+                      <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{theme.name}</div>
+                      <div style={{fontSize:"11px",color:"var(--t3)"}}>{theme.desc}</div>
+                    </div>
+                    <label style={{fontSize:"12px",color:"var(--t3)",marginBottom:0,width:"auto"}}>售價</label>
+                    <input type="number" defaultValue={price} style={{width:"70px",marginBottom:0,fontSize:"13px",textAlign:"center"}}
+                      onBlur={async e => { const p=parseInt(e.target.value); if(p>0) await fRef(`themeShopConfig/${id}`).set({...cfg,price:p,enabled}); }} />
+                    <button className="btn-sm ghost" style={{marginBottom:0,fontSize:"12px",padding:"3px 10px",background:enabled?"var(--a)":"transparent",color:enabled?"#fff":"var(--t2)",border:"1px solid var(--b2)"}}
+                      onClick={async()=>{ const en=!enabled; await fRef(`themeShopConfig/${id}`).set({...cfg,price,enabled:en}); }}>
+                      {enabled?"上架":"下架"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {tab==="record" && (
             !todayRec
               ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>今天尚無開獎紀錄</div>
@@ -1848,6 +1912,84 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                   {saveMsg && <p style={{textAlign:"center",color:"var(--a)",fontSize:"14px",marginTop:"-4px"}}>{saveMsg}</p>}
                 </>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Theme Modal ── */
+function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose }) {
+  const isDark = THEMES[previewTheme||activeTheme]?.dark;
+  const displayTheme = previewTheme || activeTheme;
+
+  const visibleThemes = Object.entries(THEMES).filter(([id, t]) => {
+    if (t.free) return true;
+    const cfg = themeShopConfig[id];
+    return cfg && cfg.enabled !== false;
+  });
+
+  return (
+    <div className="modal-bg" onClick={onClose} style={{zIndex:3000}}>
+      <div className="card" onClick={e=>e.stopPropagation()} style={{width:"min(480px,94vw)",maxHeight:"80vh",display:"flex",flexDirection:"column",padding:"24px",gap:"16px",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:"18px",fontWeight:"700",color:"var(--t1)"}}>🎨 主題</div>
+            <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"2px"}}>選擇你的介面主題風格</div>
+          </div>
+          <button className="ghost" onClick={onClose} style={{marginBottom:0}}>✕</button>
+        </div>
+
+        {previewTheme && (
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"var(--abg)",border:"1px solid var(--abd)",borderRadius:"10px"}}>
+            <span style={{fontSize:"13px",fontWeight:"600",color:"var(--a)"}}>預覽中：{THEMES[previewTheme].emoji} {THEMES[previewTheme].name}</span>
+            <div style={{display:"flex",gap:"8px"}}>
+              <button className="ghost" style={{marginBottom:0,fontSize:"12px",padding:"4px 10px"}} onClick={onCancelPreview}>取消</button>
+              {!ownedThemes.has(previewTheme) && (
+                <button style={{marginBottom:0,fontSize:"12px",padding:"4px 10px",background:"var(--a)",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}
+                  onClick={()=>onBuy(previewTheme)}
+                  disabled={userPoints < (themeShopConfig[previewTheme]?.price || THEMES[previewTheme].defaultPrice || 300)}>
+                  購買並啟用 🪙{themeShopConfig[previewTheme]?.price || THEMES[previewTheme].defaultPrice || 300}
+                </button>
+              )}
+              {ownedThemes.has(previewTheme) && (
+                <button style={{marginBottom:0,fontSize:"12px",padding:"4px 10px",background:"var(--a)",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer"}}
+                  onClick={()=>onActivate(previewTheme)}>
+                  啟用
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+          {visibleThemes.map(([id, theme]) => {
+            const isActive = id === activeTheme && !previewTheme;
+            const isPreviewing = id === previewTheme;
+            const owned = ownedThemes.has(id);
+            const price = themeShopConfig[id]?.price || theme.defaultPrice || 300;
+            const canAfford = userPoints >= price;
+
+            return (
+              <div key={id} onClick={()=>{ if (owned) onActivate(id); else onPreview(id); }}
+                style={{position:"relative",padding:"14px",borderRadius:"12px",border:`2px solid ${isActive||isPreviewing?"var(--a)":"var(--b1)"}`,background:isActive||isPreviewing?"var(--abg)":"var(--s2)",cursor:"pointer",transition:"all .15s"}}>
+                {(isActive) && <span style={{position:"absolute",top:"8px",right:"8px",fontSize:"10px",fontWeight:"700",color:"var(--a)",background:"var(--abg)",padding:"2px 7px",borderRadius:"20px"}}>使用中</span>}
+                {isPreviewing && <span style={{position:"absolute",top:"8px",right:"8px",fontSize:"10px",fontWeight:"700",color:"var(--a)",background:"var(--abg)",padding:"2px 7px",borderRadius:"20px"}}>預覽中</span>}
+                {!owned && !theme.free && <span style={{position:"absolute",top:"8px",right:"8px",fontSize:"10px",color:"var(--t3)"}}>🔒</span>}
+                <div style={{fontSize:"28px",marginBottom:"6px"}}>{theme.emoji}</div>
+                <div style={{fontSize:"13px",fontWeight:"700",color:"var(--t1)",marginBottom:"2px"}}>{theme.name}</div>
+                <div style={{fontSize:"11px",color:"var(--t3)",marginBottom:"8px"}}>{theme.desc}</div>
+                {theme.free && <span style={{fontSize:"11px",color:"var(--t3)"}}>免費</span>}
+                {!theme.free && owned && <span style={{fontSize:"11px",color:"var(--t3)"}}>已擁有</span>}
+                {!theme.free && !owned && (
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <span style={{fontSize:"12px",fontWeight:"600",color:canAfford?"var(--a)":"var(--t3)"}}>🪙 {price}</span>
+                    <span style={{fontSize:"11px",color:"var(--t3)"}}>點擊預覽</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1874,7 +2016,7 @@ function SugarRush({ onDone }) {
   );
 }
 
-function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, shopNews, onProfile, achievementNews, onLogoClick, userPoints, onShop, onPointsHistory}) {
+function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, shopNews, onProfile, achievementNews, onLogoClick, userPoints, onShop, onPointsHistory}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   return (
     <div className="site-header">
@@ -1896,9 +2038,7 @@ function SiteHeader({title, sub, isDark, toggleDark, onAdmin, onHelp, onCardHelp
           <button className={`ghost theme-toggle header-hide-mobile${cardNews?" has-news":""}`} onClick={onCardHelp} title="卡牌說明">🃏</button>
           <button className={`ghost theme-toggle header-hide-mobile${rulesNews?" has-news":""}`} onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
           {isAdmin && <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>}
-          <button className="ghost theme-toggle header-dark-toggle" onClick={toggleDark} title="切換深淺色模式">
-            {isDark ? "☀️" : "🌙"}
-          </button>
+          <button className={`ghost theme-toggle header-dark-toggle${themeHasNews?" has-news":""}`} onClick={onTheme} title="主題">🎨</button>
           {userName && <div style={{position:"relative",display:"inline-flex"}}>
             <button className={`ghost theme-toggle${shopNews?" has-news":""}`} onClick={onShop} title="點數商店">🛒</button>
             {isLastWorkingDayOfMonth() && <span style={{position:"absolute",top:"-10px",left:"50%",transform:"translateX(-50%)",background:"#e53e3e",color:"#fff",fontSize:"9px",fontWeight:"700",padding:"1px 5px",borderRadius:"20px",whiteSpace:"nowrap",pointerEvents:"none",letterSpacing:"0.2px"}}>On Sale!</span>}
@@ -2787,7 +2927,7 @@ function ConfirmModal({ show, message, onConfirm, onCancel }) {
 }
 
 /* ── Login Screen ── */
-function LoginScreen({ isDark, toggleDark }) {
+function LoginScreen({ activeTheme, onToggleDark }) {
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState("");
   async function handleGoogleLogin() {
@@ -2800,7 +2940,7 @@ function LoginScreen({ isDark, toggleDark }) {
       <div className="site-header">
         <div className="site-header-inner">
           <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
-          <button className="ghost theme-toggle" onClick={toggleDark}>{isDark?"☀️":"🌙"}</button>
+          <button className="ghost theme-toggle" onClick={onToggleDark}>{THEMES[activeTheme]?.dark?"☀️":"🌙"}</button>
         </div>
       </div>
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
@@ -3018,7 +3158,7 @@ function BirthdaySetModal({ uid, onClose }) {
 }
 
 /* ── Set Name Screen ── */
-function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
+function SetNameScreen({ user, activeTheme, onToggleDark, onNameSet }) {
   const suggested = (user.displayName || "").split(" ")[0];
   const [name, setName] = React.useState(suggested);
   const [bdMonth, setBdMonth] = React.useState("");
@@ -3055,7 +3195,7 @@ function SetNameScreen({ user, isDark, toggleDark, onNameSet }) {
       <div className="site-header">
         <div className="site-header-inner">
           <div className="logo"><div className="logo-icon">◈</div><span>午餐大樂透</span></div>
-          <button className="ghost theme-toggle" onClick={toggleDark}>{isDark?"☀️":"🌙"}</button>
+          <button className="ghost theme-toggle" onClick={onToggleDark}>{THEMES[activeTheme]?.dark?"☀️":"🌙"}</button>
         </div>
       </div>
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
@@ -3369,10 +3509,15 @@ function App() {
   const [userOwnedPets, setUserOwnedPets] = useState({});
   const [userActivePet, setUserActivePet] = useState(null);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    try { return localStorage.getItem("lunch_theme") === "dark"; }
-    catch(e) { return false; }
+  const [activeTheme, setActiveTheme] = useState(() => {
+    try { return localStorage.getItem("lunch_active_theme") || "light"; }
+    catch(e) { return "light"; }
   });
+  const isDarkMode = THEMES[activeTheme]?.dark || false;
+  const [ownedThemes, setOwnedThemes] = useState(() => TEST_MODE ? new Set(Object.keys(THEMES)) : new Set(["light","dark"]));
+  const [themeShopConfig, setThemeShopConfig] = useState({});
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [previewTheme, setPreviewTheme] = useState(null);
 
   // Auth 狀態監聽
   useEffect(() => {
@@ -3552,6 +3697,28 @@ function App() {
     setUserActivePet(Object.keys(PET_TYPES)[0] || null);
   }, [boundName]);
 
+  useEffect(() => {
+    const ref = fRef("themeShopConfig");
+    const handler = snap => setThemeShopConfig(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!boundName || TEST_MODE) return;
+    const sKey = sanitizeKey(boundName);
+    const ref1 = fRef(`userOwnedThemes/${sKey}`);
+    const h1 = snap => {
+      const val = snap.val() || {};
+      setOwnedThemes(new Set(["light","dark",...Object.keys(val).filter(k=>val[k])]));
+    };
+    ref1.on("value", h1);
+    const ref2 = fRef(`userActiveTheme/${sKey}`);
+    const h2 = snap => { const v = snap.val(); if (v && THEMES[v]) setActiveTheme(v); };
+    ref2.on("value", h2);
+    return () => { ref1.off("value", h1); ref2.off("value", h2); };
+  }, [boundName]);
+
   // 生日資料載入（過濾離職者）
   useEffect(() => {
     async function loadBirthdays() {
@@ -3679,10 +3846,10 @@ function App() {
 
   useEffect(() => {
     try {
-      if (isDarkMode) { document.body.classList.add("dark-mode"); localStorage.setItem("lunch_theme", "dark"); } 
-      else { document.body.classList.remove("dark-mode"); localStorage.setItem("lunch_theme", "light"); }
+      applyTheme(activeTheme);
+      localStorage.setItem("lunch_active_theme", activeTheme);
     } catch(e) {}
-  }, [isDarkMode]);
+  }, [activeTheme]);
 
   useEffect(() => { sessRef.current = sess; }, [sess]);
 
@@ -4234,6 +4401,36 @@ function App() {
     }
   }
 
+  async function buyTheme(themeId) {
+    if (!boundName || isBuyingRef.current) return;
+    if (ownedThemes.has(themeId)) { activateTheme(themeId); return; }
+    isBuyingRef.current = true;
+    const key = sanitizeKey(boundName);
+    const price = themeShopConfig[themeId]?.price || THEMES[themeId]?.defaultPrice || 300;
+    try {
+      if (TEST_MODE) {
+        setOwnedThemes(prev => new Set([...prev, themeId]));
+        setUserPoints(prev => (prev || 0) - price);
+        activateTheme(themeId);
+        return showToast("已購買主題 " + (THEMES[themeId]?.name || "") + "！");
+      }
+      let pointsOk = false;
+      await fRef(`userPoints/${key}`).transaction(n => { if ((n||0) < price) return; pointsOk = true; return (n||0) - price; });
+      if (!pointsOk) { showToast("點數不足"); isBuyingRef.current = false; return; }
+      await fRef(`userOwnedThemes/${key}/${themeId}`).set(true);
+      logPointsEntry(key, "buy_theme", -price, THEMES[themeId]?.name || themeId);
+      activateTheme(themeId);
+      showToast("已購買主題 " + (THEMES[themeId]?.name || "") + "！");
+    } catch(e) { showToast("購買失敗，請重試"); }
+    finally { isBuyingRef.current = false; }
+  }
+
+  function activateTheme(themeId) {
+    setActiveTheme(themeId);
+    setPreviewTheme(null);
+    if (!TEST_MODE && boundName) fRef(`userActiveTheme/${sanitizeKey(boundName)}`).set(themeId);
+  }
+
   async function buyPet(petKey, price) {
     if (!boundName || isBuyingRef.current) return;
     isBuyingRef.current = true;
@@ -4366,8 +4563,8 @@ function App() {
   ]).filter(x => x.num);
 
   if (authState === "loading") return <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg)",gap:"12px"}}><div className="status-dot" style={{width:"12px",height:"12px"}}></div><span style={{fontSize:"13px",color:"var(--t3)"}}>連線中…</span></div>;
-  if (authState === "login") return <LoginScreen isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} />;
-  if (authState === "setname") return <SetNameScreen user={currentUser} isDark={isDarkMode} toggleDark={()=>setIsDarkMode(!isDarkMode)} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
+  if (authState === "login") return <LoginScreen activeTheme={activeTheme} onToggleDark={()=>setActiveTheme(t=>t==="dark"?"light":"dark")} />;
+  if (authState === "setname") return <SetNameScreen user={currentUser} activeTheme={activeTheme} onToggleDark={()=>setActiveTheme(t=>t==="dark"?"light":"dark")} onNameSet={name=>{setBoundName(name);setForm(f=>({...f,name}));setAuthState("ready");}} />;
   if (authState === "resigned") return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",gap:"16px",background:"var(--bg)",color:"var(--t1)",textAlign:"center",padding:"24px"}}>
       <div style={{fontSize:"48px"}}>🚪</div>
@@ -4393,9 +4590,21 @@ function App() {
     {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} newSections={helpNewSections} />}
     {showCardHelp && <CardHelpModal onClose={()=>setShowCardHelp(false)} cardConfig={cardConfig} newCardTypes={cardHelpNewTypes} />}
     {showHistory && <HistoryModal weekly={weekly} onClose={()=>setShowHistory(false)} userTitles={userTitles} titleShopConfig={titleShopConfig} />}
-    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} shopConfig={shopConfig} titleShopConfig={titleShopConfig} petShopConfig={petShopConfig} />
+    <AdminPanel open={adminOpen} rests={rests} weekly={weekly} pts={pts} absent={absent} sess={sess} onClose={closeAdmin} onAddRest={adminAddRest} onDeleteRest={adminDeleteRest} onRenameRest={adminRenameRest} onSaveTodayRecord={adminSaveTodayRecord} onUpdateNumMax={adminUpdateNumMax} cardConfig={cardConfig} cardPool={cardPool} shopConfig={shopConfig} titleShopConfig={titleShopConfig} petShopConfig={petShopConfig} themeShopConfig={themeShopConfig} />
     {birthdayModal}
     <ShopModal open={showShop} onClose={()=>setShowShop(false)} shopConfig={shopConfig} titleShopConfig={titleShopConfig} userPoints={userPoints} userOwnedTitles={userOwnedTitles} onBuy={buyFromShop} onBuyTitle={buyTitle} petShopConfig={petShopConfig} userOwnedPets={userOwnedPets} onBuyPet={buyPet} discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1} unseenTabs={unseenShopTabs} />
+    {showThemeModal && <ThemeModal
+      activeTheme={activeTheme}
+      previewTheme={previewTheme}
+      ownedThemes={ownedThemes}
+      themeShopConfig={themeShopConfig}
+      userPoints={userPoints}
+      onActivate={activateTheme}
+      onPreview={id => { setPreviewTheme(id); applyTheme(id); }}
+      onCancelPreview={() => { setPreviewTheme(null); applyTheme(activeTheme); }}
+      onBuy={buyTheme}
+      onClose={() => { setShowThemeModal(false); if (previewTheme) { setPreviewTheme(null); applyTheme(activeTheme); } }}
+    />}
     {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} userOwnedTitles={userOwnedTitles} titleShopConfig={titleShopConfig} userOwnedPets={userOwnedPets} userActivePet={userActivePet} onSetActivePet={handleSetActivePet} onClose={()=>{
       setShowProfile(false);
       setHasNewAchievement(false);
@@ -4417,7 +4626,7 @@ function App() {
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
+      <SiteHeader onTheme={()=>setShowThemeModal(true)} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id))} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
@@ -4659,7 +4868,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" isDark={isDarkMode} toggleDark={() => setIsDarkMode(!isDarkMode)} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
+        <SiteHeader title="開獎結果" onTheme={()=>setShowThemeModal(true)} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id))} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
