@@ -497,7 +497,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 18:13";
+  const BUILD_TIME = "2026-06-25 18:15";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2040,7 +2040,7 @@ function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardH
       <div className="site-header-inner">
         <div className="logo" style={{gap:"8px"}}>
           {themeMeta.logoImg
-            ? <img src={themeMeta.logoImg} onClick={onLogoClick} style={{height:"52px",width:"52px",objectFit:"contain",cursor:"pointer",borderRadius:"8px"}} alt="logo" />
+            ? <><img src={themeMeta.logoImg} onClick={onLogoClick} style={{height:"52px",width:"52px",objectFit:"contain",cursor:"pointer",borderRadius:"8px"}} alt="logo" /><span className="logo-text" onClick={onLogoClick} style={{cursor:"pointer"}}>午餐大樂透</span></>
             : <><div className="logo-icon" onClick={onLogoClick} style={{cursor:"pointer"}}>◈</div><span className="logo-text">午餐大樂透</span></>
           }
           {DB_PREFIX==="lunch_test"&&<span style={{background:"#FF9500",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"2px 8px",borderRadius:"20px",letterSpacing:"0.5px",marginLeft:"6px"}}>🧪 TEST</span>}
