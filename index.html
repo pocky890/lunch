@@ -276,17 +276,22 @@
 
     /* --- 手動深色模式 (深海藍質感漸層) --- */
     body.dark-mode {
-      --bg:   #000000;
-      --s1:   #1C1C1E;
-      --s2:   #1C1C1E;
-      --s3:   #2C2C2E;
-      --s4:   #3A3A3C;
-      --b1:   #38383A;
-      --b2:   #48484A;
-      --b3:   #636366;
-      --t1:   #F5F5F7;
-      --t2:   #EBEBF5;
-      --t3:   rgba(235, 235, 245, 0.6);
+      --bg:   #070B14;
+      --s1:   rgba(17,24,39,.72);
+      --s2:   rgba(17,24,39,.62);
+      --s3:   rgba(255,255,255,.05);
+      --s4:   rgba(255,255,255,.08);
+      --b1:   rgba(255,255,255,.08);
+      --b2:   rgba(255,255,255,.12);
+      --b3:   rgba(255,255,255,.18);
+      --t1:   #F8FAFC;
+      --t2:   #CBD5E1;
+      --t3:   #94A3B8;
+      --a:    #8B5CF6;
+      --a2:   #7C3AED;
+      --ah:   #A78BFA;
+      --abg:  rgba(139,92,246,.15);
+      --abd:  rgba(139,92,246,.4);
 
       --c-green-bg: #052e16; --c-green-bd: #166534; --c-green-tx: #86efac;
       --c-pink-bg:  #2d0a1e; --c-pink-bd:  #9d174d; --c-pink-tx:  #f9a8d4;
@@ -294,23 +299,28 @@
       --c-orange-bg:#2c1a00; --c-orange-bd:#92400e; --c-orange-tx:#fed7aa;
       --c-tip-bg:#2d0808; --c-tip-bd:#7f1d1d; --c-tip-tx:#fca5a5;
       --c-amber-bg: #2c1f00; --c-amber-bd: #b45309; --c-amber-tx: #fde68a;
+
+      background:
+        radial-gradient(circle at 15% 15%, rgba(120,90,255,.25), transparent 30%),
+        radial-gradient(circle at 85% 0%, rgba(0,140,255,.18), transparent 35%),
+        #070B14;
     }
-    
+
     body.dark-mode .card,
     body.dark-mode .stat-card {
-      background: linear-gradient(135deg, #2A2B30 0%, #1A1B20 100%);
-      border-color: rgba(255, 255, 255, 0.05);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      background: rgba(17,24,39,.58);
+      border-color: rgba(255,255,255,.08);
+      box-shadow: 0 18px 45px rgba(0,0,0,.45), 0 0 30px rgba(139,92,246,.10), inset 0 1px rgba(255,255,255,.05);
     }
-    
+
     body.dark-mode .stat-card.active-card {
-      background: linear-gradient(180deg, rgba(0, 113, 227, 0.15) 0%, transparent 80px), linear-gradient(135deg, #2A2B30 0%, #1A1B20 100%);
+      background: linear-gradient(180deg, rgba(139,92,246,.15) 0%, transparent 80px), rgba(17,24,39,.58);
       border-color: var(--abd);
     }
 
     body.dark-mode .empty-state {
-      background: linear-gradient(135deg, #232428 0%, #17181C 100%);
-      border-color: #383A40;
+      background: rgba(17,24,39,.4);
+      border-color: rgba(255,255,255,.08);
     }
 
     body.dark-mode input, body.dark-mode select { background: var(--s3); color: var(--t1); }
@@ -448,7 +458,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 12:20";
+  const BUILD_TIME = "2026-06-25 15:20";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
