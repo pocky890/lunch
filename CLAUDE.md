@@ -53,6 +53,78 @@ session/                當日設定（numMax 等）
 有新成就時，Header 名字按鈕發紫光（`.has-news` class）。
 自動選：登入後若有解鎖成就且未選稱號，自動選稀有度最高的。
 
+## 主題系統
+
+### 架構概覽
+- `THEMES` 常數（module-level）定義所有主題設定
+- `applyTheme(themeId)` 套用主題：清除舊 CSS var → 寫入新 var → 切換 `dark-mode` class → 設定 body background → 設定 `data-theme` attribute
+- `body[data-theme="xxx"]` 用於 CSS 針對特定主題 override 硬編碼顏色
+- Firebase 路徑：`themeShopConfig/{id}`（上架/價格）、`userOwnedThemes/{key}/{id}`、`userActiveTheme/{key}`
+
+### THEMES 欄位說明
+```js
+{
+  name: "顯示名稱",
+  emoji: "🏴‍☠️",
+  desc: "簡短描述",
+  free: true,           // 免費主題（日光/深夜），不設 defaultPrice
+  defaultPrice: 500,    // 付費主題預設售價（管理員可在後台覆蓋）
+  dark: false,          // true = 套用 body.dark-mode class（影響 card/input/button CSS）
+  vars: { "--bg":"...", "--a":"...", ... },  // 覆蓋 CSS 變數（THEME_VAR_KEYS 範圍內）
+  bg: "...",            // body.style.background shorthand（可含圖片、漸層）
+  logoImg: "theme/xxx/logo.png",  // 有值時替換 header ◈ 圖示，文字仍保留
+  headerWave: true,     // 有值時 SiteHeader 加 op-header class + op-wave 動畫條
+}
+```
+
+### 新增客製化主題的完整清單
+
+**1. 圖片資源**（若有）
+- 放在 `theme/{主題名}/` 資料夾，commit 進 repo
+- 建議壓縮：背景圖 ≤ 150KB（1280px wide, JPEG q82），logo ≤ 20KB（200×200 PNG）
+
+**2. THEMES 常數**（`index.html` 約 445 行後）
+- 加入主題 entry，設定 vars / bg / logoImg / headerWave
+
+**3. 硬編碼顏色的 CSS override**（必須處理，否則卡片不透明）
+這些元素有寫死的顏色，不受 CSS var 影響，需用 `body[data-theme="xxx"]` 補 override：
+```css
+/* 卡片背景（.card / .stat-card / .empty-state 寫死 #FFFFFF） */
+body[data-theme="xxx"] .card,
+body[data-theme="xxx"] .stat-card,
+body[data-theme="xxx"] .empty-state { background: rgba(255,255,255,.62) !important; }
+
+/* 語意色 banner（--c-*-bg 預設實心色，背景圖主題需改半透明） */
+body[data-theme="xxx"] { --c-green-bg:rgba(220,252,231,.68); --c-pink-bg:...; ... }
+
+/* 開獎大數字（.result-number 有自己的漸層） */
+body[data-theme="xxx"] .result-number:not(.result-number-scorched) {
+  background: linear-gradient(...); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+```
+
+**4. 深色 Header 主題（headerWave: true 時）**
+```css
+.site-header.op-header { background: rgba(...) !important; border-bottom: none !important; }
+.site-header.op-header button.ghost { color: #E0F0FF !important; ... }
+.site-header.op-header .logo-weather, .site-header.op-header .logo-weather span { color: #C8E0FF !important; }
+.site-header.op-header .header-title-area div { color: #F0F8FF !important; }
+```
+> ⚠️ 目前 `op-header` / `op-wave` CSS 為航海王主題專用名稱。若未來多個主題需深色 Header，應改為通用 `.theme-dark-header` class。
+
+**5. 開獎結果頁 JS inline 顏色（gc / oc 物件）**
+開獎頁最接近/獨贏卡片用 JS 算出的顏色，CSS override 進不去，需在 App component 加條件：
+```js
+const gc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } : { bg:"#F0FDF4", ... };
+const oc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } : { bg:"#FFF7ED", ... };
+```
+
+**6. 管理員後台上架**
+- 主題寫進 `THEMES` 後，需到管理員面板 → 🎨 主題 Tab → 設定售價並上架，使用者才看得到（免費主題除外）
+
+**7. TEST_MODE**
+- `ownedThemes` 初始化時已包含所有主題，無需額外處理
+
 ## 卡牌系統
 - extra_number（加號卡）、follow_rest（跟著我吃）、no_pay（免付卡）、thirsty_card（口渴卡 1 張）、streak_protect（連勝保護卡）
 - 卡牌設定存 Firebase `cardConfig/`
