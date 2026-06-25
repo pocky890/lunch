@@ -160,6 +160,7 @@
     .site-header.op-header .has-news { box-shadow: 0 0 0 3px rgba(192,57,43,.7), 0 0 12px rgba(192,57,43,.5) !important; }
     .site-header.op-header .logo-weather, .site-header.op-header .logo-weather span { color: #C8E0FF !important; }
     body[data-theme="onepiece"] .card, body[data-theme="onepiece"] .stat-card, body[data-theme="onepiece"] .empty-state { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
+    body[data-theme="onepiece"] { --c-green-bg:rgba(220,252,231,.68); --c-green-bd:rgba(134,239,172,.7); --c-pink-bg:rgba(253,242,248,.68); --c-pink-bd:rgba(249,168,212,.7); --c-blue-bg:rgba(219,234,254,.68); --c-blue-bd:rgba(147,197,253,.7); --c-orange-bg:rgba(255,237,213,.68); --c-orange-bd:rgba(253,186,116,.7); --c-amber-bg:rgba(254,249,195,.68); --c-amber-bd:rgba(252,211,77,.7); }
     .op-wave { position: absolute; bottom: -28px; left: 0; width: 200%; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28'%3E%3Cpath d='M0,14 C200,28 400,0 600,14 C800,28 1000,0 1200,14 L1200,28 L0,28Z' fill='%230E1A34'/%3E%3C/svg%3E") repeat-x; animation: opWave 7s linear infinite; pointer-events: none; z-index:1; }
     @keyframes opWave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @media (max-width: 640px) {
@@ -494,7 +495,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 18:00";
+  const BUILD_TIME = "2026-06-25 18:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
