@@ -481,7 +481,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 16:44";
+  const BUILD_TIME = "2026-06-25 16:49";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1918,11 +1918,12 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
 }
 
 /* ── Theme Modal ── */
-function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose }) {
+function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose, discountRate = 1 }) {
+  const ep = p => Math.floor(p * discountRate);
   const visibleThemes = Object.entries(THEMES).filter(([id, t]) => {
     if (t.free) return true;
     const cfg = themeShopConfig[id];
-    return cfg && cfg.enabled !== false;
+    return (cfg && cfg.enabled !== false) || ownedThemes.has(id);
   });
 
   return (
@@ -1945,9 +1946,9 @@ function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, u
             <div style={{display:"flex",gap:"6px"}}>
               <button className="ghost" style={{marginBottom:0,fontSize:"11px",padding:"3px 8px"}} onClick={onCancelPreview}>取消</button>
               {!ownedThemes.has(previewTheme)
-                ? <button style={{marginBottom:0,fontSize:"11px",padding:"3px 10px",background:"var(--a)",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:userPoints<(themeShopConfig[previewTheme]?.price||THEMES[previewTheme].defaultPrice||300)?0.5:1}}
+                ? <button style={{marginBottom:0,fontSize:"11px",padding:"3px 10px",background:"var(--a)",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer",opacity:userPoints<ep(themeShopConfig[previewTheme]?.price||THEMES[previewTheme].defaultPrice||300)?0.5:1}}
                     onClick={()=>onBuy(previewTheme)}>
-                    購買並啟用 🪙{themeShopConfig[previewTheme]?.price||THEMES[previewTheme].defaultPrice||300}
+                    購買並啟用 🪙{ep(themeShopConfig[previewTheme]?.price||THEMES[previewTheme].defaultPrice||300)}
                   </button>
                 : <button style={{marginBottom:0,fontSize:"11px",padding:"3px 10px",background:"var(--a)",color:"#fff",border:"none",borderRadius:"6px",cursor:"pointer"}}
                     onClick={()=>onActivate(previewTheme)}>啟用</button>
@@ -1963,20 +1964,25 @@ function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, u
               const isActive = id === activeTheme && !previewTheme;
               const isPreviewing = id === previewTheme;
               const owned = ownedThemes.has(id);
-              const price = themeShopConfig[id]?.price || theme.defaultPrice || 300;
+              const basePrice = themeShopConfig[id]?.price || theme.defaultPrice || 300;
+              const price = ep(basePrice);
               const canAfford = userPoints >= price;
+              const disabled = themeShopConfig[id]?.enabled === false && owned;
               return (
                 <div key={id} onClick={()=>{ if (owned||theme.free) onActivate(id); else onPreview(id); }}
-                  style={{position:"relative",padding:"10px 12px 8px",borderRadius:"8px",border:`2px solid ${isActive||isPreviewing?"var(--a)":"var(--b1)"}`,background:isActive||isPreviewing?"var(--abg)":"var(--s2)",cursor:"pointer",transition:"border-color .15s"}}>
+                  style={{position:"relative",padding:"10px 12px 8px",borderRadius:"8px",border:`2px solid ${isActive||isPreviewing?"var(--a)":"var(--b1)"}`,background:isActive||isPreviewing?"var(--abg)":"var(--s2)",cursor:"pointer",transition:"border-color .15s",opacity:disabled?.6:1}}>
                   <div style={{position:"absolute",top:"6px",right:"8px",fontSize:"10px",lineHeight:1,fontWeight:700}}>
                     {isActive && <span style={{color:"var(--a)"}}>✓</span>}
                     {isPreviewing && <span style={{color:"var(--a)"}}>預</span>}
                     {!owned && !theme.free && !isPreviewing && <span style={{color:"var(--t3)"}}>🔒</span>}
+                    {disabled && <span style={{color:"var(--t3)"}}>下架</span>}
                   </div>
                   <div style={{fontSize:"14px",fontWeight:"700",color:"var(--t1)",paddingRight:"16px"}}>{theme.name}</div>
                   <div style={{fontSize:"11px",color:"var(--t3)",margin:"2px 0 6px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{theme.desc}</div>
                   <div style={{fontSize:"12px",fontWeight:theme.free||owned?400:600,color:theme.free||owned?"var(--t3)":canAfford?"var(--a)":"var(--t3)"}}>
-                    {theme.free?"免費":owned?"已擁有":`🪙${price}`}
+                    {theme.free ? "免費" : owned ? "已擁有" : discountRate < 1
+                      ? <>{`🪙`}<span style={{textDecoration:"line-through",color:"var(--t3)",marginRight:"3px"}}>{basePrice}</span><span style={{color:"#c0392b"}}>{price}</span></>
+                      : `🪙${price}`}
                   </div>
                 </div>
               );
@@ -4409,7 +4415,8 @@ function App() {
     if (ownedThemes.has(themeId)) { activateTheme(themeId); return; }
     isBuyingRef.current = true;
     const key = sanitizeKey(boundName);
-    const price = themeShopConfig[themeId]?.price || THEMES[themeId]?.defaultPrice || 300;
+    const dr = isLastWorkingDayOfMonth() ? 0.8 : 1;
+    const price = Math.floor((themeShopConfig[themeId]?.price || THEMES[themeId]?.defaultPrice || 300) * dr);
     try {
       if (TEST_MODE) {
         setOwnedThemes(prev => new Set([...prev, themeId]));
@@ -4606,6 +4613,7 @@ function App() {
       onPreview={id => { setPreviewTheme(id); applyTheme(id); }}
       onCancelPreview={() => { setPreviewTheme(null); applyTheme(activeTheme); }}
       onBuy={buyTheme}
+      discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1}
       onClose={() => { setShowThemeModal(false); if (previewTheme) { setPreviewTheme(null); applyTheme(activeTheme); } }}
     />}
     {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} userOwnedTitles={userOwnedTitles} titleShopConfig={titleShopConfig} userOwnedPets={userOwnedPets} userActivePet={userActivePet} onSetActivePet={handleSetActivePet} onClose={()=>{
