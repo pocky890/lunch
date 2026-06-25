@@ -482,7 +482,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 16:21";
+  const BUILD_TIME = "2026-06-25 16:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1927,7 +1927,7 @@ function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, u
   });
 
   return (
-    <div className="modal-bg" onClick={onClose} style={{zIndex:3000}}>
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.08)",backdropFilter:"blur(1px)"}}>
       <div onClick={e=>e.stopPropagation()} style={{position:"relative",background:"var(--bg)",borderRadius:"var(--r)",width:"min(420px,92vw)",maxHeight:"85vh",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,.25)"}}>
 
         {/* ✕ 貼在容器右上角 */}
