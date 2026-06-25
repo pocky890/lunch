@@ -153,11 +153,12 @@
     }
     .site-header-inner { max-width: 1080px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
     .header-title-area { text-align: right; }
-    .site-header.op-header { background: rgba(20,35,65,.88) !important; border-bottom: none !important; backdrop-filter: blur(16px); }
-    .site-header.op-header .logo-icon, .site-header.op-header .logo-text { color: #F8FBFF !important; }
-    .site-header.op-header button.ghost { color: #D0E8FF !important; border-color: rgba(255,255,255,.18) !important; }
-    .site-header.op-header button.ghost:hover { background: rgba(255,255,255,.12) !important; }
-    .op-wave { position: absolute; bottom: -22px; left: 0; width: 200%; height: 22px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 22' preserveAspectRatio='none'%3E%3Cpath d='M0,11 C150,22 350,0 600,11 C850,22 1050,0 1200,11 L1200,22 L0,22Z' fill='rgba(20%2C35%2C65%2C.88)'/%3E%3C/svg%3E") repeat-x; animation: opWave 6s linear infinite; pointer-events: none; }
+    .site-header.op-header { background: rgba(14,26,52,.92) !important; border-bottom: none !important; backdrop-filter: blur(20px); }
+    .site-header.op-header .logo-icon, .site-header.op-header .logo-text { color: #F0F8FF !important; }
+    .site-header.op-header button.ghost { color: #E0F0FF !important; border-color: rgba(255,255,255,.25) !important; background: rgba(255,255,255,.06) !important; }
+    .site-header.op-header button.ghost:hover { background: rgba(255,255,255,.16) !important; }
+    .site-header.op-header .has-news { box-shadow: 0 0 0 3px rgba(192,57,43,.7), 0 0 12px rgba(192,57,43,.5) !important; }
+    .op-wave { position: absolute; bottom: -28px; left: 0; width: 200%; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28'%3E%3Cpath d='M0,14 C200,28 400,0 600,14 C800,28 1000,0 1200,14 L1200,28 L0,28Z' fill='%230E1A34'/%3E%3C/svg%3E") repeat-x; animation: opWave 7s linear infinite; pointer-events: none; z-index:1; }
     @keyframes opWave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @media (max-width: 640px) {
       .site-header-inner { padding: 0 12px; height: 52px; gap: 4px; }
@@ -469,7 +470,7 @@
       vars:{ "--bg":"#F5F5FF","--s1":"#FFFFFF","--s2":"#EEEFFF","--s3":"#E0E2FF","--s4":"#CECFFF","--b1":"#B0B4F5","--b2":"#8888DC","--b3":"#5C5CB8","--t1":"#1A1850","--t2":"#38367A","--t3":"#6060A8","--a":"#7C4DFF","--a2":"#651FFF","--ah":"#B388FF","--abg":"rgba(124,77,255,.08)","--abd":"rgba(124,77,255,.25)" },
       bg:"radial-gradient(circle at 25% 25%, rgba(180,180,255,.4), transparent 40%), radial-gradient(circle at 75% 75%, rgba(160,160,255,.25), transparent 35%), #F5F5FF" },
     onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false,
-      vars:{ "--bg":"#D6EAF8","--s1":"rgba(255,255,255,.92)","--s2":"rgba(235,244,250,.88)","--s3":"rgba(26,42,74,.05)","--s4":"rgba(26,42,74,.09)","--b1":"rgba(26,42,74,.15)","--b2":"rgba(26,42,74,.28)","--b3":"rgba(26,42,74,.45)","--t1":"#1A2A4A","--t2":"#2A4A7A","--t3":"#5578A8","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.10)","--abd":"rgba(192,57,43,.30)" },
+      vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(26,42,74,.08)","--s4":"rgba(26,42,74,.13)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
       bg:"url('theme/one_piece/background.jpg') center/cover fixed",
       logoImg:"theme/one_piece/logo.png", headerWave:true },
   };
@@ -491,7 +492,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 17:45";
+  const BUILD_TIME = "2026-06-25 17:50";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2033,7 +2034,7 @@ function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardH
       <div className="site-header-inner">
         <div className="logo" style={{gap:"8px"}}>
           {themeMeta.logoImg
-            ? <img src={themeMeta.logoImg} onClick={onLogoClick} style={{height:"40px",width:"40px",objectFit:"contain",cursor:"pointer",borderRadius:"6px"}} alt="logo" />
+            ? <img src={themeMeta.logoImg} onClick={onLogoClick} style={{height:"52px",width:"52px",objectFit:"contain",cursor:"pointer",borderRadius:"8px"}} alt="logo" />
             : <><div className="logo-icon" onClick={onLogoClick} style={{cursor:"pointer"}}>◈</div><span className="logo-text">午餐大樂透</span></>
           }
           {DB_PREFIX==="lunch_test"&&<span style={{background:"#FF9500",color:"#fff",fontSize:"10px",fontWeight:"700",padding:"2px 8px",borderRadius:"20px",letterSpacing:"0.5px",marginLeft:"6px"}}>🧪 TEST</span>}
