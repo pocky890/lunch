@@ -158,6 +158,8 @@
     .site-header.op-header button.ghost { color: #E0F0FF !important; border-color: rgba(255,255,255,.25) !important; background: rgba(255,255,255,.06) !important; }
     .site-header.op-header button.ghost:hover { background: rgba(255,255,255,.16) !important; }
     .site-header.op-header .has-news { box-shadow: 0 0 0 3px rgba(192,57,43,.7), 0 0 12px rgba(192,57,43,.5) !important; }
+    .site-header.op-header .logo-weather, .site-header.op-header .logo-weather span { color: #C8E0FF !important; }
+    body[data-theme="onepiece"] .card, body[data-theme="onepiece"] .stat-card { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
     .op-wave { position: absolute; bottom: -28px; left: 0; width: 200%; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28'%3E%3Cpath d='M0,14 C200,28 400,0 600,14 C800,28 1000,0 1200,14 L1200,28 L0,28Z' fill='%230E1A34'/%3E%3C/svg%3E") repeat-x; animation: opWave 7s linear infinite; pointer-events: none; z-index:1; }
     @keyframes opWave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @media (max-width: 640px) {
@@ -470,7 +472,7 @@
       vars:{ "--bg":"#F5F5FF","--s1":"#FFFFFF","--s2":"#EEEFFF","--s3":"#E0E2FF","--s4":"#CECFFF","--b1":"#B0B4F5","--b2":"#8888DC","--b3":"#5C5CB8","--t1":"#1A1850","--t2":"#38367A","--t3":"#6060A8","--a":"#7C4DFF","--a2":"#651FFF","--ah":"#B388FF","--abg":"rgba(124,77,255,.08)","--abd":"rgba(124,77,255,.25)" },
       bg:"radial-gradient(circle at 25% 25%, rgba(180,180,255,.4), transparent 40%), radial-gradient(circle at 75% 75%, rgba(160,160,255,.25), transparent 35%), #F5F5FF" },
     onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false,
-      vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(26,42,74,.08)","--s4":"rgba(26,42,74,.13)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
+      vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
       bg:"url('theme/one_piece/background.jpg') center/cover fixed",
       logoImg:"theme/one_piece/logo.png", headerWave:true },
   };
@@ -492,7 +494,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 17:50";
+  const BUILD_TIME = "2026-06-25 17:56";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -725,6 +727,7 @@ function applyTheme(themeId) {
   if (theme.dark) body.classList.add("dark-mode");
   else body.classList.remove("dark-mode");
   if (theme.bg) body.style.background = theme.bg;
+  body.setAttribute("data-theme", themeId);
 }
 function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; } return m; }
 
