@@ -163,10 +163,19 @@
     body[data-theme="onepiece"] .card, body[data-theme="onepiece"] .stat-card, body[data-theme="onepiece"] .empty-state { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
     body[data-theme="onepiece"] .result-number:not(.result-number-scorched) { background: linear-gradient(135deg, #C0392B 0%, #E74C3C 60%, #922B21 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     body[data-theme="onepiece"] { --c-green-bg:rgba(220,252,231,.68); --c-green-bd:rgba(134,239,172,.7); --c-pink-bg:rgba(253,242,248,.68); --c-pink-bd:rgba(249,168,212,.7); --c-blue-bg:rgba(219,234,254,.68); --c-blue-bd:rgba(147,197,253,.7); --c-orange-bg:rgba(255,237,213,.68); --c-orange-bd:rgba(253,186,116,.7); --c-amber-bg:rgba(254,249,195,.68); --c-amber-bd:rgba(252,211,77,.7); }
+    body[data-theme="kimetsu"] .card, body[data-theme="kimetsu"] .stat-card, body[data-theme="kimetsu"] .empty-state { backdrop-filter: none; -webkit-backdrop-filter: none; }
     body[data-theme="kimetsu"] .result-number:not(.result-number-scorched) { background: linear-gradient(135deg, #7B0D1E 0%, #C62B3A 50%, #E84055 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     body.dark-mode[data-theme="kimetsu"] { --c-green-bg:rgba(20,83,45,.55); --c-green-bd:rgba(34,197,94,.35); --c-pink-bg:rgba(131,24,67,.45); --c-pink-bd:rgba(244,114,182,.35); --c-blue-bg:rgba(23,37,84,.55); --c-blue-bd:rgba(147,197,253,.35); --c-orange-bg:rgba(124,45,18,.50); --c-orange-bd:rgba(253,186,116,.35); --c-amber-bg:rgba(120,53,15,.50); --c-amber-bd:rgba(252,211,77,.35); }
     .op-wave { position: absolute; bottom: -28px; left: 0; width: 200%; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28'%3E%3Cpath d='M0,14 C200,28 400,0 600,14 C800,28 1000,0 1200,14 L1200,28 L0,28Z' fill='%230E1A34'/%3E%3C/svg%3E") repeat-x; animation: opWave 7s linear infinite; pointer-events: none; z-index:1; }
     @keyframes opWave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    .km-petals { position:absolute; bottom:0; left:0; width:100%; height:0; pointer-events:none; overflow:visible; z-index:2; }
+    .km-petal { position:absolute; width:7px; height:10px; border-radius:50% 0 50% 0; opacity:0; animation:kmFall linear infinite; }
+    @keyframes kmFall {
+      0%   { transform:translateY(-10px) rotate(0deg);   opacity:0; }
+      8%   { opacity:.85; }
+      85%  { opacity:.55; }
+      100% { transform:translateY(110px) rotate(380deg); opacity:0; }
+    }
     @media (max-width: 640px) {
       .site-header-inner { padding: 0 12px; height: 52px; gap: 4px; }
       .header-title-area { display: none !important; }
@@ -477,10 +486,10 @@
       vars:{ "--bg":"#F5F5FF","--s1":"#FFFFFF","--s2":"#EEEFFF","--s3":"#E0E2FF","--s4":"#CECFFF","--b1":"#B0B4F5","--b2":"#8888DC","--b3":"#5C5CB8","--t1":"#1A1850","--t2":"#38367A","--t3":"#6060A8","--a":"#7C4DFF","--a2":"#651FFF","--ah":"#B388FF","--abg":"rgba(124,77,255,.08)","--abd":"rgba(124,77,255,.25)" },
       bg:"radial-gradient(circle at 25% 25%, rgba(180,180,255,.4), transparent 40%), radial-gradient(circle at 75% 75%, rgba(160,160,255,.25), transparent 35%), #F5F5FF" },
     kimetsu:    { name:"鬼滅之刃", emoji:"🗡️",  desc:"水の呼吸・壱ノ型",   defaultPrice:500, dark:true,
-      vars:{ "--bg":"#0D0A1A","--s1":"rgba(15,8,28,.80)","--s2":"rgba(15,8,28,.65)","--s3":"rgba(180,20,40,.08)","--s4":"rgba(180,20,40,.14)","--b1":"rgba(180,30,50,.22)","--b2":"rgba(180,30,50,.40)","--b3":"rgba(180,30,50,.65)","--t1":"#FFF0F2","--t2":"#E8C0C8","--t3":"#B88090","--a":"#C62B3A","--a2":"#9E1F2C","--ah":"#E84055","--abg":"rgba(198,43,58,.12)","--abd":"rgba(198,43,58,.35)" },
-      bg:"url('theme/kimetsu/1005531_c.jpg') center/cover fixed",
-      logoImg:"theme/kimetsu/logo.png",
-      backgrounds:["1005531_c.jpg","1011910_c.jpg","1014466_c.jpg","1033022_c.jpg","1049964_c.jpg","1054250_c.jpg"] },
+      vars:{ "--bg":"#0D0A1A","--s1":"rgba(15,8,28,.95)","--s2":"rgba(15,8,28,.65)","--s3":"rgba(180,20,40,.08)","--s4":"rgba(180,20,40,.14)","--b1":"rgba(180,30,50,.22)","--b2":"rgba(180,30,50,.40)","--b3":"rgba(180,30,50,.65)","--t1":"#FFF0F2","--t2":"#E8C0C8","--t3":"#B88090","--a":"#C62B3A","--a2":"#9E1F2C","--ah":"#E84055","--abg":"rgba(198,43,58,.12)","--abd":"rgba(198,43,58,.35)" },
+      bg:"linear-gradient(rgba(5,3,15,.60),rgba(5,3,15,.60)), url('theme/kimetsu/1049964_c.jpg') center/cover fixed",
+      logoImg:"theme/kimetsu/logo.png", headerPetals:true,
+      backgrounds:["1049964_c.jpg","1153480_1_c.jpg","1264746_c.jpg","1314559_c.jpg","1316632_c.jpg","1317019_c.jpg","1343744_c.jpg","1348830_c.jpg","1349192_c.jpg","1363243_c.jpg"] },
     onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false,
       vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
       bg:"url('theme/one_piece/bg_0.jpg') center/cover fixed",
@@ -505,7 +514,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 23:13";
+  const BUILD_TIME = "2026-06-25 23:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -740,7 +749,8 @@ function applyTheme(themeId, bgOverride) {
   if (theme.bg) {
     if (bgOverride && theme.backgrounds?.includes(bgOverride)) {
       const dir = theme.bg.match(/url\('([^']*\/)/)?.[1] || "";
-      body.style.background = `url('${dir}${bgOverride}') center/cover fixed`;
+      const prefix = theme.bg.match(/^((?:linear-gradient\([^)]+\),\s*)*)url\(/)?.[1] || "";
+      body.style.background = `${prefix}url('${dir}${bgOverride}') center/cover fixed`;
     } else {
       body.style.background = theme.bg;
     }
@@ -2069,6 +2079,7 @@ function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardH
   return (
     <div className={`site-header${themeMeta.headerWave ? " op-header" : ""}`} style={{position:"relative"}}>
       {themeMeta.headerWave && <div className="op-wave" aria-hidden="true" />}
+      {themeMeta.headerPetals && <div className="km-petals" aria-hidden="true">{[0,1,2,3,4,5,6,7,8,9,10,11].map(i=><div key={i} className="km-petal" style={{left:`${4+i*8.5}%`,animationDuration:`${3.5+i*0.35}s`,animationDelay:`${i*0.45}s`,background:["#B39DDB","#9575CD","#CE93D8","#D1A3E0","#7E57C2","#C48BC9"][i%6],transform:`rotate(${i*30}deg)`}} />)}</div>}
       <div className="site-header-inner">
         <div className="logo" style={{gap:"8px"}}>
           {themeMeta.logoImg
@@ -4964,12 +4975,16 @@ function App() {
     const maxTotal = nonWinnerCount * soloTreatPerPerson;
     const perWinner = soloWinners.length > 1 ? Math.floor(maxTotal / soloWinners.length) : maxTotal;
     // 深色模式下 winner 卡片 & 排名列替代色
-    const gc = isDarkMode
+    const gc = activeTheme==="kimetsu"
+      ? {bg:"rgba(20,83,45,.65)",bd:"rgba(34,197,94,.40)",top:"#4ADE80",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
+      : isDarkMode
       ? {bg:"rgba(34,197,94,0.10)",bd:"rgba(34,197,94,0.25)",top:"#22C55E",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
       : activeTheme==="onepiece"
       ? {bg:"rgba(220,252,231,.65)",bd:"rgba(134,239,172,.7)",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"}
       : {bg:"#F0FDF4",bd:"#DCFCE7",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"};
-    const oc = isDarkMode
+    const oc = activeTheme==="kimetsu"
+      ? {bg:"rgba(120,20,30,.65)",bd:"rgba(198,43,58,.40)",top:"#E84055",h:"#FDBA74",sub:"#FB923C",div:"rgba(198,43,58,.40)",p:"#FDBA74",str:"#E84055"}
+      : isDarkMode
       ? {bg:"rgba(249,115,22,0.10)",bd:"rgba(249,115,22,0.25)",top:"#F97316",h:"#FDBA74",sub:"#FB923C",div:"rgba(249,115,22,0.25)",p:"#FDBA74",str:"#FB923C"}
       : activeTheme==="onepiece"
       ? {bg:"rgba(255,237,213,.65)",bd:"rgba(253,186,116,.7)",top:"#F97316",h:"#9A3412",sub:"#C2410C",div:"rgba(253,186,116,.7)",p:"#9A3412",str:"#7C2D12"}
