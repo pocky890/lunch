@@ -458,7 +458,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-25 15:20";
+  const BUILD_TIME = "2026-06-25 15:25";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4569,9 +4569,9 @@ function App() {
               <button onClick={doJoin} disabled={isLoading}>
                 {isLoading ? "處理中..." : isEditing ? "確認修改" : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
               </button>
-              {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}}>重新設定時間</button>}
-              <div className="divider" />
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
+              <div className="divider" />
+              {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}}>重新設定時間</button>}
             </div>
           </div>
           <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
