@@ -164,12 +164,15 @@
     body.dark-mode[data-theme="onepiece"] .card, body.dark-mode[data-theme="onepiece"] .stat-card, body.dark-mode[data-theme="onepiece"] .empty-state { backdrop-filter: blur(8px); }
     body[data-theme="onepiece"] .result-number:not(.result-number-scorched) { background: linear-gradient(135deg, #C0392B 0%, #E74C3C 60%, #922B21 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     body[data-theme="onepiece"] { --c-green-bg:rgba(220,252,231,.68); --c-green-bd:rgba(134,239,172,.7); --c-pink-bg:rgba(253,242,248,.68); --c-pink-bd:rgba(249,168,212,.7); --c-blue-bg:rgba(219,234,254,.68); --c-blue-bd:rgba(147,197,253,.7); --c-orange-bg:rgba(255,237,213,.68); --c-orange-bd:rgba(253,186,116,.7); --c-amber-bg:rgba(254,249,195,.68); --c-amber-bd:rgba(252,211,77,.7); }
-    body[data-theme="kimetsu"] .card, body[data-theme="kimetsu"] .stat-card, body[data-theme="kimetsu"] .empty-state { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    body.dark-mode[data-theme="kimetsu"] .card, body.dark-mode[data-theme="kimetsu"] .stat-card, body.dark-mode[data-theme="kimetsu"] .empty-state { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    body[data-theme="kimetsu"]:not(.dark-mode) .card, body[data-theme="kimetsu"]:not(.dark-mode) .stat-card, body[data-theme="kimetsu"]:not(.dark-mode) .empty-state { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
+    body[data-theme="aot"]:not(.dark-mode) .card, body[data-theme="aot"]:not(.dark-mode) .stat-card, body[data-theme="aot"]:not(.dark-mode) .empty-state { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
     body[data-theme="aot"] .result-number:not(.result-number-scorched) { background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #4CAF50 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     body.dark-mode[data-theme="aot"] { --c-green-bg:rgba(10,40,10,.60); --c-green-bd:rgba(46,125,50,.40); --c-pink-bg:rgba(80,10,40,.50); --c-pink-bd:rgba(180,50,100,.35); --c-blue-bg:rgba(10,30,60,.55); --c-blue-bd:rgba(50,100,180,.35); --c-orange-bg:rgba(80,40,5,.55); --c-orange-bd:rgba(200,120,30,.35); --c-amber-bg:rgba(70,50,5,.50); --c-amber-bd:rgba(200,160,30,.35); }
     body[data-theme="kimetsu"] .result-number:not(.result-number-scorched) { background: linear-gradient(135deg, #7B0D1E 0%, #C62B3A 50%, #E84055 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     body.dark-mode[data-theme="kimetsu"] { --c-green-bg:rgba(20,83,45,.55); --c-green-bd:rgba(34,197,94,.35); --c-pink-bg:rgba(131,24,67,.45); --c-pink-bd:rgba(244,114,182,.35); --c-blue-bg:rgba(23,37,84,.55); --c-blue-bd:rgba(147,197,253,.35); --c-orange-bg:rgba(124,45,18,.50); --c-orange-bd:rgba(253,186,116,.35); --c-amber-bg:rgba(120,53,15,.50); --c-amber-bd:rgba(252,211,77,.35); }
     body.dark-mode[data-theme="onepiece"] { --c-green-bg:rgba(20,83,45,.55); --c-green-bd:rgba(34,197,94,.35); --c-pink-bg:rgba(131,24,67,.45); --c-pink-bd:rgba(244,114,182,.35); --c-blue-bg:rgba(23,37,84,.55); --c-blue-bd:rgba(147,197,253,.35); --c-orange-bg:rgba(124,45,18,.50); --c-orange-bd:rgba(253,186,116,.35); --c-amber-bg:rgba(120,53,15,.50); --c-amber-bd:rgba(252,211,77,.35); }
+    body[data-theme="aot"]:not(.dark-mode), body[data-theme="kimetsu"]:not(.dark-mode) { --c-green-bg:rgba(220,252,231,.68); --c-green-bd:rgba(134,239,172,.7); --c-pink-bg:rgba(253,242,248,.68); --c-pink-bd:rgba(249,168,212,.7); --c-blue-bg:rgba(219,234,254,.68); --c-blue-bd:rgba(147,197,253,.7); --c-orange-bg:rgba(255,237,213,.68); --c-orange-bd:rgba(253,186,116,.7); --c-amber-bg:rgba(254,249,195,.68); --c-amber-bd:rgba(252,211,77,.7); }
     .op-wave { position: absolute; bottom: -28px; left: 0; width: 200%; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28'%3E%3Cpath d='M0,14 C200,28 400,0 600,14 C800,28 1000,0 1200,14 L1200,28 L0,28Z' fill='%230E1A34'/%3E%3C/svg%3E") repeat-x; animation: opWave 7s linear infinite; pointer-events: none; z-index:1; }
     @keyframes opWave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     .km-petals { position:absolute; bottom:0; left:0; width:100%; height:0; pointer-events:none; overflow:visible; z-index:2; }
@@ -491,13 +494,15 @@
     cloud:      { name:"奶油雲朵", emoji:"☁️",  desc:"輕柔夢幻薰衣草",  defaultPrice:300, dark:false,
       vars:{ "--bg":"#F5F5FF","--s1":"#FFFFFF","--s2":"#EEEFFF","--s3":"#E0E2FF","--s4":"#CECFFF","--b1":"#B0B4F5","--b2":"#8888DC","--b3":"#5C5CB8","--t1":"#1A1850","--t2":"#38367A","--t3":"#6060A8","--a":"#7C4DFF","--a2":"#651FFF","--ah":"#B388FF","--abg":"rgba(124,77,255,.08)","--abd":"rgba(124,77,255,.25)" },
       bg:"radial-gradient(circle at 25% 25%, rgba(180,180,255,.4), transparent 40%), radial-gradient(circle at 75% 75%, rgba(160,160,255,.25), transparent 35%), #F5F5FF" },
-    aot:        { name:"進擊的巨人", emoji:"⚔️",  desc:"超大型巨人威脅下的人類",  defaultPrice:500, dark:true,
+    aot:        { name:"進擊的巨人", emoji:"⚔️",  desc:"超大型巨人威脅下的人類",  defaultPrice:500, dark:true, autoBgMode:true,
       vars:{ "--bg":"#0A0D0A","--s1":"rgba(12,18,12,.90)","--s2":"rgba(12,18,12,.75)","--s3":"rgba(10,20,10,.72)","--s4":"rgba(10,20,10,.82)","--b1":"rgba(70,110,70,.28)","--b2":"rgba(70,110,70,.45)","--b3":"rgba(70,110,70,.65)","--t1":"#E8F0E8","--t2":"#B4C8B4","--t3":"#789878","--a":"#2E7D32","--a2":"#1B5E20","--ah":"#4CAF50","--abg":"rgba(46,125,50,.12)","--abd":"rgba(46,125,50,.35)" },
+      varsLight:{ "--bg":"#EAF1EA","--s1":"rgba(255,255,255,.62)","--s2":"rgba(235,245,235,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(20,40,20,.18)","--b2":"rgba(20,40,20,.30)","--b3":"rgba(20,40,20,.48)","--t1":"#14280C","--t2":"#2A4C18","--t3":"#4E7838","--a":"#2E7D32","--a2":"#1B5E20","--ah":"#4CAF50","--abg":"rgba(46,125,50,.12)","--abd":"rgba(46,125,50,.32)" },
       bg:"linear-gradient(rgba(8,12,8,.50),rgba(8,12,8,.50)), url('theme/attack_on_titan/607893_c.jpg') center/cover fixed",
       logoImg:"theme/attack_on_titan/logo.png", headerCrack:true,
       backgrounds:["607893_c.jpg","607705_c.jpg","612514_c.jpg","656796_c.jpg","747115_c.jpg","814968_c.jpg","924919_c.jpg","1126962_c.jpg","1138875_c.jpg"] },
-    kimetsu:    { name:"鬼滅之刃", emoji:"🗡️",  desc:"水の呼吸・壱ノ型",   defaultPrice:500, dark:true,
+    kimetsu:    { name:"鬼滅之刃", emoji:"🗡️",  desc:"水の呼吸・壱ノ型",   defaultPrice:500, dark:true, autoBgMode:true,
       vars:{ "--bg":"#0D0A1A","--s1":"rgba(15,8,28,.95)","--s2":"rgba(15,8,28,.65)","--s3":"rgba(180,20,40,.08)","--s4":"rgba(180,20,40,.14)","--b1":"rgba(180,30,50,.22)","--b2":"rgba(180,30,50,.40)","--b3":"rgba(180,30,50,.65)","--t1":"#FFF0F2","--t2":"#E8C0C8","--t3":"#B88090","--a":"#C62B3A","--a2":"#9E1F2C","--ah":"#E84055","--abg":"rgba(198,43,58,.12)","--abd":"rgba(198,43,58,.35)" },
+      varsLight:{ "--bg":"#F3E9EC","--s1":"rgba(255,255,255,.62)","--s2":"rgba(248,235,240,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(74,20,30,.18)","--b2":"rgba(74,20,30,.30)","--b3":"rgba(74,20,30,.48)","--t1":"#2D0810","--t2":"#6B1525","--t3":"#9E3545","--a":"#C62B3A","--a2":"#9E1F2C","--ah":"#E84055","--abg":"rgba(198,43,58,.12)","--abd":"rgba(198,43,58,.32)" },
       bg:"linear-gradient(rgba(5,3,15,.60),rgba(5,3,15,.60)), url('theme/kimetsu/1049964_c.jpg') center/cover fixed",
       logoImg:"theme/kimetsu/logo.png", headerPetals:true,
       backgrounds:["1049964_c.jpg","1153480_1_c.jpg","1316632_c.jpg","1317019_c.jpg","1343744_c.jpg","1348830_c.jpg","1349192_c.jpg","1363243_c.jpg"] },
@@ -526,7 +531,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 10:57";
+  const BUILD_TIME = "2026-06-26 11:19";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -763,7 +768,15 @@ function applyTheme(themeId, bgOverride, mode) {
   if (isDark) body.classList.add("dark-mode");
   else body.classList.remove("dark-mode");
   if (theme.bg) {
-    if (bgOverride && theme.backgrounds?.includes(bgOverride)) {
+    if (theme.autoBgMode && theme.backgrounds) {
+      const dir = theme.bg.match(/url\('([^']*\/)/)?.[1] || "";
+      const file = (bgOverride && theme.backgrounds.includes(bgOverride)) ? bgOverride : theme.backgrounds[0];
+      // 遮罩依模式：深色用主題原本的遮罩；淺色主題（如航海王）不加；深色主題翻成淺色時改用淡白罩
+      const prefix = isDark
+        ? theme.bg.slice(0, theme.bg.indexOf("url("))
+        : (theme.dark ? "linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,.18)), " : "");
+      body.style.background = `${prefix}url('${dir}${file}') center/cover fixed`;
+    } else if (bgOverride && theme.backgrounds?.includes(bgOverride)) {
       const dir = theme.bg.match(/url\('([^']*\/)/)?.[1] || "";
       const prefix = theme.bg.slice(0, theme.bg.indexOf("url("));
       body.style.background = `${prefix}url('${dir}${bgOverride}') center/cover fixed`;
@@ -5044,22 +5057,23 @@ function App() {
     const maxTotal = nonWinnerCount * soloTreatPerPerson;
     const perWinner = soloWinners.length > 1 ? Math.floor(maxTotal / soloWinners.length) : maxTotal;
     // 深色模式下 winner 卡片 & 排名列替代色
-    const gc = activeTheme==="aot"
+    const imgTheme = activeTheme==="onepiece"||activeTheme==="aot"||activeTheme==="kimetsu";
+    const gc = isDarkMode && activeTheme==="aot"
       ? {bg:"rgba(10,40,10,.70)",bd:"rgba(46,125,50,.45)",top:"#4CAF50",h:"#A5D6A7",sub:"#66BB6A",str:"#4CAF50"}
-      : activeTheme==="kimetsu"
+      : isDarkMode && activeTheme==="kimetsu"
       ? {bg:"rgba(20,83,45,.65)",bd:"rgba(34,197,94,.40)",top:"#4ADE80",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
       : isDarkMode
       ? {bg:"rgba(34,197,94,0.10)",bd:"rgba(34,197,94,0.25)",top:"#22C55E",h:"#86EFAC",sub:"#4ADE80",str:"#22C55E"}
-      : activeTheme==="onepiece"
+      : imgTheme
       ? {bg:"rgba(220,252,231,.65)",bd:"rgba(134,239,172,.7)",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"}
       : {bg:"#F0FDF4",bd:"#DCFCE7",top:"#22C55E",h:"#166534",sub:"#15803D",str:"#14532D"};
-    const oc = activeTheme==="aot"
+    const oc = isDarkMode && activeTheme==="aot"
       ? {bg:"rgba(60,30,5,.70)",bd:"rgba(150,90,20,.45)",top:"#FFA726",h:"#FFCC80",sub:"#FFB74D",div:"rgba(150,90,20,.45)",p:"#FFCC80",str:"#FFA726"}
-      : activeTheme==="kimetsu"
+      : isDarkMode && activeTheme==="kimetsu"
       ? {bg:"rgba(120,20,30,.65)",bd:"rgba(198,43,58,.40)",top:"#E84055",h:"#FDBA74",sub:"#FB923C",div:"rgba(198,43,58,.40)",p:"#FDBA74",str:"#E84055"}
       : isDarkMode
       ? {bg:"rgba(249,115,22,0.10)",bd:"rgba(249,115,22,0.25)",top:"#F97316",h:"#FDBA74",sub:"#FB923C",div:"rgba(249,115,22,0.25)",p:"#FDBA74",str:"#FB923C"}
-      : activeTheme==="onepiece"
+      : imgTheme
       ? {bg:"rgba(255,237,213,.65)",bd:"rgba(253,186,116,.7)",top:"#F97316",h:"#9A3412",sub:"#C2410C",div:"rgba(253,186,116,.7)",p:"#9A3412",str:"#7C2D12"}
       : {bg:"#FFF7ED",bd:"#FFEDD5",top:"#F97316",h:"#9A3412",sub:"#C2410C",div:"#FED7AA",p:"#9A3412",str:"#7C2D12"};
     return (

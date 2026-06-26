@@ -80,12 +80,14 @@ session/                當日設定（numMax 等）
 ```
 
 **autoBgMode（依背景亮度自動切深/淺）**
-- 目前只有航海王（onepiece）啟用。aot/kimetsu 尚未做（要擴充見下）。
+- 三個背景圖主題（onepiece / aot / kimetsu）全部啟用。
 - 機制：`detectBgDark(url)` 用 canvas 取背景圖中央區平均亮度（門檻 135），結果快取。`applyThemeAuto(themeId, bgFile)` 先用主模式同步套用，偵測完成再用 `applyTheme(id, bg, "dark"|"light")` 修正，並 `setBgDark()` 讓 `isDarkMode`（已改為 state）連動圖表/開獎頁。
 - 主模式（= `dark` 欄位）保留手調 `vars`；相反模式用 `varsDark`/`varsLight`。
-- **寫死的 per-theme CSS 必須依 `.dark-mode` gating**：例如 onepiece 卡片 override 要寫 `body[data-theme="onepiece"]:not(.dark-mode) .card`，深色模式才會 fallback 到通用 `body.dark-mode .card`。
-- **語意色 `--c-*` 必須補一組半透明深色版**：`body.dark-mode` 的 `--c-*-bg` 是**實心 hex**（不透明），背景圖主題若沒補 `body.dark-mode[data-theme="xxx"]` 半透明版，banner（口渴卡/加號卡/壽星/卡牌等）會變成不透明色塊蓋住背景圖。三個主題都已各補一條（值與 kimetsu 相同）。
-- 擴充 aot/kimetsu：加 `autoBgMode:true` + `varsLight`（它們主模式是深色），並把寫死的深色 per-theme CSS 補上 `:not(.dark-mode)` 的淺色那半，逐張背景用 preview 驗證。
+- **遮罩依模式（applyTheme bg 段）**：aot/kimetsu 的 `bg` 烤了深色遮罩，偵測的是原圖、實際顯示被壓暗。所以深色模式用主題原遮罩、深色主題翻成淺色時改用淡白罩（`rgba(255,255,255,.18)`）讓亮背景真的亮起來。onepiece 無遮罩兩模式皆不加。**這是 aot/kimetsu 能做 autoBgMode 的關鍵**——只加 `varsLight` 而不換遮罩，淺色 UI 會壓在暗背景上看不清。
+- **寫死的 per-theme CSS 必須依 `.dark-mode` gating**：卡片 override 寫 `body[data-theme="xxx"]:not(.dark-mode) .card`（淺色半透明白）；深色交給通用 `body.dark-mode .card`。
+- **語意色 `--c-*` 兩個模式都要補半透明版**：`:root`/`body` 預設與 `body.dark-mode` 的 `--c-*-bg` 都是**實心 hex**（不透明），背景圖主題淺色要補 `body[data-theme="xxx"]:not(.dark-mode)`、深色要補 `body.dark-mode[data-theme="xxx"]`，否則 banner（口渴卡/加號卡/壽星/卡牌等）變不透明色塊蓋住背景。
+- **開獎頁 gc/oc**：aot/kimetsu 深色色板只在 `isDarkMode` 時用；淺色模式三主題共用半透明淺色（`imgTheme` 分支），避免實心 `#F0FDF4` 蓋住背景。
+- kimetsu 只有 1 張背景偏亮、aot 有 4 張，門檻 135 已驗證能正確分類各背景。
 
 ### 新增客製化主題的完整清單
 
