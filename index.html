@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 17:09";
+  const BUILD_TIME = "2026-06-26 17:11";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5297,6 +5297,7 @@ function App() {
                         <span style={{fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)",display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
                           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
                           {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
+                          {bonusDayToday && allDiceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 5px"}}>×{allDiceRolls[sanitizeKey(p.name)]}</span>}
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
                       </div>
