@@ -173,6 +173,16 @@
     body.dark-mode[data-theme="kimetsu"] { --c-green-bg:rgba(20,83,45,.55); --c-green-bd:rgba(34,197,94,.35); --c-pink-bg:rgba(131,24,67,.45); --c-pink-bd:rgba(244,114,182,.35); --c-blue-bg:rgba(23,37,84,.55); --c-blue-bd:rgba(147,197,253,.35); --c-orange-bg:rgba(124,45,18,.50); --c-orange-bd:rgba(253,186,116,.35); --c-amber-bg:rgba(120,53,15,.50); --c-amber-bd:rgba(252,211,77,.35); }
     body.dark-mode[data-theme="onepiece"] { --c-green-bg:rgba(20,83,45,.55); --c-green-bd:rgba(34,197,94,.35); --c-pink-bg:rgba(131,24,67,.45); --c-pink-bd:rgba(244,114,182,.35); --c-blue-bg:rgba(23,37,84,.55); --c-blue-bd:rgba(147,197,253,.35); --c-orange-bg:rgba(124,45,18,.50); --c-orange-bd:rgba(253,186,116,.35); --c-amber-bg:rgba(120,53,15,.50); --c-amber-bd:rgba(252,211,77,.35); }
     body[data-theme="aot"]:not(.dark-mode), body[data-theme="kimetsu"]:not(.dark-mode) { --c-green-bg:rgba(220,252,231,.68); --c-green-bd:rgba(134,239,172,.7); --c-pink-bg:rgba(253,242,248,.68); --c-pink-bd:rgba(249,168,212,.7); --c-blue-bg:rgba(219,234,254,.68); --c-blue-bd:rgba(147,197,253,.7); --c-orange-bg:rgba(255,237,213,.68); --c-orange-bd:rgba(253,186,116,.7); --c-amber-bg:rgba(254,249,195,.68); --c-amber-bd:rgba(252,211,77,.7); }
+    @keyframes diceFallBounce {
+      0%   { transform: translateY(-80px) scale(1.1); opacity:0; }
+      50%  { opacity:1; }
+      62%  { transform: translateY(0px) scale(1); }
+      72%  { transform: translateY(-14px) scale(1.06); }
+      82%  { transform: translateY(0px) scale(0.97); }
+      90%  { transform: translateY(-6px) scale(1.02); }
+      100% { transform: translateY(0px) scale(1); }
+    }
+    .dice-fall { animation: diceFallBounce 1.3s cubic-bezier(.33,0,.66,1) forwards; }
     .op-wave { position: absolute; bottom: -28px; left: 0; width: 200%; height: 28px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 28'%3E%3Cpath d='M0,14 C200,28 400,0 600,14 C800,28 1000,0 1200,14 L1200,28 L0,28Z' fill='%230E1A34'/%3E%3C/svg%3E") repeat-x; animation: opWave 7s linear infinite; pointer-events: none; z-index:1; }
     @keyframes opWave { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     .km-petals { position:absolute; bottom:0; left:0; width:100%; height:0; pointer-events:none; overflow:visible; z-index:2; }
@@ -531,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 15:17";
+  const BUILD_TIME = "2026-06-26 16:31";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -741,6 +751,23 @@ function isLastWorkingDayOfMonth() {
 }
 function isDeadlinePassed(dl) { const now = new Date(), [h,m] = dl.split(":").map(Number); return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m); }
 function isDoubleDay(dateStr) { if (!dateStr && TEST_MODE && new URLSearchParams(location.search).has("specialday")) return true; const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
+function getWeeklyBonusDay() {
+  const d = new Date();
+  const thu = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + 4 - (d.getDay() || 7)));
+  const yearStart = new Date(Date.UTC(thu.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((thu - yearStart) / 86400000) + 1) / 7);
+  const seed = thu.getUTCFullYear() * 100 + weekNum;
+  const dow = ((seed * 1103515245 + 12345) >>> 0) % 5;
+  const today = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const daysToMon = d.getDay() === 0 ? -6 : 1 - d.getDay();
+  const mon = new Date(today); mon.setDate(today.getDate() + daysToMon);
+  const bonus = new Date(mon); bonus.setDate(mon.getDate() + dow);
+  return `${bonus.getFullYear()}-${String(bonus.getMonth()+1).padStart(2,"0")}-${String(bonus.getDate()).padStart(2,"0")}`;
+}
+function isBonusDay() {
+  if (TEST_MODE && new URLSearchParams(location.search).has("bonusday")) return true;
+  return getWeeklyBonusDay() === todayStr();
+}
 function calcCountdown(dl) {
   const now = new Date(), [h,m] = dl.split(":").map(Number);
   const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
@@ -836,13 +863,19 @@ async function givePointsForDay(ptsList, absentList, dateStr) {
   let claimed = false;
   await fRef(`pointsAwarded/${dateStr}`).transaction(cur => { if (cur) return; claimed = true; return true; });
   if (!claimed) return;
+  const isBonus = getWeeklyBonusDay() === dateStr;
+  const diceRolls = isBonus ? (await fGet(`dailyDice/${dateStr}`) || {}) : {};
   for (const p of ptsList) {
-    await fRef(`userPoints/${sanitizeKey(p.name)}`).transaction(n => (n||0) + 10);
-    logPointsEntry(sanitizeKey(p.name), "participate", 10, dateStr);
+    const mult = isBonus ? (diceRolls[sanitizeKey(p.name)] || 1) : 1;
+    const pts = 10 * mult;
+    await fRef(`userPoints/${sanitizeKey(p.name)}`).transaction(n => (n||0) + pts);
+    logPointsEntry(sanitizeKey(p.name), isBonus ? "participate_bonus" : "participate", pts, dateStr);
   }
   for (const name of absentList) {
-    await fRef(`userPoints/${sanitizeKey(name)}`).transaction(n => (n||0) + 5);
-    logPointsEntry(sanitizeKey(name), "absent", 5, dateStr);
+    const mult = isBonus ? (diceRolls[sanitizeKey(name)] || 1) : 1;
+    const pts = 5 * mult;
+    await fRef(`userPoints/${sanitizeKey(name)}`).transaction(n => (n||0) + pts);
+    logPointsEntry(sanitizeKey(name), isBonus ? "absent_bonus" : "absent", pts, dateStr);
   }
 }
 
@@ -2227,6 +2260,39 @@ function BirthdayBanner({ todayBirthdays }) {
   );
 }
 
+function BonusDayBanner({ myDiceRoll }) {
+  const FACES = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+  const [face, setFace] = React.useState("🎲");
+  const [settled, setSettled] = React.useState(false);
+  const [animKey, setAnimKey] = React.useState(0);
+  React.useEffect(() => {
+    if (!myDiceRoll) return;
+    setSettled(false); setFace("🎲"); setAnimKey(k => k + 1);
+    let delay = 70, elapsed = 0;
+    const tick = () => {
+      elapsed += delay;
+      if (elapsed < 1600) {
+        setFace(FACES[Math.floor(Math.random() * 6)]);
+        delay = Math.min(delay * 1.09, 300);
+        setTimeout(tick, delay);
+      } else {
+        setFace(FACES[myDiceRoll - 1]);
+        setSettled(true);
+      }
+    };
+    setTimeout(tick, 350);
+  }, [myDiceRoll]);
+  return (
+    <div style={{textAlign:"center",padding:"14px 16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"12px"}}>
+      <div key={animKey} className={myDiceRoll ? "dice-fall" : ""} style={{fontSize:"40px",lineHeight:1,marginBottom:"6px",display:"inline-block"}}>{face}</div>
+      <div style={{fontSize:"14px",fontWeight:"600",color:"var(--c-amber-tx)"}}>
+        {settled ? `🎲 今日點數 ${myDiceRoll}× 加倍！${myDiceRoll >= 5 ? " 🔥" : ""}` : "今天是點數加倍日！骰子搖搖中…"}
+      </div>
+      {settled && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"4px"}}>參加得 {10*myDiceRoll} 點 · 不參加得 {5*myDiceRoll} 點</div>}
+    </div>
+  );
+}
+
 function TestModeBanner() {
   if (!TEST_MODE) return null;
   return (
@@ -2662,7 +2728,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
   );
 }
 
-function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles = {}, titleShopConfig = {}}) {
+function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles = {}, titleShopConfig = {}, diceRolls = {}, bonusDayToday = false}) {
   const empty = (!list || list.length === 0) && absent.length === 0;
   if (empty) return <div className="empty-state"><p style={{fontWeight:"500",color:"var(--t2)",fontSize:"15px",marginTop:0}}>尚無人加入</p><p>等待其他人參與...</p></div>;
   return (
@@ -2679,6 +2745,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
               {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title" style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
             </span>
+            {bonusDayToday && diceRolls[sanitizeKey(p.name)] && <span className="badge badge-gold" style={{flexShrink:0,fontSize:"11px",padding:"1px 5px",marginRight:"2px"}}>{diceRolls[sanitizeKey(p.name)]}×</span>}
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"4px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲 ?" : p.rest}</span>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
           </div>
@@ -2691,6 +2758,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
           <div key={name} style={{display:"flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"var(--s3)",border:"1px solid var(--b1)",marginBottom:"4px",opacity:0.7}}>
             <span style={{fontSize:"13px",color:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>🙅 {name}</span>
             {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(name)], titleShopConfig); return a ? <span className="badge badge-title" style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
+            {bonusDayToday && diceRolls[sanitizeKey(name)] && <span className="badge badge-gold" style={{flexShrink:0,fontSize:"11px",padding:"1px 5px"}}>{diceRolls[sanitizeKey(name)]}×</span>}
           </div>
         ))}
       </>}
@@ -4719,6 +4787,31 @@ function App() {
     if (boundName && !form.name) setForm(f => ({...f, name: boundName}));
   }, [boundName]);
 
+  const bonusDayToday = isBonusDay();
+  const [myDiceRoll, setMyDiceRoll] = useState(null);
+  const [allDiceRolls, setAllDiceRolls] = useState({});
+
+  useEffect(() => {
+    if (!bonusDayToday || !boundName) return;
+    const today = todayStr(), key = sanitizeKey(boundName);
+    (async () => {
+      const existing = await fGet(`dailyDice/${today}/${key}`);
+      if (existing != null) { setMyDiceRoll(existing); return; }
+      const roll = Math.floor(Math.random() * 6) + 1;
+      await fRef(`dailyDice/${today}/${key}`).transaction(cur => cur === null ? roll : undefined);
+      const final = await fGet(`dailyDice/${today}/${key}`);
+      setMyDiceRoll(final);
+    })();
+  }, [boundName, bonusDayToday]);
+
+  useEffect(() => {
+    if (!bonusDayToday) return;
+    const ref = fRef(`dailyDice/${todayStr()}`);
+    const handler = snap => setAllDiceRolls(snap.val() || {});
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, [bonusDayToday]);
+
   const numMax = sess?.numMax || 99;
   const effectiveNumMax = isDoubleDay() ? Math.ceil(numMax / 2) : numMax;
   const isBirthday = todayBirthdays.some(b => b.name === boundName)
@@ -4800,7 +4893,7 @@ function App() {
       <SiteHeader onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
+        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
           <div className="card">
@@ -4825,7 +4918,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
-        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
+        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning pts={pts} weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} />
         <div className="grid-3">
@@ -4954,7 +5047,7 @@ function App() {
               {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}}>重新設定時間</button>}
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} diceRolls={allDiceRolls} bonusDayToday={bonusDayToday} /></div>
         </div>
       </div>
       {toastMsg && <div className="toast-container">{toastMsg}</div>}
@@ -4975,7 +5068,7 @@ function App() {
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
-          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
+          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning pts={pts} weekly={weekly} />
           <div className="grid-3">
             <div className="col">
@@ -4985,7 +5078,7 @@ function App() {
               </div>
             </div>
             <div className="col"><div className="card"><h2 style={{fontSize:"18px",marginBottom:"24px"}}>你的選擇已送出</h2><button className="ghost" onClick={editMyEntry} style={{marginBottom:"16px"}}>修改我的選擇</button><button className="ghost btn-danger" onClick={handleCancel} style={{marginBottom:"16px"}}>取消參加</button>{isAdmin && <><div className="divider" /><button className="ghost btn-danger" style={{width:"100%"}} onClick={()=>{setConfirmModal(true);}}>清除今日遊戲</button></>}</div></div>
-            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
+            <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} diceRolls={allDiceRolls} bonusDayToday={bonusDayToday} /></div>
           </div>
         </div>
         <Footer />
@@ -5000,7 +5093,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
-        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
+        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -5016,7 +5109,7 @@ function App() {
               <button onClick={doCancelAbsent} className="ghost">改變心意，我要參加！</button>
             </div>
           </div>
-          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} /></div>
+          <div className="col"><PtList list={pts} absent={absent} hideNumbers={!numbersRevealed} weekly={weekly} userTitles={userTitles} titleShopConfig={titleShopConfig} diceRolls={allDiceRolls} bonusDayToday={bonusDayToday} /></div>
         </div>
       </div>
       <Footer />
@@ -5042,7 +5135,7 @@ function App() {
         <SiteHeader title="開獎結果" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
+          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
           <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} titleShopConfig={titleShopConfig} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
@@ -5083,7 +5176,7 @@ function App() {
         <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />
+          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
