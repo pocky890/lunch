@@ -75,9 +75,18 @@ session/                當日設定（numMax 等）
   logoImg: "theme/xxx/logo.png",  // 有值時替換 header ◈ 圖示，文字仍保留
   headerWave: true,     // 有值時 SiteHeader 加 op-header class + op-wave 動畫條
   autoBgMode: true,     // 多背景主題：依選定背景圖亮度自動切深/淺 UI（見下方說明）
+  backgrounds: ["bg_1.jpg","bg_2.jpg",...],  // 多背景主題的背景檔名清單（相對於 theme/{id}/ 目錄）
   varsDark: { ... },    // autoBgMode 且主模式為淺色時，提供深色那半色板（反之用 varsLight）
 }
 ```
+
+**多背景選擇（backgrounds 陣列）**
+- `backgrounds` 列出所有可選的背景圖檔名（相對於 `theme/{id}/` 目錄，不含路徑前綴）。
+- App 層用 `themeBgSelections` state（`{[themeId]: filename}`）記錄各主題目前選了哪張；預設為 `backgrounds[0]`。
+- 使用者在 ThemeModal 點選縮圖時呼叫 `onBgSelect(themeId, filename)`，更新 `themeBgSelections` 並立即呼叫 `applyThemeAuto(themeId, filename)` 套用。
+- 切換背景只更新本地 state，不寫 Firebase（關掉 Modal 後若不 Activate 就不會儲存）。
+- ThemeModal 內的 `previewBgSel` 是獨立的 local state，僅管理「預覽時的背景選擇」，不影響 `themeBgSelections`。背景選擇器的顯示條件：`previewTheme` 存在時顯示（任何人都能預覽選圖）；沒有 previewTheme 時只有已擁有該主題才顯示。
+- 新增多背景主題時，`backgrounds` 陣列第一張即為預設，建議選偏暗的圖作為 index 0（讓深色 UI 作為初見印象）。
 
 **autoBgMode（依背景亮度自動切深/淺）**
 - 三個背景圖主題（onepiece / aot / kimetsu）全部啟用。
