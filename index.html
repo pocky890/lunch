@@ -431,9 +431,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 6, rules: 5, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 6, rules: 6, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 16:34";
+  const BUILD_TIME = "2026-06-26 16:37";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1205,6 +1205,10 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🛒 發薪日優惠{newSections.includes("payday") && <NewDot />}</div>
             <div>每月<strong style={{color:"var(--t1)"}}>最後一個工作日</strong>（遇假日自動提前），點數商店全館 <strong style={{color:"var(--t1)"}}>8 折</strong>。購物車按鈕上方會出現紅色「On Sale!」標語提示。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎲 點數加倍日{newSections.includes("bonusday") && <NewDot />}</div>
+            <div>每週隨機一天（週一到週五）為點數加倍日。進入遊戲後，畫面上方會出現骰子動畫，每人各自擲出 1～6 點，當天點數回饋依個人骰子結果倍增：<strong style={{color:"var(--t1)"}}>參加得 10 × 骰子點數</strong>、<strong style={{color:"var(--t1)"}}>不參加得 5 × 骰子點數</strong>。參加者名單的每張卡片上也會顯示各人的倍率。</div>
           </div>
 
         </div>
