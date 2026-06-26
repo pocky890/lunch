@@ -501,7 +501,7 @@
       backgrounds:["1049964_c.jpg","1153480_1_c.jpg","1316632_c.jpg","1317019_c.jpg","1343744_c.jpg","1348830_c.jpg","1349192_c.jpg","1363243_c.jpg"] },
     onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false,
       vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
-      bg:"url('theme/one_piece/bg_0.jpg') center/cover fixed",
+      bg:"url('theme/one_piece/bg_6.jpg') center/cover fixed",
       logoImg:"theme/one_piece/logo.png", headerWave:true,
       backgrounds:["bg_6.jpg","164963_c.jpg","714349_c.jpg","851034_c.jpg","851037_c.jpg","851071_c.jpg","851072_c.jpg","905284_c.jpg"] },
   };
@@ -523,7 +523,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 00:47";
+  const BUILD_TIME = "2026-06-26 09:01";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1969,8 +1969,10 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
 }
 
 /* ── Theme Modal ── */
-function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose, discountRate = 1, themeBgSelections = {}, onSelectBg }) {
+function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, userPoints, onActivate, onPreview, onCancelPreview, onBuy, onClose, discountRate = 1, themeBgSelections = {}, onSelectBg, onPreviewBg }) {
   const ep = p => Math.floor(p * discountRate);
+  const [previewBgSel, setPreviewBgSel] = React.useState(null);
+  React.useEffect(() => { setPreviewBgSel(null); }, [previewTheme]);
   const visibleThemes = Object.entries(THEMES).filter(([id, t]) => {
     if (t.free) return true;
     const cfg = themeShopConfig[id];
@@ -1990,22 +1992,30 @@ function ThemeModal({ activeTheme, previewTheme, ownedThemes, themeShopConfig, u
           <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"2px"}}>選擇你的介面主題風格</div>
         </div>
 
-        {/* 背景切換列：已啟用主題且有多張背景時顯示 */}
-        {!previewTheme && THEMES[activeTheme]?.backgrounds && ownedThemes.has(activeTheme) && (
-          <div style={{padding:"8px 12px",borderBottom:"1px solid var(--b1)",flexShrink:0}}>
-            <div style={{fontSize:"11px",color:"var(--t3)",marginBottom:"6px"}}>背景</div>
-            <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
-              {THEMES[activeTheme].backgrounds.map((bg, i) => {
-                const dir = THEMES[activeTheme].bg.match(/url\('([^']*\/)/)?.[1] || "";
-                const selected = (themeBgSelections[activeTheme] || THEMES[activeTheme].backgrounds[0]) === bg;
-                return (
-                  <div key={bg} onClick={() => onSelectBg(activeTheme, bg)}
-                    style={{width:"48px",height:"32px",borderRadius:"6px",cursor:"pointer",overflow:"hidden",border:`2px solid ${selected?"var(--a)":"var(--b1)"}`,flexShrink:0,backgroundImage:`url('${dir}${bg}')`,backgroundSize:"cover",backgroundPosition:"center",transition:"border-color .15s"}} />
-                );
-              })}
+        {/* 背景切換列：已啟用主題有多張背景，或預覽中的主題有多張背景時顯示 */}
+        {(() => {
+          const bgTheme = previewTheme || activeTheme;
+          const show = THEMES[bgTheme]?.backgrounds && (previewTheme ? true : ownedThemes.has(activeTheme));
+          if (!show) return null;
+          const dir = THEMES[bgTheme].bg.match(/url\('([^']*\/)/)?.[1] || "";
+          const curSel = previewTheme
+            ? (previewBgSel || THEMES[bgTheme].backgrounds[0])
+            : (themeBgSelections[activeTheme] || THEMES[bgTheme].backgrounds[0]);
+          return (
+            <div style={{padding:"8px 12px",borderBottom:"1px solid var(--b1)",flexShrink:0}}>
+              <div style={{fontSize:"11px",color:"var(--t3)",marginBottom:"6px"}}>背景</div>
+              <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                {THEMES[bgTheme].backgrounds.map(bg => (
+                  <div key={bg} onClick={() => {
+                    if (previewTheme) { setPreviewBgSel(bg); onPreviewBg && onPreviewBg(bg); }
+                    else { onSelectBg(activeTheme, bg); }
+                  }}
+                    style={{width:"48px",height:"32px",borderRadius:"6px",cursor:"pointer",overflow:"hidden",border:`2px solid ${curSel===bg?"var(--a)":"var(--b1)"}`,flexShrink:0,backgroundImage:`url('${dir}${bg}')`,backgroundSize:"cover",backgroundPosition:"center",transition:"border-color .15s"}} />
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 預覽 banner */}
         {previewTheme && (
@@ -4695,7 +4705,8 @@ function App() {
       themeShopConfig={themeShopConfig}
       userPoints={userPoints}
       onActivate={activateTheme}
-      onPreview={id => { setPreviewTheme(id); applyTheme(id); }}
+      onPreview={id => { setPreviewTheme(id); applyTheme(id, THEMES[id]?.backgrounds?.[0]); }}
+      onPreviewBg={bg => applyTheme(previewTheme, bg)}
       onCancelPreview={() => { setPreviewTheme(null); applyTheme(activeTheme, themeBgSelections[activeTheme]); }}
       onBuy={buyTheme}
       discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1}
