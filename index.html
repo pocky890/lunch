@@ -525,7 +525,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 10:41";
+  const BUILD_TIME = "2026-06-26 10:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4579,6 +4579,7 @@ function App() {
   function activateTheme(themeId) {
     setActiveTheme(themeId);
     setPreviewTheme(null);
+    applyThemeAuto(themeId, themeBgSelections[themeId]);
     if (!TEST_MODE && boundName) fRef(`userActiveTheme/${sanitizeKey(boundName)}`).set(themeId);
   }
 
