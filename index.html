@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 16:37";
+  const BUILD_TIME = "2026-06-26 16:38";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3597,7 +3597,9 @@ function PointsHistoryModal({ open, onClose, boundName }) {
   if (!open) return null;
   const TYPE_META = {
     participate: { emoji:"🎯", label:"參加抽獎" },
+    participate_bonus: { emoji:"🎲", label:"參加抽獎（加倍日）" },
     absent: { emoji:"🏠", label:"標記不參加" },
+    absent_bonus: { emoji:"🎲", label:"標記不參加（加倍日）" },
     admin: { emoji:"🎁", label:"管理員調整" },
     buy_card: { emoji:"🃏", label:"購買卡牌" },
     buy_title: { emoji:"🏅", label:"購買稱號" },
