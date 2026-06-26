@@ -160,7 +160,8 @@
     .site-header.op-header .has-news { box-shadow: 0 0 0 3px rgba(192,57,43,.7), 0 0 12px rgba(192,57,43,.5) !important; }
     .site-header.op-header .logo-weather, .site-header.op-header .logo-weather span { color: #C8E0FF !important; }
     .site-header.op-header .header-title-area div { color: #F0F8FF !important; }
-    body[data-theme="onepiece"] .card, body[data-theme="onepiece"] .stat-card, body[data-theme="onepiece"] .empty-state { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
+    body[data-theme="onepiece"]:not(.dark-mode) .card, body[data-theme="onepiece"]:not(.dark-mode) .stat-card, body[data-theme="onepiece"]:not(.dark-mode) .empty-state { background: rgba(255,255,255,.62) !important; backdrop-filter: blur(8px); }
+    body.dark-mode[data-theme="onepiece"] .card, body.dark-mode[data-theme="onepiece"] .stat-card, body.dark-mode[data-theme="onepiece"] .empty-state { backdrop-filter: blur(8px); }
     body[data-theme="onepiece"] .result-number:not(.result-number-scorched) { background: linear-gradient(135deg, #C0392B 0%, #E74C3C 60%, #922B21 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     body[data-theme="onepiece"] { --c-green-bg:rgba(220,252,231,.68); --c-green-bd:rgba(134,239,172,.7); --c-pink-bg:rgba(253,242,248,.68); --c-pink-bd:rgba(249,168,212,.7); --c-blue-bg:rgba(219,234,254,.68); --c-blue-bd:rgba(147,197,253,.7); --c-orange-bg:rgba(255,237,213,.68); --c-orange-bd:rgba(253,186,116,.7); --c-amber-bg:rgba(254,249,195,.68); --c-amber-bd:rgba(252,211,77,.7); }
     body[data-theme="kimetsu"] .card, body[data-theme="kimetsu"] .stat-card, body[data-theme="kimetsu"] .empty-state { backdrop-filter: none; -webkit-backdrop-filter: none; }
@@ -499,8 +500,9 @@
       bg:"linear-gradient(rgba(5,3,15,.60),rgba(5,3,15,.60)), url('theme/kimetsu/1049964_c.jpg') center/cover fixed",
       logoImg:"theme/kimetsu/logo.png", headerPetals:true,
       backgrounds:["1049964_c.jpg","1153480_1_c.jpg","1316632_c.jpg","1317019_c.jpg","1343744_c.jpg","1348830_c.jpg","1349192_c.jpg","1363243_c.jpg"] },
-    onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false,
+    onepiece:   { name:"航海王",   emoji:"🏴‍☠️", desc:"草帽海賊團的冒險",   defaultPrice:500, dark:false, autoBgMode:true,
       vars:{ "--bg":"#C8DFF0","--s1":"rgba(255,255,255,.62)","--s2":"rgba(220,235,248,.52)","--s3":"rgba(255,255,255,.75)","--s4":"rgba(255,255,255,.60)","--b1":"rgba(26,42,74,.18)","--b2":"rgba(26,42,74,.30)","--b3":"rgba(26,42,74,.48)","--t1":"#0F1E38","--t2":"#1E3A6A","--t3":"#3D5A8A","--a":"#C0392B","--a2":"#A93226","--ah":"#E74C3C","--abg":"rgba(192,57,43,.12)","--abd":"rgba(192,57,43,.32)" },
+      varsDark:{ "--bg":"#0A1726","--s1":"rgba(12,24,42,.82)","--s2":"rgba(12,24,42,.66)","--s3":"rgba(255,255,255,.06)","--s4":"rgba(255,255,255,.10)","--b1":"rgba(255,255,255,.14)","--b2":"rgba(255,255,255,.24)","--b3":"rgba(255,255,255,.40)","--t1":"#EAF2FB","--t2":"#BCCCDD","--t3":"#8194A8","--a":"#E74C3C","--a2":"#C0392B","--ah":"#FF6B5B","--abg":"rgba(231,76,60,.16)","--abd":"rgba(231,76,60,.42)" },
       bg:"url('theme/one_piece/bg_6.jpg') center/cover fixed",
       logoImg:"theme/one_piece/logo.png", headerWave:true,
       backgrounds:["bg_6.jpg","164963_c.jpg","714349_c.jpg","851034_c.jpg","851037_c.jpg","851071_c.jpg","851072_c.jpg","905284_c.jpg"] },
@@ -523,7 +525,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 10:17";
+  const BUILD_TIME = "2026-06-26 10:41";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -747,13 +749,17 @@ function getWeekDates() {
 function snapToArr(val) { return Object.values(val||{}).sort((a,b)=>a.joinedAt-b.joinedAt); }
 
 const THEME_VAR_KEYS = ["--bg","--s1","--s2","--s3","--s4","--b1","--b2","--b3","--t1","--t2","--t3","--a","--a2","--ah","--abg","--abd"];
-function applyTheme(themeId, bgOverride) {
+function applyTheme(themeId, bgOverride, mode) {
   const theme = THEMES[themeId] || THEMES.light;
   const body = document.body;
   THEME_VAR_KEYS.forEach(k => body.style.removeProperty(k));
   body.style.removeProperty("background");
-  if (theme.vars) Object.entries(theme.vars).forEach(([k,v]) => body.style.setProperty(k,v));
-  if (theme.dark) body.classList.add("dark-mode");
+  const isDark = mode ? (mode === "dark") : !!theme.dark;
+  const vars = (theme.autoBgMode && isDark !== !!theme.dark)
+    ? (theme.dark ? theme.varsLight : theme.varsDark)
+    : theme.vars;
+  if (vars) Object.entries(vars).forEach(([k,v]) => body.style.setProperty(k,v));
+  if (isDark) body.classList.add("dark-mode");
   else body.classList.remove("dark-mode");
   if (theme.bg) {
     if (bgOverride && theme.backgrounds?.includes(bgOverride)) {
@@ -765,6 +771,30 @@ function applyTheme(themeId, bgOverride) {
     }
   }
   body.setAttribute("data-theme", themeId);
+}
+const _bgDarkCache = {};
+function detectBgDark(url) {
+  if (url in _bgDarkCache) return Promise.resolve(_bgDarkCache[url]);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const W = 24, H = 24, c = document.createElement("canvas");
+        c.width = W; c.height = H;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, W, H);
+        const x0 = Math.floor(W*0.2), y0 = Math.floor(H*0.2), w = Math.ceil(W*0.6), h = Math.ceil(H*0.6);
+        const d = ctx.getImageData(x0, y0, w, h).data;
+        let s = 0, n = 0;
+        for (let i = 0; i < d.length; i += 4) { s += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]; n++; }
+        const isDark = (s/n) < 135;
+        _bgDarkCache[url] = isDark;
+        resolve(isDark);
+      } catch(e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 function mergeRests(custObj) { const m = {}; for (const cat of CATEGORIES) { const c = Object.values(custObj?.[cat]||{}); m[cat] = [...new Set([...DEFAULT_RESTS[cat],...c])]; } return m; }
 
@@ -3595,7 +3625,23 @@ function App() {
     try { return localStorage.getItem("lunch_active_theme") || "light"; }
     catch(e) { return "light"; }
   });
-  const isDarkMode = THEMES[activeTheme]?.dark || false;
+  const [bgDark, setBgDark] = useState(() => THEMES[activeTheme]?.dark || false);
+  const isDarkMode = bgDark;
+  const themeTokenRef = useRef(0);
+  function applyThemeAuto(themeId, bgFile) {
+    const token = ++themeTokenRef.current;
+    applyTheme(themeId, bgFile);
+    const theme = THEMES[themeId];
+    if (!theme?.autoBgMode || !theme.bg) { setBgDark(!!theme?.dark); return; }
+    const dir = theme.bg.match(/url\('([^']*\/)/)?.[1] || "";
+    const file = (bgFile && theme.backgrounds?.includes(bgFile)) ? bgFile : theme.backgrounds?.[0];
+    detectBgDark(`${dir}${file}`).then(isDark => {
+      if (token !== themeTokenRef.current) return;
+      if (isDark == null) { setBgDark(!!theme.dark); return; }
+      applyTheme(themeId, bgFile, isDark ? "dark" : "light");
+      setBgDark(isDark);
+    });
+  }
   const [ownedThemes, setOwnedThemes] = useState(() => TEST_MODE ? new Set(Object.keys(THEMES)) : new Set(["light","dark"]));
   const [themeShopConfig, setThemeShopConfig] = useState({});
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -3620,7 +3666,7 @@ function App() {
     const next = {...themeBgSelections, [themeId]: bgFile};
     setThemeBgSelections(next);
     try { localStorage.setItem("lunch_theme_bg", JSON.stringify(next)); } catch(e) {}
-    applyTheme(themeId, bgFile);
+    applyThemeAuto(themeId, bgFile);
   }
 
   // Auth 狀態監聽
@@ -3950,7 +3996,7 @@ function App() {
 
   useEffect(() => {
     try {
-      applyTheme(activeTheme, themeBgSelections[activeTheme]);
+      applyThemeAuto(activeTheme, themeBgSelections[activeTheme]);
       localStorage.setItem("lunch_active_theme", activeTheme);
     } catch(e) {}
   }, [activeTheme, themeBgSelections]);
@@ -4705,14 +4751,14 @@ function App() {
       themeShopConfig={themeShopConfig}
       userPoints={userPoints}
       onActivate={activateTheme}
-      onPreview={id => { setPreviewTheme(id); applyTheme(id, THEMES[id]?.backgrounds?.[0]); }}
-      onPreviewBg={bg => applyTheme(previewTheme, bg)}
-      onCancelPreview={() => { setPreviewTheme(null); applyTheme(activeTheme, themeBgSelections[activeTheme]); }}
+      onPreview={id => { setPreviewTheme(id); applyThemeAuto(id, THEMES[id]?.backgrounds?.[0]); }}
+      onPreviewBg={bg => applyThemeAuto(previewTheme, bg)}
+      onCancelPreview={() => { setPreviewTheme(null); applyThemeAuto(activeTheme, themeBgSelections[activeTheme]); }}
       onBuy={buyTheme}
       discountRate={isLastWorkingDayOfMonth() ? 0.8 : 1}
       themeBgSelections={themeBgSelections}
       onSelectBg={selectThemeBg}
-      onClose={() => { setShowThemeModal(false); if (previewTheme) { setPreviewTheme(null); applyTheme(activeTheme, themeBgSelections[activeTheme]); } }}
+      onClose={() => { setShowThemeModal(false); if (previewTheme) { setPreviewTheme(null); applyThemeAuto(activeTheme, themeBgSelections[activeTheme]); } }}
     />}
     {showProfile && <MyProfileModal boundName={boundName} weekly={weekly} userTitles={userTitles} onTitleChange={handleTitleChange} specialAchievements={mySpecialAchievements} myCards={myCards} userOwnedTitles={userOwnedTitles} titleShopConfig={titleShopConfig} userOwnedPets={userOwnedPets} userActivePet={userActivePet} onSetActivePet={handleSetActivePet} onClose={()=>{
       setShowProfile(false);

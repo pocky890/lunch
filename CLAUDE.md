@@ -74,8 +74,17 @@ session/                當日設定（numMax 等）
   bg: "...",            // body.style.background shorthand（可含圖片、漸層）
   logoImg: "theme/xxx/logo.png",  // 有值時替換 header ◈ 圖示，文字仍保留
   headerWave: true,     // 有值時 SiteHeader 加 op-header class + op-wave 動畫條
+  autoBgMode: true,     // 多背景主題：依選定背景圖亮度自動切深/淺 UI（見下方說明）
+  varsDark: { ... },    // autoBgMode 且主模式為淺色時，提供深色那半色板（反之用 varsLight）
 }
 ```
+
+**autoBgMode（依背景亮度自動切深/淺）**
+- 目前只有航海王（onepiece）啟用。aot/kimetsu 尚未做（要擴充見下）。
+- 機制：`detectBgDark(url)` 用 canvas 取背景圖中央區平均亮度（門檻 135），結果快取。`applyThemeAuto(themeId, bgFile)` 先用主模式同步套用，偵測完成再用 `applyTheme(id, bg, "dark"|"light")` 修正，並 `setBgDark()` 讓 `isDarkMode`（已改為 state）連動圖表/開獎頁。
+- 主模式（= `dark` 欄位）保留手調 `vars`；相反模式用 `varsDark`/`varsLight`。
+- **寫死的 per-theme CSS 必須依 `.dark-mode` gating**：例如 onepiece 卡片 override 要寫 `body[data-theme="onepiece"]:not(.dark-mode) .card`，深色模式才會 fallback 到通用 `body.dark-mode .card`。語意色 `--c-*` 因與 `body.dark-mode` 同特異度、靠 source order 自動覆蓋，不用改。
+- 擴充 aot/kimetsu：加 `autoBgMode:true` + `varsLight`（它們主模式是深色），並把寫死的深色 per-theme CSS 補上 `:not(.dark-mode)` 的淺色那半，逐張背景用 preview 驗證。
 
 ### 新增客製化主題的完整清單
 
