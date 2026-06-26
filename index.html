@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 16:31";
+  const BUILD_TIME = "2026-06-26 16:34";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4793,6 +4793,7 @@ function App() {
 
   useEffect(() => {
     if (!bonusDayToday || !boundName) return;
+    if (TEST_MODE) { setMyDiceRoll(r => r || Math.floor(Math.random() * 6) + 1); return; }
     const today = todayStr(), key = sanitizeKey(boundName);
     (async () => {
       const existing = await fGet(`dailyDice/${today}/${key}`);
@@ -4806,11 +4807,22 @@ function App() {
 
   useEffect(() => {
     if (!bonusDayToday) return;
+    if (TEST_MODE) {
+      setAllDiceRolls(prev => {
+        const rolls = {...prev};
+        [...pts.map(p => p.name), ...absent].forEach(name => {
+          const k = sanitizeKey(name);
+          if (!rolls[k]) rolls[k] = Math.floor(Math.random() * 6) + 1;
+        });
+        return rolls;
+      });
+      return;
+    }
     const ref = fRef(`dailyDice/${todayStr()}`);
     const handler = snap => setAllDiceRolls(snap.val() || {});
     ref.on("value", handler);
     return () => ref.off("value", handler);
-  }, [bonusDayToday]);
+  }, [bonusDayToday, TEST_MODE ? pts.length : 0]);
 
   const numMax = sess?.numMax || 99;
   const effectiveNumMax = isDoubleDay() ? Math.ceil(numMax / 2) : numMax;
