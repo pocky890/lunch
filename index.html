@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 16:57";
+  const BUILD_TIME = "2026-06-26 17:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2268,14 +2268,22 @@ function BonusDayBanner({ myDiceRoll }) {
   const [diceRot, setDiceRot] = React.useState({ x: 0, y: 0 });
   const [settled, setSettled] = React.useState(false);
   const [animKey, setAnimKey] = React.useState(0);
+  const [skipAnim, setSkipAnim] = React.useState(false);
 
   React.useEffect(() => {
     if (!myDiceRoll) return;
+    const FINAL_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] };
+    const [tx, ty] = FINAL_ROT[myDiceRoll];
+    if (localStorage.getItem(`diceShown_${todayStr()}`)) {
+      setDiceRot({ x: tx, y: ty });
+      setSkipAnim(true);
+      setSettled(true);
+      return;
+    }
+    localStorage.setItem(`diceShown_${todayStr()}`, '1');
     setSettled(false);
     setDiceRot({ x: 0, y: 0 });
     setAnimKey(k => k + 1);
-    const FINAL_ROT = { 1:[0,0], 2:[-90,0], 3:[0,-90], 4:[0,90], 5:[90,0], 6:[0,180] };
-    const [tx, ty] = FINAL_ROT[myDiceRoll];
     const totalX = tx + 2160, totalY = ty + 2160;
     let rafId;
     const start = performance.now();
@@ -2303,7 +2311,7 @@ function BonusDayBanner({ myDiceRoll }) {
 
   return (
     <div style={{textAlign:"center",padding:"16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"12px"}}>
-      <div key={animKey} className={myDiceRoll ? "dice-3d-pos" : ""} style={{display:"inline-block",marginBottom:"12px",filter:"drop-shadow(0 8px 18px rgba(0,0,0,0.22))"}}>
+      <div key={animKey} className={skipAnim ? "" : (myDiceRoll ? "dice-3d-pos" : "")} style={{display:"inline-block",marginBottom:"12px",filter:"drop-shadow(0 8px 18px rgba(0,0,0,0.22))"}}>
         <div style={{perspective:"260px",display:"inline-block"}}>
           <div style={{width:SZ,height:SZ,position:"relative",transformStyle:"preserve-3d",transform:`rotateX(${diceRot.x}deg) rotateY(${diceRot.y}deg)`}}>
             {FACE_DEFS.map(({t,n}) => (
