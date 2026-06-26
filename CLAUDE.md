@@ -83,7 +83,8 @@ session/                當日設定（numMax 等）
 - 目前只有航海王（onepiece）啟用。aot/kimetsu 尚未做（要擴充見下）。
 - 機制：`detectBgDark(url)` 用 canvas 取背景圖中央區平均亮度（門檻 135），結果快取。`applyThemeAuto(themeId, bgFile)` 先用主模式同步套用，偵測完成再用 `applyTheme(id, bg, "dark"|"light")` 修正，並 `setBgDark()` 讓 `isDarkMode`（已改為 state）連動圖表/開獎頁。
 - 主模式（= `dark` 欄位）保留手調 `vars`；相反模式用 `varsDark`/`varsLight`。
-- **寫死的 per-theme CSS 必須依 `.dark-mode` gating**：例如 onepiece 卡片 override 要寫 `body[data-theme="onepiece"]:not(.dark-mode) .card`，深色模式才會 fallback 到通用 `body.dark-mode .card`。語意色 `--c-*` 因與 `body.dark-mode` 同特異度、靠 source order 自動覆蓋，不用改。
+- **寫死的 per-theme CSS 必須依 `.dark-mode` gating**：例如 onepiece 卡片 override 要寫 `body[data-theme="onepiece"]:not(.dark-mode) .card`，深色模式才會 fallback 到通用 `body.dark-mode .card`。
+- **語意色 `--c-*` 必須補一組半透明深色版**：`body.dark-mode` 的 `--c-*-bg` 是**實心 hex**（不透明），背景圖主題若沒補 `body.dark-mode[data-theme="xxx"]` 半透明版，banner（口渴卡/加號卡/壽星/卡牌等）會變成不透明色塊蓋住背景圖。三個主題都已各補一條（值與 kimetsu 相同）。
 - 擴充 aot/kimetsu：加 `autoBgMode:true` + `varsLight`（它們主模式是深色），並把寫死的深色 per-theme CSS 補上 `:not(.dark-mode)` 的淺色那半，逐張背景用 preview 驗證。
 
 ### 新增客製化主題的完整清單
