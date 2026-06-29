@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 17:32";
+  const BUILD_TIME = "2026-06-29 18:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3716,11 +3716,16 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
     }
     if (item.type === "card_used") {
       const ct = CARD_TYPES[item.cardType];
+      const label = item.cardType === "streak_protect"
+        ? `連勝保護卡自動發動，${item.prevStreak} 連勝保留`
+        : item.cardType === "cheapskate_card"
+        ? "免付卡自動發動，本次請客免付"
+        : `使用了 ${ct?.name || item.cardType}`;
       return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--s2)",marginBottom:"4px"}}>
           <span style={{fontSize:"16px"}}>{ct?.emoji || "🃏"}</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:"13px",fontWeight:"500"}}>使用了 {ct?.name || item.cardType}</div>
+            <div style={{fontSize:"13px",fontWeight:"500"}}>{label}</div>
             {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
           </div>
           {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
@@ -4566,19 +4571,22 @@ function App() {
             if (!entry) continue;
             await fRef(`cheapskateUsers/${today}/${pKey}`).set(p.name);
             await returnCardToPool(p.name, entry[0]);
+            logNotification(pKey, "card_used", { cardType: "cheapskate_card", date: today });
           }
         }
         let streakProtected = false;
         if (!skipStreak) {
           for (const p of pts) {
             if (winnerNameSet.has(p.name)) continue;
-            if (getPreviousStreak(weekly, p.name, today) < 2) continue;
+            const ps = getPreviousStreak(weekly, p.name, today);
+            if (ps < 2) continue;
             const pKey = sanitizeKey(p.name);
             const cardsObj = await fGet(`userCards/${pKey}`) || {};
             const entry = Object.entries(cardsObj).find(([,c]) => c.type === "streak_protect" && c.expiresAt >= today);
             if (!entry) continue;
             await fRef(`weekly/${today}`).update({ skipStreak: true });
             await returnCardToPool(p.name, entry[0]);
+            logNotification(pKey, "card_used", { cardType: "streak_protect", prevStreak: ps, date: today });
             streakProtected = true;
             break;
           }
