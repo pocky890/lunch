@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 13:06";
+  const BUILD_TIME = "2026-06-29 14:38";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4496,13 +4496,17 @@ function App() {
       let stealSucceeded = false;
       if (activeCard?.type === "steal_card") {
         const today = todayStr();
-        const otherPts = pts.filter(p => p.name !== name);
+        const myKey = sanitizeKey(name);
+        const nameMap = {};
+        pts.forEach(p => { nameMap[sanitizeKey(p.name)] = p.name; });
+        absent.forEach(n => { nameMap[sanitizeKey(n)] = n; });
+        const allUserCards = await fGet("userCards");
         const victims = [];
-        for (const p of otherPts) {
-          const cards = await fGet(`userCards/${sanitizeKey(p.name)}`);
-          if (cards) {
+        if (allUserCards) {
+          for (const [key, cards] of Object.entries(allUserCards)) {
+            if (key === myKey || !cards) continue;
             const valid = Object.entries(cards).filter(([,c]) => c.expiresAt >= today);
-            if (valid.length > 0) victims.push({ name: p.name, cards: valid });
+            if (valid.length > 0) victims.push({ name: nameMap[key] || key, cards: valid });
           }
         }
         if (victims.length > 0) {
