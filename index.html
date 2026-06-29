@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 16:26";
+  const BUILD_TIME = "2026-06-29 16:39";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3645,8 +3645,10 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
       setItems([
         { _src:"notif", type:"card_received", cardType:"extra_number", date:"2026-06-27", ts: now - 3600000 },
         { _src:"notif", type:"card_stolen_from_you", cardType:"thirsty_card", by:"某人", date:"2026-06-26", ts: now - 86400000 },
-        { _src:"notif", type:"achievement", key:"join50", date:"2026-06-25", ts: now - 172800000 },
-        { _src:"win",   type:"win", date:"2026-06-24", ts: now - 259200000, streak: 2 },
+        { _src:"notif", type:"streak_broken", brokenBy:"某人", prevStreak: 3, date:"2026-06-25", ts: now - 172800000 },
+        { _src:"notif", type:"achievement", key:"join50", date:"2026-06-24", ts: now - 259200000 },
+        { _src:"win",   type:"win", date:"2026-06-23", ts: now - 345600000, streak: 3 },
+        { _src:"win",   type:"solo_win", date:"2026-06-20", ts: now - 604800000, streak: 1 },
       ]);
       return;
     }
@@ -3661,7 +3663,7 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         if (!isWinnerOf(rec, boundName)) continue;
         const dateMs = new Date(date + "T12:00:00+08:00").getTime();
         if (dateMs < cutoff90) continue;
-        wins.push({ _src:"win", type: rec.soloWin ? "solo_win" : "win", date, ts: rec.closedAt || dateMs, streak: computeStreak(weekly, boundName, date, 0) });
+        wins.push({ _src:"win", type: rec.soloWin ? "solo_win" : "win", date, ts: rec.closedAt || dateMs, streak: rec.streak || 0 });
       }
       setItems([...notifs, ...wins].sort((a,b) => (b.ts||0)-(a.ts||0)));
       setLoading(false);
@@ -3673,12 +3675,12 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
     const timeStr = d ? `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` : "";
     if (item._src === "win" || item.type === "win" || item.type === "solo_win") {
       const isSolo = item.type === "solo_win";
-      const streakTxt = item.streak > 1 ? ` · ${item.streak} 連勝` : "";
+      const streakTxt = item.streak >= 1 ? ` · ${item.streak} 連勝` : "";
       return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",marginBottom:"4px"}}>
           <span style={{fontSize:"16px"}}>{isSolo ? "🏆" : "🎯"}</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--c-green-tx)"}}>{isSolo ? "獨贏！" : "贏了！"}{streakTxt}</div>
+            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--c-green-tx)"}}>{isSolo ? "獨贏！完全命中" : "贏了！最接近號碼"}{streakTxt}</div>
             {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
           </div>
           {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
@@ -3719,6 +3721,18 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
           <span style={{fontSize:"16px"}}>{ct?.emoji || "🃏"}</span>
           <div style={{flex:1}}>
             <div style={{fontSize:"13px",fontWeight:"500"}}>使用了 {ct?.name || item.cardType}</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
+    if (item.type === "streak_broken") {
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>💔</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500",color:"var(--c-amber-tx)"}}>殘念！{item.prevStreak} 連勝被 {item.brokenBy} 中斷</div>
             {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
           </div>
           {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
@@ -4554,6 +4568,7 @@ function App() {
             await returnCardToPool(p.name, entry[0]);
           }
         }
+        let streakProtected = false;
         if (!skipStreak) {
           for (const p of pts) {
             if (winnerNameSet.has(p.name)) continue;
@@ -4564,6 +4579,7 @@ function App() {
             if (!entry) continue;
             await fRef(`weekly/${today}`).update({ skipStreak: true });
             await returnCardToPool(p.name, entry[0]);
+            streakProtected = true;
             break;
           }
         }
@@ -4575,6 +4591,14 @@ function App() {
           await fRef(`specialAchievements/${pKey}/${achKey}`).set(true);
           logNotification(pKey, "achievement", { key: achKey, date: today });
           if (p.name === boundName) setMySpecialAchievements(prev => ({...prev, [achKey]: true}));
+        }
+        if (!skipStreak && !streakProtected) {
+          for (const p of pts) {
+            if (winnerNameSet.has(p.name)) continue;
+            const prevStreak = getPreviousStreak(weekly, p.name, today);
+            if (prevStreak < 1) continue;
+            logNotification(sanitizeKey(p.name), "streak_broken", { brokenBy: result.winner.name, prevStreak, date: today });
+          }
         }
         const won = [];
         const shuffledPts = [...pts];
