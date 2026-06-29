@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 18:12";
+  const BUILD_TIME = "2026-06-29 18:14";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3732,6 +3732,18 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         </div>
       );
     }
+    if (item.type === "nuked") {
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>☢️</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500",color:"var(--c-orange-tx)"}}>{item.by ? `被 ${item.by} 的核彈炸出局` : "被核彈炸出局"}</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
     if (item.type === "streak_broken") {
       return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",marginBottom:"4px"}}>
@@ -4558,6 +4570,13 @@ function App() {
 
       if (didWrite) {
         await givePointsForDay(pts, absent, today);
+        if (result.nukedParticipants?.length > 0) {
+          const nukers = pts.filter(p => p.cardUsed === "nuke_card");
+          const nukerName = nukers.length === 1 ? nukers[0].name : null;
+          for (const p of result.nukedParticipants) {
+            logNotification(sanitizeKey(p.name), "nuked", { by: nukerName, date: today });
+          }
+        }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
         await ensureDailyCards(today, effectiveNumMax);
         // 集中結算被動卡與隱藏成就：由天選客戶端統一掃描所有參賽者，確保離線者也生效
