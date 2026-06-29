@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 10:51";
+  const BUILD_TIME = "2026-06-29 10:58";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4990,7 +4990,7 @@ function App() {
                 <input value={form.name} readOnly style={{background:"var(--s3)",cursor:"default",paddingRight:"72px"}} />
                 <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",color:"var(--t3)",fontWeight:"500"}}>Google 帳號</span>
               </div>
-              {!isEditing && (() => {
+              {(() => {
                 const chips = pts
                   .filter(p => p.rest && !p.isRandomRest && p.name !== form.name)
                   .map(p => ({ name: p.name, rest: p.rest, cat: CATEGORIES.find(c => (rests[c]||[]).includes(p.rest)) }))
