@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 16:03";
+  const BUILD_TIME = "2026-06-29 16:05";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5552,11 +5552,21 @@ function App() {
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
                       </div>
-                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",marginRight:"16px",flexShrink:0,gap:"2px"}}>
-                        <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)"}}>{(p.hasPet&&p.petNumber)||(p.cardUsed==="extra_number"&&p.number2) ? `#${p._origMain||p.number}` : `#${p.number}`}</span>
-                        {p.hasPet&&p.petNumber && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🐾 #{p.petNumber}</span>}
-                        {p.cardUsed==="extra_number"&&p.number2 && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>➕ #{p.number2}</span>}
-                      </div>
+                      {(() => {
+                        const hasBd = p.birthdayNumbers?.length > 0;
+                        const hasExtra = p.cardUsed==="extra_number" && p.number2;
+                        const hasPetNum = p.hasPet && p.petNumber;
+                        const hasMulti = hasBd || hasExtra || hasPetNum;
+                        const mainNum = hasMulti ? (p._origMain || p.number) : p.number;
+                        return (
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",marginRight:"16px",flexShrink:0,gap:"2px"}}>
+                            <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)"}}># {mainNum}</span>
+                            {hasBd && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🎂 {p.birthdayNumbers.map(n=>`#${n}`).join(" ")}</span>}
+                            {hasExtra && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>➕ #{p.number2}</span>}
+                            {hasPetNum && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🐾 #{p.petNumber}</span>}
+                          </div>
+                        );
+                      })()}
                       <span style={{fontSize:"13px",fontWeight:"500",color:isWinner?wr.tx:"var(--t3)",minWidth:"64px",textAlign:"right",flexShrink:0}}>{dist===0?"命中":`差 ${dist}`}</span>
                     </div>
                   );
