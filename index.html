@@ -129,7 +129,7 @@
       transition: all 0.3s ease;
     }
 
-    .page { max-width: 1080px; margin: 0 auto; padding: 0 24px 64px; }
+    .page { max-width: 1080px; margin: 0 auto; padding: 104px 24px 64px; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
     .grid-3-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
     .col { min-width: 0; display: flex; flex-direction: column; }
@@ -147,8 +147,8 @@
     .divider { height: 1px; background: var(--b1); margin: 24px 0; }
 
     .site-header {
-      position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(229, 229, 234, 0.8);
-      margin-bottom: 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50; border-bottom: 1px solid rgba(229, 229, 234, 0.8);
+      background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px);
       transition: background-color 0.3s ease, border-color 0.3s ease;
     }
     .site-header-inner { max-width: 1080px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
@@ -210,7 +210,7 @@
       .header-actions { gap: 4px !important; }
       .header-actions > div { border-left: none !important; padding-left: 4px !important; }
       input, select { font-size: 16px; }
-      .page { padding: 0 16px 48px; }
+      .page { padding: 92px 16px 48px; }
       .modal-bg { padding: 16px; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-26 17:11";
+  const BUILD_TIME = "2026-06-29 10:44";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
