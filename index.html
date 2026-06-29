@@ -431,9 +431,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 6, rules: 6, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 6, rules: 7, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 16:11";
+  const BUILD_TIME = "2026-06-29 16:26";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -920,10 +920,16 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (todayPtsCount < 4) return 0;
   const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
   let streak = 1;
+  let consecutiveAbsent = 0;
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec) break;
     if (rec.skipStreak) continue;
+    if (rec.absentNames?.includes(winnerName)) {
+      if (++consecutiveAbsent > 14) break;
+      continue;
+    }
+    consecutiveAbsent = 0;
     if (isWinnerOf(rec, winnerName)) { streak++; } else { break; }
   }
   return streak;
@@ -1110,10 +1116,16 @@ async function returnCardToPool(name, cardId) {
 function getPreviousStreak(weekly, name, today) {
   const past = Object.keys(weekly||{}).filter(d => d < today).sort().reverse();
   let count = 0;
+  let consecutiveAbsent = 0;
   for (const date of past) {
     const rec = weekly[date];
     if (!rec || rec.noParticipants) break;
     if (rec.skipStreak) continue;
+    if (rec.absentNames?.includes(name)) {
+      if (++consecutiveAbsent > 14) break;
+      continue;
+    }
+    consecutiveAbsent = 0;
     if (isWinnerOf(rec, name)) { count++; } else { break; }
   }
   return count;
@@ -1194,11 +1206,12 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div>若多人差距相同，用「幸運號碼 mod 同分人數」決定最終得主。</div>
           </div>
           <div>
-            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客</div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客{newSections.includes("streak") && <NewDot />}</div>
             <div>非獨贏的情況下，若同一人連續 3 次選中最接近，所有參加者每人補助 <strong style={{color:"var(--t1)"}}>30 元</strong>；連續 4 次補助 40 元，以此類推（N 連勝 × 10 元）。</div>
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"6px"}}>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
+              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🙅 標記<strong style={{color:"var(--t2)"}}>今日不參加</strong>時，連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>。但若連續 14 天未參加，連勝才會歸零。</div>
             </div>
           </div>
           <div>
@@ -4514,7 +4527,7 @@ function App() {
     const soloWinners = result.winners || [result.winner];
     const birthdayWinnerEntry = soloWinners.find(w => todayBirthdays.some(b => b.name === w.name));
     const soloTreatPerPerson = result.soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) * (birthdayWinnerEntry ? 2 : 1) : 50;
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, participantNames:pts.map(p=>p.name), ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(birthdayWinnerEntry && {birthdayWinner: birthdayWinnerEntry.name})};
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, participantNames:pts.map(p=>p.name), ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(absent.length > 0 && {absentNames: absent}), ...(birthdayWinnerEntry && {birthdayWinner: birthdayWinnerEntry.name})};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
