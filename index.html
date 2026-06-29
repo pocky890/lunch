@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 17:20";
+  const BUILD_TIME = "2026-06-29 17:32";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3675,7 +3675,7 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
     const timeStr = d ? `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` : "";
     if (item._src === "win" || item.type === "win" || item.type === "solo_win") {
       const isSolo = item.type === "solo_win";
-      const streakTxt = item.streak >= 1 ? ` · ${item.streak} 連勝` : "";
+      const streakTxt = item.streak >= 2 ? ` · ${item.streak} 連勝` : item.streak === 0 ? " · 人數不足4人，不計連勝" : "";
       return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",marginBottom:"4px"}}>
           <span style={{fontSize:"16px"}}>{isSolo ? "🏆" : "🎯"}</span>
