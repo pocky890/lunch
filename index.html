@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 10:44";
+  const BUILD_TIME = "2026-06-29 10:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4990,6 +4990,27 @@ function App() {
                 <input value={form.name} readOnly style={{background:"var(--s3)",cursor:"default",paddingRight:"72px"}} />
                 <span style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",fontSize:"11px",color:"var(--t3)",fontWeight:"500"}}>Google 帳號</span>
               </div>
+              {!isEditing && (() => {
+                const chips = pts
+                  .filter(p => p.rest && !p.isRandomRest && p.name !== form.name)
+                  .map(p => ({ name: p.name, rest: p.rest, cat: CATEGORIES.find(c => (rests[c]||[]).includes(p.rest)) }))
+                  .filter(x => x.cat);
+                if (!chips.length) return null;
+                return (
+                  <div style={{marginBottom:"16px"}}>
+                    <div style={{fontSize:"12px",fontWeight:"600",color:"var(--t3)",marginBottom:"8px"}}>跟著吃</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
+                      {chips.map(({name, rest, cat}) => (
+                        <button key={name} type="button" className="btn-sm ghost"
+                          onClick={() => { setIsRandom(false); setForm(f=>({...f,category:cat,rest,cust:""})); }}
+                          style={{marginBottom:0,fontSize:"12px",padding:"4px 12px",borderRadius:"20px"}}>
+                          {name} <span style={{opacity:0.5,margin:"0 2px"}}>·</span> {rest}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               <label>餐廳類型</label>
               {isRandom
                 ? <div style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"16px"}}>
