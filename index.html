@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 16:39";
+  const BUILD_TIME = "2026-06-29 16:59";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5547,6 +5547,7 @@ function App() {
                   🎂 <strong>{p.name}</strong> 今天生日，本局選了 {1+(p.birthdayNumbers?.length||0)+(p.number2?1:0)} 個號碼：{[p.number,...(p.birthdayNumbers||[]),...(p.number2?[p.number2]:[])].map(n=>`#${n}`).join("、")}
                 </div>
               ))}
+              <CardPoolDisplay cardPool={cardPool} />
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
                   const dist = Math.abs(p.number - drawnNumber), isWinner = (result.winners || [winner]).some(w => w.id === p.id), ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];
