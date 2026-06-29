@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 19:37";
+  const BUILD_TIME = "2026-06-29 19:50";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2011,7 +2011,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
               </div>
 
               <div style={{marginTop:"20px"}}>
-              <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🐾 寵物商店設定</p>
+              <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🐻 寵物商店設定</p>
               {Object.entries(PET_TYPES).map(([key, pt]) => {
                 const cfg = petShopConfig[key] || {};
                 return (
@@ -2694,7 +2694,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
         <div style={{display:"flex",gap:"4px",background:"var(--s2)",borderRadius:"8px",padding:"4px",marginBottom:"16px"}}>
           {tabBtn("cards","🃏 卡牌")}
           {tabBtn("titles","🏷️ 稱號")}
-          {tabBtn("pets","🐾 寵物")}
+          {tabBtn("pets","🐻 寵物")}
         </div>
         {shopTab === "cards" && (cardEntries.length === 0
           ? <div className="empty-state"><p style={{color:"var(--t2)"}}>目前沒有可購買的卡牌</p></div>
@@ -3250,7 +3250,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
         </div>
         <div style={{display:"flex",gap:"8px",marginBottom:"16px",flexShrink:0}}>
           {tabBtn("achievements","🏆 成就稱號")}
-          {tabBtn("cards",`🃏 手牌${myCards.length>0?` (${myCards.filter(c=>c.expiresAt>=today).length})`:""}`)}{tabBtn("pets","🐾 寵物")}</div>
+          {tabBtn("cards",`🃏 手牌${myCards.length>0?` (${myCards.filter(c=>c.expiresAt>=today).length})`:""}`)}{tabBtn("pets","🐻 寵物")}</div>
         {tab==="achievements" && <>
         <div style={{marginBottom:"16px",padding:"12px 14px",background:"var(--s3)",borderRadius:"var(--r)",border:"1px solid var(--b1)"}}>
           <div style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",marginBottom:"6px"}}>目前稱號</div>
@@ -3884,7 +3884,7 @@ function PointsHistoryModal({ open, onClose, boundName }) {
     admin: { emoji:"🎁", label:"管理員調整" },
     buy_card: { emoji:"🃏", label:"購買卡牌" },
     buy_title: { emoji:"🏅", label:"購買稱號" },
-    buy_pet: { emoji:"🐾", label:"購買寵物" },
+    buy_pet: { emoji:"🐻", label:"購買寵物" },
     buy_theme: { emoji:"🎨", label:"購買主題" },
   };
   const grouped = {};
@@ -5376,7 +5376,7 @@ function App() {
                   const nukeZone    = nukeCenter ? getNukeZone(nukeCenter, effectiveNumMax) : [];
                   const slots = [
                     { key:"main",    color:"rgba(0,113,227,0.9)",   outline:"rgba(0,113,227,0.6)",   label:"主號碼",   num: form.number },
-                    ...(hasPetBonus ? [{ key:"pet",   color:"rgba(16,185,129,0.85)", outline:"rgba(16,185,129,0.5)",  label:"🐾",       num: petNumber }] : []),
+                    ...(hasPetBonus ? [{ key:"pet",   color:"rgba(16,185,129,0.85)", outline:"rgba(16,185,129,0.5)",  label:"🐻",       num: petNumber }] : []),
                     ...(isExtraCard ? [{ key:"extra", color:"rgba(234,88,12,0.85)",  outline:"rgba(234,88,12,0.5)",   label:"加號卡",   num: number2 }] : []),
                     ...(isBirthday  ? [
                       { key:"bd0", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日", num: bdNumbers[0] },
@@ -5430,7 +5430,7 @@ function App() {
                           {isBirthday&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>🎂 生日+4</span>}
                           {isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>➕ 加號卡+1</span>}
                           {isNukeCard&&<span style={{fontSize:"11px",color:"rgba(239,68,68,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>☢️ 選核心號碼</span>}
-                          {hasPetBonus&&<span style={{fontSize:"11px",color:"rgba(16,185,129,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>🐾 寵物±1</span>}
+                          {hasPetBonus&&<span style={{fontSize:"11px",color:"rgba(16,185,129,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>🐻 寵物±1</span>}
                         </label>
                         <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
                       </div>
@@ -5669,7 +5669,7 @@ function App() {
                             <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)"}}># {mainNum}</span>
                             {hasBd && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🎂 {p.birthdayNumbers.map(n=>`#${n}`).join(" ")}</span>}
                             {hasExtra && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>➕ #{p.number2}</span>}
-                            {hasPetNum && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🐾 #{p.petNumber}</span>}
+                            {hasPetNum && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🐻 #{p.petNumber}</span>}
                           </div>
                         );
                       })()}
