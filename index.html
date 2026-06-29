@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 18:14";
+  const BUILD_TIME = "2026-06-29 19:37";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3756,6 +3756,54 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         </div>
       );
     }
+    if (item.type === "thirsty_cancelled") {
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>🥤</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500",color:"var(--c-orange-tx)"}}>{item.by ? `被 ${item.by} 的核彈炸出局，口渴卡效果取消` : "被核彈炸出局，口渴卡效果取消"}</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
+    if (item.type === "follow_overridden") {
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>🍽️</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500",color:"var(--c-amber-tx)"}}>{item.soloWinner ? `${item.soloWinner} 獨贏，跟著我吃卡無效` : "獨贏出現，跟著我吃卡無效"}</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
+    if (item.type === "follow_affected") {
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--s2)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>🍽️</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500"}}>{item.by} 使用跟著我吃卡，今天去 {item.rest}</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
+    if (item.type === "numbers_revealed") {
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--s2)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>👁️</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500"}}>{item.by} 使用公開卡，本場所有人號碼已公開</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
     if (item.type === "achievement") {
       const ach = ACHIEVEMENTS.find(a => a.key === item.key);
       return (
@@ -4575,6 +4623,9 @@ function App() {
           const nukerName = nukers.length === 1 ? nukers[0].name : null;
           for (const p of result.nukedParticipants) {
             logNotification(sanitizeKey(p.name), "nuked", { by: nukerName, date: today });
+            if (p.cardUsed === "thirsty_card") {
+              logNotification(sanitizeKey(p.name), "thirsty_cancelled", { by: nukerName, date: today });
+            }
           }
         }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
@@ -4625,6 +4676,19 @@ function App() {
             const prevStreak = getPreviousStreak(weekly, p.name, today);
             if (prevStreak < 1) continue;
             logNotification(sanitizeKey(p.name), "streak_broken", { brokenBy: result.winner.name, prevStreak, date: today });
+          }
+        }
+        if (result.soloWin) {
+          for (const p of pts) {
+            if (p.cardUsed === "follow_restaurant") {
+              logNotification(sanitizeKey(p.name), "follow_overridden", { soloWinner: result.winner.name, date: today });
+            }
+          }
+        }
+        if (result.followRestUser) {
+          for (const p of pts) {
+            if (p.name === result.followRestUser) continue;
+            logNotification(sanitizeKey(p.name), "follow_affected", { by: result.followRestUser, rest: result.winner.rest, date: today });
           }
         }
         const won = [];
@@ -4820,6 +4884,10 @@ function App() {
       // 公開卡：所有人號碼立即公開
       if (activeCard?.type === "reveal_numbers") {
         await fSet(`revealNumbers/${todayStr()}`, true);
+        for (const p of pts) {
+          if (p.name === name) continue;
+          logNotification(sanitizeKey(p.name), "numbers_revealed", { by: name, date: todayStr() });
+        }
       }
 
       // 隱藏成就：sameNumberStreak 追蹤（新加入時）
