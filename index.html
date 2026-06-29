@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 10:58";
+  const BUILD_TIME = "2026-06-29 11:30";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2177,7 +2177,7 @@ function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardH
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   const themeMeta = THEMES[activeTheme] || {};
   return (
-    <div className={`site-header${themeMeta.headerWave ? " op-header" : ""}`} style={{position:"relative"}}>
+    <div className={`site-header${themeMeta.headerWave ? " op-header" : ""}`}>
       {themeMeta.headerWave && <div className="op-wave" aria-hidden="true" />}
       {themeMeta.headerPetals && <div className="km-petals" aria-hidden="true">{[0,1,2,3,4,5,6,7,8,9,10,11].map(i=><div key={i} className="km-petal" style={{left:`${4+i*8.5}%`,animationDuration:`${3.5+i*0.35}s`,animationDelay:`${i*0.45}s`,background:["#B39DDB","#9575CD","#CE93D8","#D1A3E0","#7E57C2","#C48BC9"][i%6],transform:`rotate(${i*30}deg)`}} />)}</div>}
       {themeMeta.headerCrack && <div className="aot-crack" aria-hidden="true" />}
