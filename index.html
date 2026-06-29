@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 11:36";
+  const BUILD_TIME = "2026-06-29 13:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4045,10 +4045,10 @@ function App() {
       const mm = data.date?.slice(5,7), dd = data.date?.slice(8,10);
       const dateLabel = mm && dd ? `（${parseInt(mm)}/${parseInt(dd)}）` : "";
       showToast(`🎭 你的 ${CARD_TYPES[data.cardType]?.emoji}${CARD_TYPES[data.cardType]?.name} 被 ${data.by} 偷走了！${dateLabel}`, 30000);
-      fRef(`stolenNotice/${sanitizeKey(name)}`).remove();
+      snap.ref.remove();
     };
-    ref.on("value", handler);
-    return () => ref.off("value", handler);
+    ref.on("child_added", handler);
+    return () => ref.off("child_added", handler);
   }, [form.name]);
 
   // 我的手牌即時監聽（依 name）
@@ -4510,18 +4510,18 @@ function App() {
           const [cardId] = victim.cards[Math.floor(Math.random() * victim.cards.length)];
           // 原子取卡：僅當該卡仍在對方手牌時才偷走，避免與「對方剛好使用該卡」競態造成複製
           let stolen = null;
-          await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => {
+          const txResult = await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => {
             if (cur === null) return; // 已被使用或偷走，放棄
             stolen = cur;
             return null;              // 原子移除
           });
-          if (stolen) {
+          if (txResult.committed && stolen) {
             const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
             await newRef.set(stolen);
             stealSucceeded = true;
             if (stolen.type === "steal_card") { await fRef(`specialAchievements/${sanitizeKey(name)}/stealSteal`).set(true); setMySpecialAchievements(prev => ({...prev, stealSteal: true})); }
             showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`, 10000);
-            await fRef(`stolenNotice/${sanitizeKey(victim.name)}`).set({ by: name, cardType: stolen.type, date: todayStr() });
+            await fRef(`stolenNotice/${sanitizeKey(victim.name)}`).push().set({ by: name, cardType: stolen.type, date: todayStr() });
           } else {
             showToast("🎭 想偷的卡剛好被用掉了，盜牌卡保留 😅");
           }
