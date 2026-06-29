@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 16:05";
+  const BUILD_TIME = "2026-06-29 16:11";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3634,21 +3634,15 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         { _src:"notif", type:"card_stolen_from_you", cardType:"thirsty_card", by:"某人", date:"2026-06-26", ts: now - 86400000 },
         { _src:"notif", type:"achievement", key:"join50", date:"2026-06-25", ts: now - 172800000 },
         { _src:"win",   type:"win", date:"2026-06-24", ts: now - 259200000, streak: 2 },
-        { _src:"points", type:"participate", delta:10, note:"2026-06-24", ts: now - 259200001 },
-        { _src:"points", type:"buy_card", delta:-50, note:"🃏 加號卡", ts: now - 300000000 },
       ]);
       return;
     }
     setLoading(true);
     const sKey = sanitizeKey(boundName);
     const cutoff90 = Date.now() - 90 * 24 * 60 * 60 * 1000;
-    const cutoff30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    Promise.all([
-      db.ref(`${DB_PREFIX}/userNotifications/${sKey}`).orderByChild("ts").startAt(cutoff90).limitToLast(200).once("value"),
-      db.ref(`${DB_PREFIX}/pointsLog/${sKey}`).orderByChild("ts").startAt(cutoff30).limitToLast(200).once("value"),
-    ]).then(([nSnap, pSnap]) => {
+    db.ref(`${DB_PREFIX}/userNotifications/${sKey}`).orderByChild("ts").startAt(cutoff90).limitToLast(200).once("value")
+    .then(nSnap => {
       const notifs = Object.values(nSnap.val() || {}).map(n => ({ ...n, _src:"notif" }));
-      const points = Object.values(pSnap.val() || {}).map(p => ({ ...p, _src:"points" }));
       const wins = [];
       for (const [date, rec] of Object.entries(weekly || {})) {
         if (!isWinnerOf(rec, boundName)) continue;
@@ -3656,22 +3650,11 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         if (dateMs < cutoff90) continue;
         wins.push({ _src:"win", type: rec.soloWin ? "solo_win" : "win", date, ts: rec.closedAt || dateMs, streak: computeStreak(weekly, boundName, date, 0) });
       }
-      setItems([...notifs, ...points, ...wins].sort((a,b) => (b.ts||0)-(a.ts||0)));
+      setItems([...notifs, ...wins].sort((a,b) => (b.ts||0)-(a.ts||0)));
       setLoading(false);
     });
   }, [open, boundName]);
   if (!open) return null;
-  const POINT_META = {
-    participate:        { emoji:"🎯", label:"參加抽獎" },
-    participate_bonus:  { emoji:"🎲", label:"參加抽獎（加倍日）" },
-    absent:             { emoji:"🏠", label:"標記不參加" },
-    absent_bonus:       { emoji:"🎲", label:"標記不參加（加倍日）" },
-    admin:              { emoji:"🎁", label:"管理員調整" },
-    buy_card:           { emoji:"🃏", label:"購買卡牌" },
-    buy_title:          { emoji:"🏅", label:"購買稱號" },
-    buy_pet:            { emoji:"🐾", label:"購買寵物" },
-    buy_theme:          { emoji:"🎨", label:"購買主題" },
-  };
   function renderItem(item, i) {
     const d = item.ts ? new Date(item.ts) : null;
     const timeStr = d ? `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` : "";
@@ -3742,17 +3725,7 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         </div>
       );
     }
-    const meta = POINT_META[item.type] || { emoji:"🪙", label: item.type };
-    return (
-      <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--s2)",marginBottom:"4px"}}>
-        <span style={{fontSize:"16px"}}>{meta.emoji}</span>
-        <div style={{flex:1}}>
-          <div style={{fontSize:"13px",fontWeight:"500"}}>{meta.label}</div>
-          {item.note && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.note}</div>}
-        </div>
-        {item.delta != null && <span style={{fontSize:"14px",fontWeight:"700",color:item.delta>0?"var(--a)":"#e53e3e",whiteSpace:"nowrap"}}>{item.delta>0?"+":""}{item.delta} 🪙</span>}
-      </div>
-    );
+    return null;
   }
   const grouped = {};
   for (const item of items) {
@@ -3768,7 +3741,7 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
           <div style={{fontSize:"18px",fontWeight:"700"}}>🔔 通知記錄</div>
           <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
         </div>
-        <div style={{fontSize:"12px",color:"var(--t3)",marginBottom:"12px"}}>卡牌與成就 90 天・點數記錄 30 天</div>
+        <div style={{fontSize:"12px",color:"var(--t3)",marginBottom:"12px"}}>卡牌・成就・勝場，保留 90 天</div>
         {loading ? (
           <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>載入中…</div>
         ) : items.length === 0 ? (
