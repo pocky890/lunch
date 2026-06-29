@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 15:48";
+  const BUILD_TIME = "2026-06-29 15:57";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1142,10 +1142,10 @@ function determineResultWithCards(pts, drawnNumber) {
     const threat = nukers.length>0 ? threatFor(p) : null;
     const allNums = numsOf(p);
     const validNums = (threat && threat.size>0) ? allNums.filter(n=>!threat.has(n)) : allNums;
-    if (validNums.length===1) return {...p, number:validNums[0]};
-    if (validNums.includes(drawnNumber)) return {...p, number:drawnNumber};
+    if (validNums.length===1) return {...p, _origMain: p.number, number:validNums[0]};
+    if (validNums.includes(drawnNumber)) return {...p, _origMain: p.number, number:drawnNumber};
     const best = validNums.reduce((a,b)=>Math.abs(a-drawnNumber)<=Math.abs(b-drawnNumber)?a:b);
-    return {...p, number:best};
+    return {...p, _origMain: p.number, number:best};
   });
   const nukeExtra = {...(nukedPts.length>0&&{nukedParticipants:nukedPts}), ...(partialNuked.length>0&&{partialNukedParticipants:partialNuked})};
   const res = determineResult(effective, drawnNumber);
@@ -4594,7 +4594,7 @@ function App() {
         const shuffledPts = [...pts];
         for (let i = shuffledPts.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [shuffledPts[i], shuffledPts[j]] = [shuffledPts[j], shuffledPts[i]]; }
         for (const p of shuffledPts) {
-          const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : [])].filter(Boolean);
+          const numbers = [p.number, ...(p.birthdayNumbers || []), ...(p.cardUsed === "extra_number" && p.number2 ? [p.number2] : []), ...(p.hasPet && p.petNumber ? [p.petNumber] : [])].filter(Boolean);
           for (const n of numbers) {
             const t = await checkAndAwardCard(p.name, n, today);
             if (t) { won.push({ name: p.name, type: t }); break; }
@@ -5552,7 +5552,10 @@ function App() {
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
                       </div>
-                      <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)",marginRight:"16px",flexShrink:0}}>#{p.number}</span>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",marginRight:"16px",flexShrink:0,gap:"2px"}}>
+                        <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)"}}>{p.hasPet&&p.petNumber ? `#${p._origMain||p.number}` : `#${p.number}`}</span>
+                        {p.hasPet&&p.petNumber && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🐾 #{p.petNumber}</span>}
+                      </div>
                       <span style={{fontSize:"13px",fontWeight:"500",color:isWinner?wr.tx:"var(--t3)",minWidth:"64px",textAlign:"right",flexShrink:0}}>{dist===0?"命中":`差 ${dist}`}</span>
                     </div>
                   );
