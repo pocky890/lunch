@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 20:40";
+  const BUILD_TIME = "2026-06-30 20:54";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3977,32 +3977,11 @@ async function autoSettleWCMatches(showToast) {
     });
     if (needIds.length === 0) return;
 
-    let shouldFetch = false;
-    await fRef("wc2026/lastResultCheck").transaction(cur => {
-      if (cur && now - cur < 30 * 60 * 1000) return undefined;
-      shouldFetch = true;
-      return now;
-    });
-    if (!shouldFetch) return;
-
-    const resp = await fetch("https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED", {
-      headers: { "X-Auth-Token": "5d480cad43b349ac9a56f79fc3ee8552" }
-    });
-    if (!resp.ok) return;
-    const data = await resp.json();
-
-    const finMap = {};
-    for (const m of (data.matches || [])) {
-      const hs = m.score?.fullTime?.home, as2 = m.score?.fullTime?.away;
-      if (hs !== null && hs !== undefined) finMap[String(m.id)] = { homeScore: hs, awayScore: as2 };
-    }
-
     let settled = 0;
     for (const mid of needIds) {
-      const fin = finMap[mid];
-      if (!fin) continue;
-      await fRef(`wc2026/matches/${mid}`).update({ status: "FINISHED", homeScore: fin.homeScore, awayScore: fin.awayScore });
-      const result = fin.homeScore > fin.awayScore ? "home" : fin.homeScore < fin.awayScore ? "away" : "draw";
+      const m = matches[mid];
+      if (m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined) continue;
+      const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
       const o = odds?.[mid] || {};
       const mName = `${matches[mid]?.homeTeam || ""} vs ${matches[mid]?.awayTeam || ""}`;
       for (const [uKey, bet] of Object.entries(allBets[mid])) {
@@ -4022,70 +4001,6 @@ async function autoSettleWCMatches(showToast) {
   } catch(e) {}
 }
 
-async function autoFetchWCMatches(showToast) {
-  if (TEST_MODE) return;
-  try {
-    const now = Date.now();
-    let shouldFetch = false;
-    await fRef("wc2026/lastMatchFetch").transaction(cur => {
-      if (cur && now - cur < 60 * 60 * 1000) return undefined;
-      shouldFetch = true;
-      return now;
-    });
-    if (!shouldFetch) return;
-    const resp = await fetch("https://api.football-data.org/v4/competitions/WC/matches", {
-      headers: { "X-Auth-Token": "5d480cad43b349ac9a56f79fc3ee8552" }
-    });
-    if (!resp.ok) { if (showToast) showToast("📅 賽程更新失敗", 4000); return; }
-    const data = await resp.json();
-    const ms = {};
-    for (const m of (data.matches || [])) {
-      ms[m.id] = { id: m.id, homeTeam: m.homeTeam.shortName || m.homeTeam.name, awayTeam: m.awayTeam.shortName || m.awayTeam.name, utcDate: m.utcDate, status: m.status, stage: m.stage, group: m.group || null, homeScore: m.score?.fullTime?.home ?? null, awayScore: m.score?.fullTime?.away ?? null };
-    }
-    await fSet("wc2026/matches", ms);
-    if (showToast) showToast(`📅 賽程已更新（${Object.keys(ms).length} 場）`, 4000);
-  } catch(e) { if (showToast) showToast("📅 賽程更新失敗", 4000); }
-}
-
-async function autoFetchWCOdds(showToast) {
-  if (TEST_MODE) return;
-  try {
-    const now = Date.now();
-    const apiKey = "f017ab09768e8e7b9a1cc60340809ce3";
-    let shouldFetch = false;
-    await fRef("wc2026/lastOddsFetch").transaction(cur => {
-      if (cur && now - cur < 24 * 60 * 60 * 1000) return undefined;
-      shouldFetch = true;
-      return now;
-    });
-    if (!shouldFetch) return;
-    const resp = await fetch(`https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds/?apiKey=${apiKey}&regions=eu&markets=h2h`);
-    if (!resp.ok) { if (showToast) showToast("📊 賠率更新失敗", 4000); return; }
-    const data = await resp.json();
-    if (!Array.isArray(data)) { if (showToast) showToast("📊 賠率更新失敗", 4000); return; }
-    const matches = await fGet("wc2026/matches");
-    if (!matches) return;
-    const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const lookup = {};
-    for (const [mid, m] of Object.entries(matches)) {
-      lookup[norm(m.homeTeam) + "|" + norm(m.awayTeam)] = mid;
-    }
-    let updated = 0;
-    for (const entry of data) {
-      const mid = lookup[norm(entry.home_team) + "|" + norm(entry.away_team)];
-      if (!mid) continue;
-      const market = entry.bookmakers?.[0]?.markets?.find(mk => mk.key === "h2h");
-      if (!market) continue;
-      const homeO = market.outcomes.find(o => norm(o.name) === norm(entry.home_team));
-      const awayO = market.outcomes.find(o => norm(o.name) === norm(entry.away_team));
-      const drawO = market.outcomes.find(o => o.name === "Draw");
-      if (!homeO || !awayO) continue;
-      await fSet(`wc2026/odds/${mid}`, { home: homeO.price, draw: drawO?.price || 0, away: awayO.price });
-      updated++;
-    }
-    if (showToast) showToast(updated > 0 ? `📊 賠率已更新（${updated} 場）` : "📊 賠率更新失敗", 4000);
-  } catch(e) { if (showToast) showToast("📊 賠率更新失敗", 4000); }
-}
 
 /* ── 世界盃競猜 ── */
 function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToast }) {
@@ -4106,11 +4021,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/matches", setMatches);
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
-    (async () => {
-      await autoSettleWCMatches(showWCToast);
-      await autoFetchWCMatches(showWCToast);
-      await autoFetchWCOdds(showWCToast);
-    })();
+    autoSettleWCMatches(showWCToast);
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
