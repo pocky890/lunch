@@ -2920,7 +2920,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
               {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title" style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
             </span>
             {bonusDayToday && diceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px",marginRight:"4px"}}>×{diceRolls[sanitizeKey(p.name)]}</span>}
-            <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"4px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲 ?" : p.rest}</span>
+            <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"4px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1}}>{hideNumbers ? "?" : `#${p.number}`}</span>
           </div>
         );
