@@ -1623,6 +1623,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [wcMatches, setWcMatches] = React.useState({});
   const [wcOdds, setWcOdds] = React.useState({});
   const [wcApiKey, setWcApiKey] = React.useState("");
+  const [oddsApiKey, setOddsApiKey] = React.useState("");
   const [wcMsg, setWcMsg] = React.useState("");
   const [wcLoading, setWcLoading] = React.useState(false);
   const [wcOddsEdit, setWcOddsEdit] = React.useState({});
@@ -1670,6 +1671,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   React.useEffect(() => {
     if (tab !== "wc" || !open) return;
     fGet("wc2026/config/apiKey").then(k => k && setWcApiKey(k));
+    fGet("wc2026/config/oddsApiKey").then(k => k && setOddsApiKey(k));
     const refs = [];
     const listen = (path, setter) => { const r = db.ref(`${DB_PREFIX}/${path}`); r.on("value", s => setter(s.val() || {})); refs.push(r); };
     listen("wc2026/matches", setWcMatches);
@@ -2120,11 +2122,17 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
           {tab==="wc" && (
             <div>
               <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🏆 世界盃管理</p>
-              <div style={{display:"flex",gap:"8px",marginBottom:"10px",alignItems:"center"}}>
+              <div style={{display:"flex",gap:"8px",marginBottom:"6px",alignItems:"center"}}>
                 <input type="password" placeholder="football-data.org API Key" value={wcApiKey}
                   onChange={e=>setWcApiKey(e.target.value)}
                   style={{flex:1,marginBottom:0,fontSize:"13px"}} />
                 <button className="btn-sm" onClick={async()=>{await fSet("wc2026/config/apiKey",wcApiKey);setWcMsg("✅ API Key 已儲存");}} style={{marginBottom:0,width:"auto"}}>儲存</button>
+              </div>
+              <div style={{display:"flex",gap:"8px",marginBottom:"10px",alignItems:"center"}}>
+                <input type="password" placeholder="The Odds API Key" value={oddsApiKey}
+                  onChange={e=>setOddsApiKey(e.target.value)}
+                  style={{flex:1,marginBottom:0,fontSize:"13px"}} />
+                <button className="btn-sm" onClick={async()=>{await fSet("wc2026/config/oddsApiKey",oddsApiKey);setWcMsg("✅ Odds API Key 已儲存");}} style={{marginBottom:0,width:"auto"}}>儲存</button>
               </div>
               <button onClick={fetchWCMatchesFromAPI} disabled={wcLoading} style={{marginBottom:"10px",width:"100%"}}>{wcLoading?"更新中...":"更新賽程"}</button>
               {wcMsg && <p style={{fontSize:"12px",color:"var(--t3)",marginBottom:"10px"}}>{wcMsg}</p>}
@@ -4143,6 +4151,44 @@ async function autoFetchWCMatches() {
   } catch(e) {}
 }
 
+async function autoFetchWCOdds() {
+  if (TEST_MODE) return;
+  try {
+    const now = Date.now();
+    const apiKey = await fGet("wc2026/config/oddsApiKey");
+    if (!apiKey) return;
+    let shouldFetch = false;
+    await fRef("wc2026/lastOddsFetch").transaction(cur => {
+      if (cur && now - cur < 24 * 60 * 60 * 1000) return undefined;
+      shouldFetch = true;
+      return now;
+    });
+    if (!shouldFetch) return;
+    const resp = await fetch(`https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds/?apiKey=${apiKey}&regions=eu&markets=h2h`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!Array.isArray(data)) return;
+    const matches = await fGet("wc2026/matches");
+    if (!matches) return;
+    const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const lookup = {};
+    for (const [mid, m] of Object.entries(matches)) {
+      lookup[norm(m.homeTeam) + "|" + norm(m.awayTeam)] = mid;
+    }
+    for (const entry of data) {
+      const mid = lookup[norm(entry.home_team) + "|" + norm(entry.away_team)];
+      if (!mid) continue;
+      const market = entry.bookmakers?.[0]?.markets?.find(mk => mk.key === "h2h");
+      if (!market) continue;
+      const homeO = market.outcomes.find(o => norm(o.name) === norm(entry.home_team));
+      const awayO = market.outcomes.find(o => norm(o.name) === norm(entry.away_team));
+      const drawO = market.outcomes.find(o => o.name === "Draw");
+      if (!homeO || !awayO) continue;
+      await fSet(`wc2026/odds/${mid}`, { home: homeO.price, draw: drawO?.price || 0, away: awayO.price });
+    }
+  } catch(e) {}
+}
+
 /* ── 世界盃競猜 ── */
 function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToast }) {
   const [tab, setTab] = React.useState("upcoming");
@@ -4162,6 +4208,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/bets", setAllBets);
     autoSettleWCMatches(showToast);
     autoFetchWCMatches();
+    autoFetchWCOdds();
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
