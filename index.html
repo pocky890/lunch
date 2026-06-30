@@ -4119,6 +4119,30 @@ async function autoSettleWCMatches(showToast) {
   } catch(e) {}
 }
 
+async function autoFetchWCMatches() {
+  if (TEST_MODE) return;
+  try {
+    const now = Date.now();
+    let shouldFetch = false;
+    await fRef("wc2026/lastMatchFetch").transaction(cur => {
+      if (cur && now - cur < 60 * 60 * 1000) return undefined;
+      shouldFetch = true;
+      return now;
+    });
+    if (!shouldFetch) return;
+    const resp = await fetch("https://api.football-data.org/v4/competitions/WC/matches", {
+      headers: { "X-Auth-Token": "5d480cad43b349ac9a56f79fc3ee8552" }
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const ms = {};
+    for (const m of (data.matches || [])) {
+      ms[m.id] = { id: m.id, homeTeam: m.homeTeam.shortName || m.homeTeam.name, awayTeam: m.awayTeam.shortName || m.awayTeam.name, utcDate: m.utcDate, status: m.status, stage: m.stage, group: m.group || null, homeScore: m.score?.fullTime?.home ?? null, awayScore: m.score?.fullTime?.away ?? null };
+    }
+    await fSet("wc2026/matches", ms);
+  } catch(e) {}
+}
+
 /* ── 世界盃競猜 ── */
 function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToast }) {
   const [tab, setTab] = React.useState("upcoming");
@@ -4137,6 +4161,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
     autoSettleWCMatches(showToast);
+    autoFetchWCMatches();
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
