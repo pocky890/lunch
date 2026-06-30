@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 20:54";
+  const BUILD_TIME = "2026-06-30 21:02";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3983,7 +3983,7 @@ async function autoSettleWCMatches(showToast) {
       if (m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined) continue;
       const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
       const o = odds?.[mid] || {};
-      const mName = `${matches[mid]?.homeTeam || ""} vs ${matches[mid]?.awayTeam || ""}`;
+      const mName = `${zhTeam(matches[mid]?.homeTeam || "")} vs ${zhTeam(matches[mid]?.awayTeam || "")}`;
       for (const [uKey, bet] of Object.entries(allBets[mid])) {
         if (bet.settled) continue;
         const payout = bet.pick === result ? Math.floor(bet.amount * (o[result] || 1)) : 0;
@@ -4046,7 +4046,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     try {
       await fRef(`wc2026/bets/${matchId}/${sKey}`).set({ pick: input.pick, amount, placedAt: Date.now(), settled: false, payout: null });
       await fRef(`userPoints/${sKey}`).transaction(p => (p || 0) - amount);
-      await fRef(`pointsLog/${sKey}`).push({ type: "wc_bet", delta: -amount, note: `${match.homeTeam} vs ${match.awayTeam}`, ts: Date.now() });
+      await fRef(`pointsLog/${sKey}`).push({ type: "wc_bet", delta: -amount, note: `${zhTeam(match.homeTeam)} vs ${zhTeam(match.awayTeam)}`, ts: Date.now() });
       const newPts = await fGet(`userPoints/${sKey}`);
       setUserPoints(newPts);
       setBetInputs(p => ({...p, [matchId]: { amount: "", pick: null }}));
