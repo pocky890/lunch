@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 21:02";
+  const BUILD_TIME = "2026-06-30 21:05";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3986,7 +3986,7 @@ async function autoSettleWCMatches(showToast) {
       const mName = `${zhTeam(matches[mid]?.homeTeam || "")} vs ${zhTeam(matches[mid]?.awayTeam || "")}`;
       for (const [uKey, bet] of Object.entries(allBets[mid])) {
         if (bet.settled) continue;
-        const payout = bet.pick === result ? Math.floor(bet.amount * (o[result] || 1)) : 0;
+        const payout = bet.pick === result ? Math.round(bet.amount * (o[result] || 1)) : 0;
         if (payout > 0) {
           await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
           await fRef(`pointsLog/${uKey}`).push({ type: "wc_win", delta: payout, note: mName, ts: Date.now() });
