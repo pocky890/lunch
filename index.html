@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 11:24";
+  const BUILD_TIME = "2026-06-30 11:42";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4040,6 +4040,68 @@ function PointsHistoryModal({ open, onClose, boundName }) {
   );
 }
 
+/* ── 世界盃自動結算 ── */
+async function autoSettleWCMatches(showToast) {
+  if (TEST_MODE) return;
+  try {
+    const now = Date.now();
+    const [allBets, matches, odds] = await Promise.all([
+      fGet("wc2026/bets"), fGet("wc2026/matches"), fGet("wc2026/odds"),
+    ]);
+    if (!allBets || !matches) return;
+
+    const needIds = Object.keys(allBets).filter(mid => {
+      const m = matches[mid];
+      if (!m || now < new Date(m.utcDate).getTime()) return false;
+      return Object.values(allBets[mid]).some(b => !b.settled);
+    });
+    if (needIds.length === 0) return;
+
+    let shouldFetch = false;
+    await fRef("wc2026/lastResultCheck").transaction(cur => {
+      if (cur && now - cur < 30 * 60 * 1000) return undefined;
+      shouldFetch = true;
+      return now;
+    });
+    if (!shouldFetch) return;
+
+    const resp = await fetch("https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED", {
+      headers: { "X-Auth-Token": "5d480cad43b349ac9a56f79fc3ee8552" }
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+
+    const finMap = {};
+    for (const m of (data.matches || [])) {
+      const hs = m.score?.fullTime?.home, as2 = m.score?.fullTime?.away;
+      if (hs !== null && hs !== undefined) finMap[String(m.id)] = { homeScore: hs, awayScore: as2 };
+    }
+
+    let settled = 0;
+    for (const mid of needIds) {
+      const fin = finMap[mid];
+      if (!fin) continue;
+      await fRef(`wc2026/matches/${mid}`).update({ status: "FINISHED", homeScore: fin.homeScore, awayScore: fin.awayScore });
+      const result = fin.homeScore > fin.awayScore ? "home" : fin.homeScore < fin.awayScore ? "away" : "draw";
+      const o = odds?.[mid] || {};
+      const mName = `${matches[mid]?.homeTeam || ""} vs ${matches[mid]?.awayTeam || ""}`;
+      for (const [uKey, bet] of Object.entries(allBets[mid])) {
+        if (bet.settled) continue;
+        const payout = bet.pick === result ? Math.floor(bet.amount * (o[result] || 1)) : 0;
+        if (payout > 0) {
+          await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
+          await fRef(`pointsLog/${uKey}`).push({ type: "wc_win", delta: payout, note: mName, ts: Date.now() });
+        } else {
+          await fRef(`pointsLog/${uKey}`).push({ type: "wc_lose", delta: 0, note: mName, ts: Date.now() });
+        }
+        await fRef(`wc2026/bets/${mid}/${uKey}`).update({ settled: true, payout });
+        settled++;
+      }
+    }
+    if (settled > 0 && showToast) showToast(`🏆 已自動結算 ${settled} 筆投注`, 6000);
+  } catch(e) {}
+}
+
 /* ── 世界盃競猜 ── */
 function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToast }) {
   const [tab, setTab] = React.useState("upcoming");
@@ -4057,6 +4119,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/matches", setMatches);
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
+    autoSettleWCMatches(showToast);
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
