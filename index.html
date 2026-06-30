@@ -1620,12 +1620,6 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [shopMsg, setShopMsg] = React.useState("");
   const [editTitleShop, setEditTitleShop] = React.useState({});
   const [newTitleEmoji, setNewTitleEmoji] = React.useState("");
-  const [wcMatches, setWcMatches] = React.useState({});
-  const [wcOdds, setWcOdds] = React.useState({});
-  const WC_FOOTBALL_API_KEY = "5d480cad43b349ac9a56f79fc3ee8552";
-  const [wcMsg, setWcMsg] = React.useState("");
-  const [wcLoading, setWcLoading] = React.useState(false);
-  const [wcOddsEdit, setWcOddsEdit] = React.useState({});
   const [newTitleName, setNewTitleName] = React.useState("");
   const [newTitlePrice, setNewTitlePrice] = React.useState("");
   const [newTitleStock, setNewTitleStock] = React.useState("0");
@@ -1667,52 +1661,6 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   }, [cardConfig]);
   const today = todayStr(), todayRec = weekly[today];
 
-  React.useEffect(() => {
-    if (tab !== "wc" || !open) return;
-    const refs = [];
-    const listen = (path, setter) => { const r = db.ref(`${DB_PREFIX}/${path}`); r.on("value", s => setter(s.val() || {})); refs.push(r); };
-    listen("wc2026/matches", setWcMatches);
-    listen("wc2026/odds", setWcOdds);
-    return () => refs.forEach(r => r.off("value"));
-  }, [tab, open]);
-
-  async function fetchWCMatchesFromAPI() {
-    setWcLoading(true); setWcMsg("");
-    try {
-      const res = await fetch(`https://api.football-data.org/v4/competitions/WC/matches`, { headers: { "X-Auth-Token": WC_FOOTBALL_API_KEY } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const ms = {};
-      for (const m of (data.matches || [])) {
-        ms[m.id] = { id: m.id, homeTeam: m.homeTeam.shortName || m.homeTeam.name, awayTeam: m.awayTeam.shortName || m.awayTeam.name, utcDate: m.utcDate, status: m.status, stage: m.stage, group: m.group || null, homeScore: m.score?.fullTime?.home ?? null, awayScore: m.score?.fullTime?.away ?? null };
-      }
-      await fSet("wc2026/matches", ms);
-      setWcMsg(`✅ 已更新 ${Object.keys(ms).length} 場比賽`);
-    } catch(e) { setWcMsg(`❌ 失敗：${e.message}`); }
-    setWcLoading(false);
-  }
-
-  async function settleWCMatch(matchId) {
-    const m = wcMatches[String(matchId)];
-    if (!m || m.homeScore === null) { setWcMsg("比賽無成績"); return; }
-    const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
-    const o = wcOdds[String(matchId)] || {};
-    const bets = await fGet(`wc2026/bets/${matchId}`) || {};
-    let count = 0;
-    for (const [uKey, bet] of Object.entries(bets)) {
-      if (bet.settled) continue;
-      const payout = bet.pick === result ? Math.floor(bet.amount * (o[result] || 1)) : 0;
-      if (payout > 0) {
-        await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
-        await fRef(`pointsLog/${uKey}`).push({ type: "wc_win", delta: payout, note: `${m.homeTeam} vs ${m.awayTeam}`, ts: Date.now() });
-      } else {
-        await fRef(`pointsLog/${uKey}`).push({ type: "wc_lose", delta: 0, note: `${m.homeTeam} vs ${m.awayTeam}`, ts: Date.now() });
-      }
-      await fRef(`wc2026/bets/${matchId}/${uKey}`).update({ settled: true, payout });
-      count++;
-    }
-    setWcMsg(`✅ 結算完成，${count} 筆`);
-  }
 
   if (!open) return null;
 
@@ -1797,7 +1745,6 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
           {tabBtn("points","🪙 點數")}
           {tabBtn("shop","🛒 商店")}
           {tabBtn("themes","🎨 主題")}
-          {tabBtn("wc","🏆 世界盃")}
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="restaurants" && <>
@@ -2113,46 +2060,6 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                   </div>
                 );
               })}
-            </div>
-          )}
-          {tab==="wc" && (
-            <div>
-              <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🏆 世界盃管理</p>
-              <button onClick={fetchWCMatchesFromAPI} disabled={wcLoading} style={{marginBottom:"10px",width:"100%"}}>{wcLoading?"更新中...":"更新賽程"}</button>
-              {wcMsg && <p style={{fontSize:"12px",color:"var(--t3)",marginBottom:"10px"}}>{wcMsg}</p>}
-              <div>
-                {Object.values(wcMatches).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate)).map(m => {
-                  const mid = String(m.id);
-                  const o = wcOdds[mid] || {};
-                  const oe = wcOddsEdit[mid] || {};
-                  const isFinished = ["FINISHED","AWARDED"].includes(m.status);
-                  const resultLabel = isFinished && m.homeScore !== null ? (m.homeScore > m.awayScore ? "主勝" : m.homeScore < m.awayScore ? "客勝" : "平局") : null;
-                  const tp = new Date(new Date(m.utcDate).getTime() + 8*3600000);
-                  const timeStr = `${String(tp.getUTCMonth()+1).padStart(2,"0")}/${String(tp.getUTCDate()).padStart(2,"0")} ${String(tp.getUTCHours()).padStart(2,"0")}:${String(tp.getUTCMinutes()).padStart(2,"0")}`;
-                  return (
-                    <div key={mid} style={{padding:"10px 0",borderBottom:"1px solid var(--b1)"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px"}}>
-                        <span style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{m.homeTeam} vs {m.awayTeam}</span>
-                        <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}{resultLabel?` · ${resultLabel}`:""}</span>
-                      </div>
-                      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
-                        {[["home","主"],["draw","平"],["away","客"]].map(([key,label])=>(
-                          <input key={key} type="number" step="0.01" placeholder={`${label}(${o[key]||"?"})`}
-                            value={oe[key]??""}
-                            onChange={e=>setWcOddsEdit(p=>({...p,[mid]:{...(p[mid]||{}),[key]:e.target.value}}))}
-                            style={{width:"60px",marginBottom:0,fontSize:"12px",padding:"4px 6px"}} />
-                        ))}
-                        <button className="btn-sm" onClick={async()=>{
-                          const v=wcOddsEdit[mid]||{};
-                          await fSet(`wc2026/odds/${mid}`,{home:parseFloat(v.home)||o.home||0,draw:parseFloat(v.draw)||o.draw||0,away:parseFloat(v.away)||o.away||0});
-                          setWcMsg("✅ 賠率已儲存");
-                        }} style={{marginBottom:0,width:"auto",fontSize:"11px",padding:"4px 8px"}}>存賠率</button>
-                        {isFinished && <button className="btn-sm" onClick={()=>settleWCMatch(mid)} style={{marginBottom:0,width:"auto",fontSize:"11px",padding:"4px 8px",background:"var(--a)",color:"#fff"}}>結算</button>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           )}
           {tab==="record" && (
