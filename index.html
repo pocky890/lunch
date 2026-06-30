@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 18:16";
+  const BUILD_TIME = "2026-06-30 18:17";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4032,7 +4032,7 @@ async function autoFetchWCMatches(showToast) {
     const resp = await fetch("https://api.football-data.org/v4/competitions/WC/matches", {
       headers: { "X-Auth-Token": "5d480cad43b349ac9a56f79fc3ee8552" }
     });
-    if (!resp.ok) return;
+    if (!resp.ok) { if (showToast) showToast("📅 賽程更新失敗", 4000); return; }
     const data = await resp.json();
     const ms = {};
     for (const m of (data.matches || [])) {
@@ -4040,7 +4040,7 @@ async function autoFetchWCMatches(showToast) {
     }
     await fSet("wc2026/matches", ms);
     if (showToast) showToast(`📅 賽程已更新（${Object.keys(ms).length} 場）`, 4000);
-  } catch(e) {}
+  } catch(e) { if (showToast) showToast("📅 賽程更新失敗", 4000); }
 }
 
 async function autoFetchWCOdds(showToast) {
@@ -4056,9 +4056,9 @@ async function autoFetchWCOdds(showToast) {
     });
     if (!shouldFetch) return;
     const resp = await fetch(`https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds/?apiKey=${apiKey}&regions=eu&markets=h2h`);
-    if (!resp.ok) return;
+    if (!resp.ok) { if (showToast) showToast("📊 賠率更新失敗", 4000); return; }
     const data = await resp.json();
-    if (!Array.isArray(data)) return;
+    if (!Array.isArray(data)) { if (showToast) showToast("📊 賠率更新失敗", 4000); return; }
     const matches = await fGet("wc2026/matches");
     if (!matches) return;
     const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -4080,7 +4080,7 @@ async function autoFetchWCOdds(showToast) {
       updated++;
     }
     if (showToast && updated > 0) showToast(`📊 賠率已更新（${updated} 場）`, 4000);
-  } catch(e) {}
+  } catch(e) { if (showToast) showToast("📊 賠率更新失敗", 4000); }
 }
 
 /* ── 世界盃競猜 ── */
