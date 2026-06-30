@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 18:14";
+  const BUILD_TIME = "2026-06-30 18:16";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4018,7 +4018,7 @@ async function autoSettleWCMatches(showToast) {
   } catch(e) {}
 }
 
-async function autoFetchWCMatches() {
+async function autoFetchWCMatches(showToast) {
   if (TEST_MODE) return;
   try {
     const now = Date.now();
@@ -4039,10 +4039,11 @@ async function autoFetchWCMatches() {
       ms[m.id] = { id: m.id, homeTeam: m.homeTeam.shortName || m.homeTeam.name, awayTeam: m.awayTeam.shortName || m.awayTeam.name, utcDate: m.utcDate, status: m.status, stage: m.stage, group: m.group || null, homeScore: m.score?.fullTime?.home ?? null, awayScore: m.score?.fullTime?.away ?? null };
     }
     await fSet("wc2026/matches", ms);
+    if (showToast) showToast(`📅 賽程已更新（${Object.keys(ms).length} 場）`, 4000);
   } catch(e) {}
 }
 
-async function autoFetchWCOdds() {
+async function autoFetchWCOdds(showToast) {
   if (TEST_MODE) return;
   try {
     const now = Date.now();
@@ -4065,6 +4066,7 @@ async function autoFetchWCOdds() {
     for (const [mid, m] of Object.entries(matches)) {
       lookup[norm(m.homeTeam) + "|" + norm(m.awayTeam)] = mid;
     }
+    let updated = 0;
     for (const entry of data) {
       const mid = lookup[norm(entry.home_team) + "|" + norm(entry.away_team)];
       if (!mid) continue;
@@ -4075,7 +4077,9 @@ async function autoFetchWCOdds() {
       const drawO = market.outcomes.find(o => o.name === "Draw");
       if (!homeO || !awayO) continue;
       await fSet(`wc2026/odds/${mid}`, { home: homeO.price, draw: drawO?.price || 0, away: awayO.price });
+      updated++;
     }
+    if (showToast && updated > 0) showToast(`📊 賠率已更新（${updated} 場）`, 4000);
   } catch(e) {}
 }
 
@@ -4097,8 +4101,8 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
     autoSettleWCMatches(showToast);
-    autoFetchWCMatches();
-    autoFetchWCOdds();
+    autoFetchWCMatches(showToast);
+    autoFetchWCOdds(showToast);
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
