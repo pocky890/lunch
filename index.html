@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 09:55";
+  const BUILD_TIME = "2026-06-30 10:29";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1618,6 +1618,12 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [shopMsg, setShopMsg] = React.useState("");
   const [editTitleShop, setEditTitleShop] = React.useState({});
   const [newTitleEmoji, setNewTitleEmoji] = React.useState("");
+  const [wcMatches, setWcMatches] = React.useState({});
+  const [wcOdds, setWcOdds] = React.useState({});
+  const [wcApiKey, setWcApiKey] = React.useState("");
+  const [wcMsg, setWcMsg] = React.useState("");
+  const [wcLoading, setWcLoading] = React.useState(false);
+  const [wcOddsEdit, setWcOddsEdit] = React.useState({});
   const [newTitleName, setNewTitleName] = React.useState("");
   const [newTitlePrice, setNewTitlePrice] = React.useState("");
   const [newTitleStock, setNewTitleStock] = React.useState("0");
@@ -1658,6 +1664,51 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
     setEditConfig(merged);
   }, [cardConfig]);
   const today = todayStr(), todayRec = weekly[today];
+
+  React.useEffect(() => {
+    if (tab !== "wc" || !open) return;
+    fGet("wc2026/config/apiKey").then(k => k && setWcApiKey(k));
+    const refs = [];
+    const listen = (path, setter) => { const r = db.ref(`${DB_PREFIX}/${path}`); r.on("value", s => setter(s.val() || {})); refs.push(r); };
+    listen("wc2026/matches", setWcMatches);
+    listen("wc2026/odds", setWcOdds);
+    return () => refs.forEach(r => r.off("value"));
+  }, [tab, open]);
+
+  async function fetchWCMatchesFromAPI() {
+    if (!wcApiKey) { setWcMsg("請先儲存 API Key"); return; }
+    setWcLoading(true); setWcMsg("");
+    try {
+      const res = await fetch(`https://api.football-data.org/v4/competitions/WC/matches`, { headers: { "X-Auth-Token": wcApiKey } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const ms = {};
+      for (const m of (data.matches || [])) {
+        ms[m.id] = { id: m.id, homeTeam: m.homeTeam.shortName || m.homeTeam.name, awayTeam: m.awayTeam.shortName || m.awayTeam.name, utcDate: m.utcDate, status: m.status, stage: m.stage, group: m.group || null, homeScore: m.score?.fullTime?.home ?? null, awayScore: m.score?.fullTime?.away ?? null };
+      }
+      await fSet("wc2026/matches", ms);
+      setWcMsg(`✅ 已更新 ${Object.keys(ms).length} 場比賽`);
+    } catch(e) { setWcMsg(`❌ 失敗：${e.message}`); }
+    setWcLoading(false);
+  }
+
+  async function settleWCMatch(matchId) {
+    const m = wcMatches[String(matchId)];
+    if (!m || m.homeScore === null) { setWcMsg("比賽無成績"); return; }
+    const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
+    const o = wcOdds[String(matchId)] || {};
+    const bets = await fGet(`wc2026/bets/${matchId}`) || {};
+    let count = 0;
+    for (const [uKey, bet] of Object.entries(bets)) {
+      if (bet.settled) continue;
+      const payout = bet.pick === result ? Math.floor(bet.amount * (o[result] || 1)) : 0;
+      if (payout > 0) await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
+      await fRef(`wc2026/bets/${matchId}/${uKey}`).update({ settled: true, payout });
+      count++;
+    }
+    setWcMsg(`✅ 結算完成，${count} 筆`);
+  }
+
   if (!open) return null;
 
   const catRests = rests[cat] || [];
@@ -1741,6 +1792,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
           {tabBtn("points","🪙 點數")}
           {tabBtn("shop","🛒 商店")}
           {tabBtn("themes","🎨 主題")}
+          {tabBtn("wc","🏆 世界盃")}
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="restaurants" && <>
@@ -2058,6 +2110,52 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
               })}
             </div>
           )}
+          {tab==="wc" && (
+            <div>
+              <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🏆 世界盃管理</p>
+              <div style={{display:"flex",gap:"8px",marginBottom:"10px",alignItems:"center"}}>
+                <input type="password" placeholder="football-data.org API Key" value={wcApiKey}
+                  onChange={e=>setWcApiKey(e.target.value)}
+                  style={{flex:1,marginBottom:0,fontSize:"13px"}} />
+                <button className="btn-sm" onClick={async()=>{await fSet("wc2026/config/apiKey",wcApiKey);setWcMsg("✅ API Key 已儲存");}} style={{marginBottom:0,width:"auto"}}>儲存</button>
+              </div>
+              <button onClick={fetchWCMatchesFromAPI} disabled={wcLoading} style={{marginBottom:"10px",width:"100%"}}>{wcLoading?"更新中...":"更新賽程"}</button>
+              {wcMsg && <p style={{fontSize:"12px",color:"var(--t3)",marginBottom:"10px"}}>{wcMsg}</p>}
+              <div>
+                {Object.values(wcMatches).sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate)).map(m => {
+                  const mid = String(m.id);
+                  const o = wcOdds[mid] || {};
+                  const oe = wcOddsEdit[mid] || {};
+                  const isFinished = ["FINISHED","AWARDED"].includes(m.status);
+                  const resultLabel = isFinished && m.homeScore !== null ? (m.homeScore > m.awayScore ? "主勝" : m.homeScore < m.awayScore ? "客勝" : "平局") : null;
+                  const tp = new Date(new Date(m.utcDate).getTime() + 8*3600000);
+                  const timeStr = `${String(tp.getUTCMonth()+1).padStart(2,"0")}/${String(tp.getUTCDate()).padStart(2,"0")} ${String(tp.getUTCHours()).padStart(2,"0")}:${String(tp.getUTCMinutes()).padStart(2,"0")}`;
+                  return (
+                    <div key={mid} style={{padding:"10px 0",borderBottom:"1px solid var(--b1)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px"}}>
+                        <span style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{m.homeTeam} vs {m.awayTeam}</span>
+                        <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}{resultLabel?` · ${resultLabel}`:""}</span>
+                      </div>
+                      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",alignItems:"center"}}>
+                        {[["home","主"],["draw","平"],["away","客"]].map(([key,label])=>(
+                          <input key={key} type="number" step="0.01" placeholder={`${label}(${o[key]||"?"})`}
+                            value={oe[key]??""}
+                            onChange={e=>setWcOddsEdit(p=>({...p,[mid]:{...(p[mid]||{}),[key]:e.target.value}}))}
+                            style={{width:"60px",marginBottom:0,fontSize:"12px",padding:"4px 6px"}} />
+                        ))}
+                        <button className="btn-sm" onClick={async()=>{
+                          const v=wcOddsEdit[mid]||{};
+                          await fSet(`wc2026/odds/${mid}`,{home:parseFloat(v.home)||o.home||0,draw:parseFloat(v.draw)||o.draw||0,away:parseFloat(v.away)||o.away||0});
+                          setWcMsg("✅ 賠率已儲存");
+                        }} style={{marginBottom:0,width:"auto",fontSize:"11px",padding:"4px 8px"}}>存賠率</button>
+                        {isFinished && <button className="btn-sm" onClick={()=>settleWCMatch(mid)} style={{marginBottom:0,width:"auto",fontSize:"11px",padding:"4px 8px",background:"var(--a)",color:"#fff"}}>結算</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {tab==="record" && (
             !todayRec
               ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>今天尚無開獎紀錄</div>
@@ -2200,7 +2298,7 @@ function SugarRush({ onDone }) {
   );
 }
 
-function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, shopNews, onProfile, achievementNews, onLogoClick, userPoints, onShop, onPointsHistory, activeTheme, onNotif, notifHasNew}) {
+function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardHelp, weather, userName, isAdmin, cardNews, rulesNews, shopNews, onProfile, achievementNews, onLogoClick, userPoints, onShop, onPointsHistory, activeTheme, onNotif, notifHasNew, onWorldCup}) {
   const showWeather = weather && !weather.loading && !weather.error && (weather.temp !== null || weather.pop !== null);
   const themeMeta = THEMES[activeTheme] || {};
   return (
@@ -2228,6 +2326,7 @@ function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardH
           <button className={`ghost theme-toggle header-hide-mobile${cardNews?" has-news":""}`} onClick={onCardHelp} title="卡牌說明">🃏</button>
           <button className={`ghost theme-toggle header-hide-mobile${rulesNews?" has-news":""}`} onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
           {isAdmin && <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>}
+          <button className="ghost theme-toggle" onClick={onWorldCup} title="世界盃競猜">🏆</button>
           <button className={`ghost theme-toggle header-dark-toggle${themeHasNews?" has-news":""}`} onClick={onTheme} title="主題">🎨</button>
           {userName && <div style={{position:"relative",display:"inline-flex"}}>
             <button className={`ghost theme-toggle${shopNews?" has-news":""}`} onClick={onShop} title="點數商店">🛒</button>
@@ -3931,6 +4030,158 @@ function PointsHistoryModal({ open, onClose, boundName }) {
   );
 }
 
+/* ── 世界盃競猜 ── */
+function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToast }) {
+  const [tab, setTab] = React.useState("upcoming");
+  const [matches, setMatches] = React.useState({});
+  const [odds, setOdds] = React.useState({});
+  const [allBets, setAllBets] = React.useState({});
+  const [betInputs, setBetInputs] = React.useState({});
+  const [submitting, setSubmitting] = React.useState(false);
+  const sKey = boundName ? sanitizeKey(boundName) : null;
+
+  React.useEffect(() => {
+    if (TEST_MODE) return;
+    const refs = [];
+    const listen = (path, setter) => { const r = db.ref(`${DB_PREFIX}/${path}`); r.on("value", s => setter(s.val() || {})); refs.push(r); };
+    listen("wc2026/matches", setMatches);
+    listen("wc2026/odds", setOdds);
+    listen("wc2026/bets", setAllBets);
+    return () => refs.forEach(r => r.off("value"));
+  }, []);
+
+  function toTaipei(utcStr) {
+    const d = new Date(new Date(utcStr).getTime() + 8 * 3600000);
+    return `${String(d.getUTCMonth()+1).padStart(2,"0")}/${String(d.getUTCDate()).padStart(2,"0")} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`;
+  }
+
+  async function placeBet(matchId) {
+    if (!sKey) return;
+    const input = betInputs[matchId] || {};
+    if (!input.pick) return showToast("請選擇隊伍");
+    const amount = parseInt(input.amount);
+    if (!amount || amount < 1) return showToast("請輸入押注點數");
+    if (amount > userPoints) return showToast("點數不足");
+    const match = matches[matchId];
+    if (!match) return;
+    if (Date.now() >= new Date(match.utcDate).getTime()) return showToast("比賽已開始，無法下注");
+    if (allBets[matchId]?.[sKey]) return showToast("已有投注");
+    setSubmitting(true);
+    try {
+      await fRef(`wc2026/bets/${matchId}/${sKey}`).set({ pick: input.pick, amount, placedAt: Date.now(), settled: false, payout: null });
+      await fRef(`userPoints/${sKey}`).transaction(p => (p || 0) - amount);
+      const newPts = await fGet(`userPoints/${sKey}`);
+      setUserPoints(newPts);
+      setBetInputs(p => ({...p, [matchId]: { amount: "", pick: null }}));
+      showToast("✅ 投注成功！");
+    } catch(e) { showToast("投注失敗"); }
+    setSubmitting(false);
+  }
+
+  const matchArr = Object.values(matches).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  const myBetEntries = sKey ? matchArr.filter(m => allBets[String(m.id)]?.[sKey]) : [];
+
+  function MatchCard({ match }) {
+    const mid = String(match.id);
+    const o = odds[mid] || {};
+    const hasOdds = o.home && o.draw && o.away;
+    const myBet = sKey ? allBets[mid]?.[sKey] : null;
+    const input = betInputs[mid] || {};
+    const started = Date.now() >= new Date(match.utcDate).getTime();
+    const isFinished = ["FINISHED","AWARDED"].includes(match.status);
+    const canBet = hasOdds && !myBet && !started && !!sKey;
+    const result = isFinished && match.homeScore !== null
+      ? (match.homeScore > match.awayScore ? "home" : match.homeScore < match.awayScore ? "away" : "draw") : null;
+    return (
+      <div style={{border:"1px solid var(--b1)",borderRadius:"12px",padding:"12px",marginBottom:"8px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
+          <span style={{fontSize:"11px",color:"var(--t3)"}}>{(match.stage||"").replace(/_/g," ")}{match.group?` · ${match.group}`:""}</span>
+          <span style={{fontSize:"11px",color:"var(--t3)"}}>{toTaipei(match.utcDate)}</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+          <div style={{flex:1,textAlign:"center"}}>
+            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{match.homeTeam}</div>
+            {result && <div style={{fontSize:"24px",fontWeight:"700",color:result==="home"?"var(--a)":"var(--t1)"}}>{match.homeScore}</div>}
+          </div>
+          <div style={{fontSize:"11px",color:"var(--t3)",fontWeight:"600",minWidth:"24px",textAlign:"center"}}>{isFinished?"FT":"VS"}</div>
+          <div style={{flex:1,textAlign:"center"}}>
+            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{match.awayTeam}</div>
+            {result && <div style={{fontSize:"24px",fontWeight:"700",color:result==="away"?"var(--a)":"var(--t1)"}}>{match.awayScore}</div>}
+          </div>
+        </div>
+        {hasOdds && (
+          <div style={{display:"flex",gap:"6px",marginBottom:"6px"}}>
+            {[["home","主",o.home],["draw","平",o.draw],["away","客",o.away]].map(([key,label,odd]) => {
+              const isBet = myBet?.pick === key;
+              const isWin = isBet && result === key;
+              const isLose = isBet && result && result !== key;
+              const isSel = !myBet && input.pick === key;
+              return (
+                <button key={key} type="button"
+                  onClick={() => canBet && setBetInputs(p => ({...p, [mid]: {...(p[mid]||{}), pick: input.pick===key?null:key}}))}
+                  style={{flex:1,padding:"6px 4px",borderRadius:"8px",fontSize:"11px",fontWeight:"600",marginBottom:0,lineHeight:1.4,cursor:canBet?"pointer":"default",
+                    background:isWin?"rgba(34,197,94,0.15)":isLose?"rgba(239,68,68,0.1)":isBet||isSel?"var(--a)":"var(--s2)",
+                    color:isWin?"#15803d":isLose?"#b91c1c":isBet||isSel?"#fff":"var(--t2)",
+                    border:`1px solid ${isWin?"rgba(34,197,94,0.4)":isLose?"rgba(239,68,68,0.3)":isBet||isSel?"var(--a)":"var(--b1)"}`}}>
+                  <div style={{opacity:.8}}>{label}</div>
+                  <div style={{fontSize:"14px",fontWeight:"700"}}>{odd}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {canBet && input.pick && (
+          <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+            <input type="number" min="1" max={userPoints} placeholder={`點數（剩 ${userPoints}）`}
+              value={input.amount||""}
+              onChange={e=>setBetInputs(p=>({...p,[mid]:{...(p[mid]||{}),amount:e.target.value}}))}
+              style={{flex:1,marginBottom:0,padding:"6px 10px",fontSize:"13px"}} />
+            <button onClick={()=>placeBet(mid)} disabled={submitting} style={{marginBottom:0,width:"auto",padding:"6px 16px",fontSize:"13px"}}>押注</button>
+          </div>
+        )}
+        {myBet && (
+          <div style={{marginTop:"6px",padding:"6px 10px",borderRadius:"8px",fontSize:"12px",
+            background:myBet.settled?(myBet.payout>0?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.08)"):"var(--s2)",
+            color:myBet.settled?(myBet.payout>0?"#15803d":"#b91c1c"):"var(--t2)"}}>
+            {myBet.pick==="home"?"主隊":myBet.pick==="away"?"客隊":"平局"} · {myBet.amount} 點
+            {myBet.settled?(myBet.payout>0?` · 獲得 ${myBet.payout} 點（+${myBet.payout-myBet.amount}）`:" · 落空"):" · 待開獎"}
+          </div>
+        )}
+        {!hasOdds && !isFinished && <div style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"4px"}}>賠率待設定</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:"460px",width:"95vw",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexShrink:0}}>
+          <h2 style={{fontSize:"18px",margin:0}}>🏆 世界盃競猜</h2>
+          <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
+        </div>
+        <div style={{display:"flex",gap:"8px",marginBottom:"16px",flexShrink:0}}>
+          {[["upcoming","賽程"],["mybets","我的投注"]].map(([key,label])=>(
+            <button key={key} onClick={()=>setTab(key)} style={{marginBottom:0,flex:1,padding:"6px",fontSize:"13px",fontWeight:"600",borderRadius:"20px",
+              background:tab===key?"var(--a)":"transparent",color:tab===key?"#fff":"var(--t2)",border:`1px solid ${tab===key?"var(--a)":"var(--b2)"}`}}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{flex:1,overflowY:"auto"}}>
+          {tab==="upcoming" && (matchArr.length===0
+            ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>尚無賽程，請管理員更新</div>
+            : matchArr.map(m=><MatchCard key={m.id} match={m} />)
+          )}
+          {tab==="mybets" && (myBetEntries.length===0
+            ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>尚無投注紀錄</div>
+            : myBetEntries.map(m=><MatchCard key={m.id} match={m} />)
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── App 主程式 ── */
 function App() {
   const [authState, setAuthState] = useState("loading"); // loading | login | setname | ready
@@ -3988,6 +4239,7 @@ function App() {
   const [toastMsg, setToastMsg] = useState("");
   const [userPoints, setUserPoints] = useState(null);
   const [showShop, setShowShop] = useState(false);
+  const [showWorldCup, setShowWorldCup] = useState(false);
   const [shopConfig, setShopConfig] = useState({});
   const [titleShopConfig, setTitleShopConfig] = useState({});
   const [userOwnedTitles, setUserOwnedTitles] = useState({});
@@ -5275,6 +5527,7 @@ function App() {
     <ChatWidget boundName={boundName} />
     <NotificationModal open={showNotifHistory} onClose={()=>setShowNotifHistory(false)} boundName={boundName} weekly={weekly} />
     <PointsHistoryModal open={showPointsHistory} onClose={()=>setShowPointsHistory(false)} boundName={boundName} />
+    {showWorldCup && <WorldCupModal onClose={()=>setShowWorldCup(false)} boundName={boundName} userPoints={userPoints} setUserPoints={setUserPoints} showToast={showToast} />}
     <TestModeBanner />
   </>;
 
@@ -5283,7 +5536,7 @@ function App() {
   if (phase==="setup") return (
     <div>
       {AP}
-      <SiteHeader onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} />
+      <SiteHeader onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
@@ -5307,7 +5560,7 @@ function App() {
   if (phase==="join") return (
     <div>
       {AP}
-      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} />
+      <SiteHeader title="購買彩券" sub="截止前選好店、押好號" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
@@ -5477,7 +5730,7 @@ function App() {
     return (
       <div>
         {AP}
-      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} />
+      <SiteHeader title="等待開獎中" sub="時間到準時揭曉" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
@@ -5504,7 +5757,7 @@ function App() {
   if (phase==="absent") return (
     <div>
       {AP}
-      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} />
+      <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
@@ -5547,7 +5800,7 @@ function App() {
     if (!result?.winner || pts.length < 2) return (
       <div>
         {AP}
-        <SiteHeader title="開獎結果" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} />
+        <SiteHeader title="開獎結果" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
@@ -5588,7 +5841,7 @@ function App() {
     return (
       <div>
         {AP}
-        <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} />
+        <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
