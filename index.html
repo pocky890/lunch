@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 18:24";
+  const BUILD_TIME = "2026-06-30 20:28";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4095,6 +4095,8 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
   const [allBets, setAllBets] = React.useState({});
   const [betInputs, setBetInputs] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
+  const [wcToast, setWcToast] = React.useState("");
+  function showWCToast(msg, duration=4000) { setWcToast(msg); setTimeout(() => setWcToast(""), duration); }
   const sKey = boundName ? sanitizeKey(boundName) : null;
 
   React.useEffect(() => {
@@ -4104,9 +4106,9 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/matches", setMatches);
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
-    autoSettleWCMatches(showToast);
-    autoFetchWCMatches(showToast);
-    autoFetchWCOdds(showToast);
+    autoSettleWCMatches(showWCToast);
+    autoFetchWCMatches(showWCToast);
+    autoFetchWCOdds(showWCToast);
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
@@ -4223,6 +4225,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
 
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      {wcToast && <div className="toast-container" style={{zIndex:10000}}>{wcToast}</div>}
       <div className="modal" style={{maxWidth:"460px",width:"95vw",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexShrink:0}}>
           <h2 style={{fontSize:"18px",margin:0}}>🏆 世界盃競猜</h2>
