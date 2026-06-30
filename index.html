@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-29 19:50";
+  const BUILD_TIME = "2026-06-30 09:50";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4825,30 +4825,35 @@ function App() {
           }
         }
         if (victims.length > 0) {
-          const victim = victims[Math.floor(Math.random() * victims.length)];
-          const [cardId] = victim.cards[Math.floor(Math.random() * victim.cards.length)];
-          // 原子取卡：僅當該卡仍在對方手牌時才偷走，避免與「對方剛好使用該卡」競態造成複製
-          let stolen = null;
-          const txResult = await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => {
-            if (cur === null) return; // 已被使用或偷走，放棄
-            stolen = cur;
-            return null;              // 原子移除
-          });
-          if (txResult.committed && stolen) {
+          // 建立所有可偷組合並隨機排列，逐一嘗試直到成功或全部撲空
+          const pool = [];
+          for (const v of victims) for (const [cId] of v.cards) pool.push({ victim: v, cardId: cId });
+          for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+          let stolen = null, stolenVictim = null;
+          for (const { victim, cardId } of pool) {
+            let attempt = null;
+            const txResult = await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => {
+              if (cur === null) return;
+              attempt = cur;
+              return null;
+            });
+            if (txResult.committed && attempt) { stolen = attempt; stolenVictim = victim; break; }
+          }
+          if (stolen && stolenVictim) {
             const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
             await newRef.set(stolen);
             stealSucceeded = true;
-            logNotification(sanitizeKey(name), "card_received", { cardType: stolen.type, date: todayStr(), from: victim.name });
+            logNotification(sanitizeKey(name), "card_received", { cardType: stolen.type, date: todayStr(), from: stolenVictim.name });
             if (stolen.type === "steal_card") {
               await fRef(`specialAchievements/${sanitizeKey(name)}/stealSteal`).set(true);
               setMySpecialAchievements(prev => ({...prev, stealSteal: true}));
               logNotification(sanitizeKey(name), "achievement", { key: "stealSteal", date: todayStr() });
             }
-            showToast(`🎭 偷到了 ${victim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`, 10000);
-            logNotification(sanitizeKey(victim.name), "card_stolen_from_you", { cardType: stolen.type, by: name, date: todayStr() });
-            await fRef(`stolenNotice/${sanitizeKey(victim.name)}`).push().set({ by: name, cardType: stolen.type, date: todayStr() });
+            showToast(`🎭 偷到了 ${stolenVictim.name} 的 ${CARD_TYPES[stolen.type]?.emoji}${CARD_TYPES[stolen.type]?.name}！`, 10000);
+            logNotification(sanitizeKey(stolenVictim.name), "card_stolen_from_you", { cardType: stolen.type, by: name, date: todayStr() });
+            await fRef(`stolenNotice/${sanitizeKey(stolenVictim.name)}`).push().set({ by: name, cardType: stolen.type, date: todayStr() });
           } else {
-            showToast("🎭 想偷的卡剛好被用掉了，盜牌卡保留 😅");
+            showToast("🎭 目前沒有人有卡可偷，盜牌卡保留 😅");
           }
         } else {
           showToast("🎭 目前沒有人有卡可偷，盜牌卡保留 😅");
