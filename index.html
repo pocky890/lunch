@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 11:14";
+  const BUILD_TIME = "2026-06-30 11:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3971,13 +3971,15 @@ function PointsHistoryModal({ open, onClose, boundName }) {
     }
     setLoading(true);
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    db.ref(`${DB_PREFIX}/pointsLog/${sanitizeKey(boundName)}`).orderByChild("ts").startAt(cutoff).limitToLast(200).once("value")
-      .then(snap => {
-        const val = snap.val() || {};
-        const arr = Object.values(val).sort((a,b) => (b.ts||0) - (a.ts||0));
-        setLogs(arr);
-        setLoading(false);
-      });
+    const ref = db.ref(`${DB_PREFIX}/pointsLog/${sanitizeKey(boundName)}`).orderByChild("ts").startAt(cutoff).limitToLast(200);
+    const handler = snap => {
+      const val = snap.val() || {};
+      const arr = Object.values(val).sort((a,b) => (b.ts||0) - (a.ts||0));
+      setLogs(arr);
+      setLoading(false);
+    };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
   }, [open, boundName]);
   if (!open) return null;
   const TYPE_META = {
