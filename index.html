@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 11:02";
+  const BUILD_TIME = "2026-06-30 11:10";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4060,7 +4060,8 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     const input = betInputs[matchId] || {};
     if (!input.pick) return showToast("請選擇隊伍");
     const amount = parseInt(input.amount);
-    if (!amount || amount < 1) return showToast("請輸入押注點數");
+    if (!amount || amount < 10) return showToast("最少押 10 點");
+    if (amount % 10 !== 0) return showToast("押注點數須為 10 的倍數");
     if (amount > userPoints) return showToast("點數不足");
     const match = matches[matchId];
     if (!match) return;
@@ -4118,8 +4119,13 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
               const isSel = !myBet && input.pick === key;
               return (
                 <button key={key} type="button"
-                  onClick={() => canBet && setBetInputs(p => ({...p, [mid]: {...(p[mid]||{}), pick: input.pick===key?null:key}}))}
-                  style={{flex:1,padding:"6px 4px",borderRadius:"8px",fontSize:"11px",fontWeight:"600",marginBottom:0,lineHeight:1.4,cursor:canBet?"pointer":"default",
+                  onClick={() => {
+                    if (started) return showToast("比賽已開始，無法下注");
+                    if (!sKey) return showToast("請先登入");
+                    if (myBet) return;
+                    setBetInputs(p => ({...p, [mid]: {...(p[mid]||{}), pick: input.pick===key?null:key}}));
+                  }}
+                  style={{flex:1,padding:"6px 4px",borderRadius:"8px",fontSize:"11px",fontWeight:"600",marginBottom:0,lineHeight:1.4,cursor:started||myBet?"default":"pointer",opacity:started&&!myBet?0.5:1,
                     background:isWin?"rgba(34,197,94,0.15)":isLose?"rgba(239,68,68,0.1)":isBet||isSel?"var(--a)":"var(--s2)",
                     color:isWin?"#15803d":isLose?"#b91c1c":isBet||isSel?"#fff":"var(--t2)",
                     border:`1px solid ${isWin?"rgba(34,197,94,0.4)":isLose?"rgba(239,68,68,0.3)":isBet||isSel?"var(--a)":"var(--b1)"}`}}>
@@ -4132,7 +4138,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
         )}
         {canBet && input.pick && (
           <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-            <input type="number" min="1" max={userPoints} placeholder={`點數（剩 ${userPoints}）`}
+            <input type="number" min="10" step="10" max={userPoints} placeholder={`點數（最少10，剩 ${userPoints}）`}
               value={input.amount||""}
               onChange={e=>setBetInputs(p=>({...p,[mid]:{...(p[mid]||{}),amount:e.target.value}}))}
               style={{flex:1,marginBottom:0,padding:"6px 10px",fontSize:"13px"}} />
