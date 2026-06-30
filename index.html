@@ -1622,8 +1622,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   const [newTitleEmoji, setNewTitleEmoji] = React.useState("");
   const [wcMatches, setWcMatches] = React.useState({});
   const [wcOdds, setWcOdds] = React.useState({});
-  const [wcApiKey, setWcApiKey] = React.useState("");
-  const [oddsApiKey, setOddsApiKey] = React.useState("");
+  const WC_FOOTBALL_API_KEY = "5d480cad43b349ac9a56f79fc3ee8552";
   const [wcMsg, setWcMsg] = React.useState("");
   const [wcLoading, setWcLoading] = React.useState(false);
   const [wcOddsEdit, setWcOddsEdit] = React.useState({});
@@ -1670,8 +1669,6 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
 
   React.useEffect(() => {
     if (tab !== "wc" || !open) return;
-    fGet("wc2026/config/apiKey").then(k => k && setWcApiKey(k));
-    fGet("wc2026/config/oddsApiKey").then(k => k && setOddsApiKey(k));
     const refs = [];
     const listen = (path, setter) => { const r = db.ref(`${DB_PREFIX}/${path}`); r.on("value", s => setter(s.val() || {})); refs.push(r); };
     listen("wc2026/matches", setWcMatches);
@@ -1680,10 +1677,9 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
   }, [tab, open]);
 
   async function fetchWCMatchesFromAPI() {
-    if (!wcApiKey) { setWcMsg("請先儲存 API Key"); return; }
     setWcLoading(true); setWcMsg("");
     try {
-      const res = await fetch(`https://api.football-data.org/v4/competitions/WC/matches`, { headers: { "X-Auth-Token": wcApiKey } });
+      const res = await fetch(`https://api.football-data.org/v4/competitions/WC/matches`, { headers: { "X-Auth-Token": WC_FOOTBALL_API_KEY } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const ms = {};
@@ -2122,18 +2118,6 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
           {tab==="wc" && (
             <div>
               <p style={{fontSize:"13px",fontWeight:"700",color:"var(--t2)",marginBottom:"12px"}}>🏆 世界盃管理</p>
-              <div style={{display:"flex",gap:"8px",marginBottom:"6px",alignItems:"center"}}>
-                <input type="password" placeholder="football-data.org API Key" value={wcApiKey}
-                  onChange={e=>setWcApiKey(e.target.value)}
-                  style={{flex:1,marginBottom:0,fontSize:"13px"}} />
-                <button className="btn-sm" onClick={async()=>{await fSet("wc2026/config/apiKey",wcApiKey);setWcMsg("✅ API Key 已儲存");}} style={{marginBottom:0,width:"auto"}}>儲存</button>
-              </div>
-              <div style={{display:"flex",gap:"8px",marginBottom:"10px",alignItems:"center"}}>
-                <input type="password" placeholder="The Odds API Key" value={oddsApiKey}
-                  onChange={e=>setOddsApiKey(e.target.value)}
-                  style={{flex:1,marginBottom:0,fontSize:"13px"}} />
-                <button className="btn-sm" onClick={async()=>{await fSet("wc2026/config/oddsApiKey",oddsApiKey);setWcMsg("✅ Odds API Key 已儲存");}} style={{marginBottom:0,width:"auto"}}>儲存</button>
-              </div>
               <button onClick={fetchWCMatchesFromAPI} disabled={wcLoading} style={{marginBottom:"10px",width:"100%"}}>{wcLoading?"更新中...":"更新賽程"}</button>
               {wcMsg && <p style={{fontSize:"12px",color:"var(--t3)",marginBottom:"10px"}}>{wcMsg}</p>}
               <div>
@@ -4155,8 +4139,7 @@ async function autoFetchWCOdds() {
   if (TEST_MODE) return;
   try {
     const now = Date.now();
-    const apiKey = await fGet("wc2026/config/oddsApiKey");
-    if (!apiKey) return;
+    const apiKey = "f017ab09768e8e7b9a1cc60340809ce3";
     let shouldFetch = false;
     await fRef("wc2026/lastOddsFetch").transaction(cur => {
       if (cur && now - cur < 24 * 60 * 60 * 1000) return undefined;
