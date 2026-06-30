@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 11:42";
+  const BUILD_TIME = "2026-06-30 11:48";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4040,6 +4040,21 @@ function PointsHistoryModal({ open, onClose, boundName }) {
   );
 }
 
+/* ── 世界盃國家中文名 ── */
+const WC_TEAM_ZH = {
+  "Algeria":"阿爾及利亞","Argentina":"阿根廷","Australia":"澳洲","Austria":"奧地利",
+  "Belgium":"比利時","Bosnia-Herzegovina":"波赫","Brazil":"巴西","Canada":"加拿大",
+  "Cape Verde Islands":"維德角","Colombia":"哥倫比亞","Congo DR":"剛果（金）",
+  "Croatia":"克羅埃西亞","Ecuador":"厄瓜多","Egypt":"埃及","England":"英格蘭",
+  "France":"法國","Germany":"德國","Ghana":"迦納","Iran":"伊朗",
+  "Ivory Coast":"象牙海岸","Japan":"日本","Mexico":"墨西哥","Morocco":"摩洛哥",
+  "Netherlands":"荷蘭","Nigeria":"奈及利亞","Norway":"挪威","Panama":"巴拿馬",
+  "Portugal":"葡萄牙","Saudi Arabia":"沙烏地阿拉伯","Senegal":"塞內加爾",
+  "South Korea":"韓國","Spain":"西班牙","Sweden":"瑞典","Switzerland":"瑞士",
+  "Tunisia":"突尼西亞","United States":"美國","Uruguay":"烏拉圭",
+};
+const zhTeam = n => WC_TEAM_ZH[n] || n;
+
 /* ── 世界盃自動結算 ── */
 async function autoSettleWCMatches(showToast) {
   if (TEST_MODE) return;
@@ -4177,12 +4192,12 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
         </div>
         <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{match.homeTeam}</div>
+            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{zhTeam(match.homeTeam)}</div>
             {result && <div style={{fontSize:"24px",fontWeight:"700",color:result==="home"?"var(--a)":"var(--t1)"}}>{match.homeScore}</div>}
           </div>
           <div style={{fontSize:"11px",color:"var(--t3)",fontWeight:"600",minWidth:"24px",textAlign:"center"}}>{isFinished?"FT":"VS"}</div>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{match.awayTeam}</div>
+            <div style={{fontSize:"13px",fontWeight:"600",color:"var(--t1)"}}>{zhTeam(match.awayTeam)}</div>
             {result && <div style={{fontSize:"24px",fontWeight:"700",color:result==="away"?"var(--a)":"var(--t1)"}}>{match.awayScore}</div>}
           </div>
         </div>
