@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 11:12";
+  const BUILD_TIME = "2026-06-30 11:14";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1702,7 +1702,12 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
     for (const [uKey, bet] of Object.entries(bets)) {
       if (bet.settled) continue;
       const payout = bet.pick === result ? Math.floor(bet.amount * (o[result] || 1)) : 0;
-      if (payout > 0) await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
+      if (payout > 0) {
+        await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
+        await fRef(`pointsLog/${uKey}`).push({ type: "wc_win", delta: payout, note: `${m.homeTeam} vs ${m.awayTeam}`, ts: Date.now() });
+      } else {
+        await fRef(`pointsLog/${uKey}`).push({ type: "wc_lose", delta: 0, note: `${m.homeTeam} vs ${m.awayTeam}`, ts: Date.now() });
+      }
       await fRef(`wc2026/bets/${matchId}/${uKey}`).update({ settled: true, payout });
       count++;
     }
@@ -3985,6 +3990,9 @@ function PointsHistoryModal({ open, onClose, boundName }) {
     buy_title: { emoji:"🏅", label:"購買稱號" },
     buy_pet: { emoji:"🐻", label:"購買寵物" },
     buy_theme: { emoji:"🎨", label:"購買主題" },
+    wc_bet:   { emoji:"🏆", label:"世界盃押注" },
+    wc_win:   { emoji:"🏆", label:"世界盃獲彩" },
+    wc_lose:  { emoji:"🏆", label:"世界盃落空" },
   };
   const grouped = {};
   for (const log of logs) {
@@ -4071,6 +4079,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     try {
       await fRef(`wc2026/bets/${matchId}/${sKey}`).set({ pick: input.pick, amount, placedAt: Date.now(), settled: false, payout: null });
       await fRef(`userPoints/${sKey}`).transaction(p => (p || 0) - amount);
+      await fRef(`pointsLog/${sKey}`).push({ type: "wc_bet", delta: -amount, note: `${match.homeTeam} vs ${match.awayTeam}`, ts: Date.now() });
       const newPts = await fGet(`userPoints/${sKey}`);
       setUserPoints(newPts);
       setBetInputs(p => ({...p, [matchId]: { amount: "", pick: null }}));
