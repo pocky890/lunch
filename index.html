@@ -541,7 +541,7 @@
     zombie_01: 'gif/zombi-maiko-jason.gif',
     godzilla_01: 'gif/godzilla_01.gif',
   };
-  const BUILD_TIME = "2026-06-30 09:50";
+  const BUILD_TIME = "2026-06-30 09:55";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4809,7 +4809,7 @@ function App() {
 
       // 盜牌卡：先嘗試偷取，決定是否真的算「使用」（撲空則保留卡牌）
       let stealSucceeded = false;
-      if (activeCard?.type === "steal_card") {
+      if (activeCard?.type === "steal_card" && !myEntry) {
         const today = todayStr();
         const myKey = sanitizeKey(name);
         const nameMap = {};
