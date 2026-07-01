@@ -132,6 +132,7 @@
     .page { max-width: 1080px; margin: 0 auto; padding: 104px 24px 64px; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
     .grid-3-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; }
+    .grid-4-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
     .col { min-width: 0; display: flex; flex-direction: column; }
     .col > .card, .col > .empty-state { flex: 1; }
     .layout-2 { display: flex; gap: 32px; align-items: flex-start; }
@@ -139,7 +140,7 @@
     .layout-main { flex: 1; min-width: 0; }
     
     @media (max-width: 800px) {
-      .grid-3, .grid-3-meta { grid-template-columns: 1fr; gap: 16px; }
+      .grid-3, .grid-3-meta, .grid-4-meta { grid-template-columns: 1fr; gap: 16px; }
       .layout-2 { flex-direction: column; gap: 16px; }
       .layout-side { width: 100%; position: static; }
     }
@@ -543,7 +544,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-01 11:27";
+  const BUILD_TIME = "2026-07-01 11:41";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2260,7 +2261,7 @@ function Footer() {
   );
 }
 
-function StatCards({deadline, ptsCount}) {
+function StatCards({deadline, ptsCount, cardPool}) {
   const [cd, setCd] = useState("--:--");
   useEffect(() => {
     if (!deadline) { setCd("--:--"); return; }
@@ -2268,11 +2269,13 @@ function StatCards({deadline, ptsCount}) {
     const timer = setInterval(() => setCd(calcCountdown(deadline)), 1000);
     return () => clearInterval(timer);
   }, [deadline]);
+  const totalCards = cardPool ? Object.values(cardPool).reduce((s,n) => s+(n||0), 0) : 0;
   return (
-    <div className="grid-3-meta">
+    <div className={totalCards > 0 ? "grid-4-meta" : "grid-3-meta"}>
       <div className="stat-card"><div className="stat-label">截止時間</div><div className="stat-value">{deadline}</div><div className="stat-sub">今日開獎時間</div></div>
       <div className="stat-card"><div className="stat-label">已加入人數</div><div className="stat-value">{ptsCount}<span style={{fontSize:"18px",fontWeight:"500",color:"var(--t3)"}}> 人</span></div><div className="stat-sub">一起選、一起吃、一起中</div></div>
       <div className="stat-card active-card"><div className="stat-label">開獎倒數</div><div className="stat-value accent">{cd}</div><div className="stat-sub">即時倒數中</div></div>
+      {totalCards > 0 && <div className="stat-card"><div className="stat-label">🃏 卡牌池</div><div className="stat-value">{totalCards}<span style={{fontSize:"18px",fontWeight:"500",color:"var(--t3)"}}> 張</span></div><div className="stat-sub">今日剩餘可抽</div></div>}
     </div>
   );
 }
@@ -5535,7 +5538,7 @@ function App() {
       <SiteHeader title="購買彩券" sub="截止前選好店、押好號" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
+        <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning pts={pts} weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} />
@@ -5706,7 +5709,7 @@ function App() {
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
-          <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
+          <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning pts={pts} weekly={weekly} />
           <CardPoolDisplay cardPool={cardPool} />
@@ -5733,7 +5736,7 @@ function App() {
       <SiteHeader title="今日不參加" sub="已標記今日不加入抽獎" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <StatCards deadline={sess?.deadline} ptsCount={pts.length} />
+        <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <div className="grid-3">
           <div className="col">
