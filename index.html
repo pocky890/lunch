@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-01 11:20";
+  const BUILD_TIME = "2026-07-01 11:27";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4124,11 +4124,11 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
         <div style={{flex:1,overflowY:"auto"}}>
           {tab==="upcoming" && (upcomingArr.length===0
             ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>目前無即將開賽的比賽</div>
-            : upcomingArr.map(m=><MatchCard key={m.id} match={m} />)
+            : upcomingArr.map(m=><React.Fragment key={m.id}>{MatchCard({match:m})}</React.Fragment>)
           )}
           {tab==="mybets" && (myBetEntries.length===0
             ? <div style={{textAlign:"center",padding:"32px",color:"var(--t3)"}}>尚無投注紀錄</div>
-            : myBetEntries.map(m=><MatchCard key={m.id} match={m} />)
+            : myBetEntries.map(m=><React.Fragment key={m.id}>{MatchCard({match:m})}</React.Fragment>)
           )}
         </div>
       </div>
