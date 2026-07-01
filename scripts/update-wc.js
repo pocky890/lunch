@@ -62,8 +62,8 @@ async function updateMatches() {
 
 async function updateOdds() {
   const last = await fbGet("wc2026/lastOddsFetch");
-  if (last && Date.now() - last < 24 * 60 * 60 * 1000) {
-    console.log("⏭  Odds: 未到 24 小時，略過");
+  if (last && Date.now() - last < 12 * 60 * 60 * 1000) {
+    console.log("⏭  Odds: 未到 12 小時，略過");
     return;
   }
   const resp = await fetch(
