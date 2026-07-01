@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-01 09:38";
+  const BUILD_TIME = "2026-07-01 09:40";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5262,12 +5262,14 @@ function App() {
       if (TEST_MODE) {
         setUserOwnedPets(prev => ({ ...prev, [petKey]: true }));
         setUserPoints(prev => (prev || 0) - price);
+        if (!userActivePet) setUserActivePet(petKey);
         return showToast("已購買寵物 " + (PET_TYPES[petKey]?.name || "") + "！");
       }
       let pointsOk = false;
       await fRef(`userPoints/${key}`).transaction(n => { if ((n||0) < price) return; pointsOk = true; return (n||0) - price; });
       if (!pointsOk) return showToast("點數不足");
       await fRef(`userOwnedPets/${key}/${petKey}`).set(true);
+      if (!userActivePet) await fRef(`userActivePet/${key}`).set({ pet: petKey, name: boundName });
       logPointsEntry(key, "buy_pet", -price, PET_TYPES[petKey]?.name || petKey);
       showToast("已購買寵物 " + (PET_TYPES[petKey]?.name || "") + "！");
     } catch(e) { showToast("購買失敗，請重試"); }
