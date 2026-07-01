@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-06-30 21:05";
+  const BUILD_TIME = "2026-07-01 09:25";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3960,46 +3960,6 @@ const WC_TEAM_ZH = {
 };
 const zhTeam = n => WC_TEAM_ZH[n] || n;
 
-/* ── 世界盃自動結算 ── */
-async function autoSettleWCMatches(showToast) {
-  if (TEST_MODE) return;
-  try {
-    const now = Date.now();
-    const [allBets, matches, odds] = await Promise.all([
-      fGet("wc2026/bets"), fGet("wc2026/matches"), fGet("wc2026/odds"),
-    ]);
-    if (!allBets || !matches) return;
-
-    const needIds = Object.keys(allBets).filter(mid => {
-      const m = matches[mid];
-      if (!m || now < new Date(m.utcDate).getTime()) return false;
-      return Object.values(allBets[mid]).some(b => !b.settled);
-    });
-    if (needIds.length === 0) return;
-
-    let settled = 0;
-    for (const mid of needIds) {
-      const m = matches[mid];
-      if (m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined) continue;
-      const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
-      const o = odds?.[mid] || {};
-      const mName = `${zhTeam(matches[mid]?.homeTeam || "")} vs ${zhTeam(matches[mid]?.awayTeam || "")}`;
-      for (const [uKey, bet] of Object.entries(allBets[mid])) {
-        if (bet.settled) continue;
-        const payout = bet.pick === result ? Math.round(bet.amount * (o[result] || 1)) : 0;
-        if (payout > 0) {
-          await fRef(`userPoints/${uKey}`).transaction(p => (p || 0) + payout);
-          await fRef(`pointsLog/${uKey}`).push({ type: "wc_win", delta: payout, note: mName, ts: Date.now() });
-        } else {
-          await fRef(`pointsLog/${uKey}`).push({ type: "wc_lose", delta: 0, note: mName, ts: Date.now() });
-        }
-        await fRef(`wc2026/bets/${mid}/${uKey}`).update({ settled: true, payout });
-        settled++;
-      }
-    }
-    if (settled > 0 && showToast) showToast(`🏆 已自動結算 ${settled} 筆投注`, 6000);
-  } catch(e) {}
-}
 
 
 /* ── 世界盃競猜 ── */
@@ -4010,8 +3970,6 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
   const [allBets, setAllBets] = React.useState({});
   const [betInputs, setBetInputs] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
-  const [wcToast, setWcToast] = React.useState("");
-  function showWCToast(msg, duration=4000) { setWcToast(msg); setTimeout(() => setWcToast(""), duration); }
   const sKey = boundName ? sanitizeKey(boundName) : null;
 
   React.useEffect(() => {
@@ -4021,7 +3979,6 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/matches", setMatches);
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
-    autoSettleWCMatches(showWCToast);
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
@@ -4138,7 +4095,6 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
 
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      {wcToast && <div className="toast-container" style={{zIndex:10000}}>{wcToast}</div>}
       <div className="modal" style={{maxWidth:"460px",width:"95vw",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexShrink:0}}>
           <h2 style={{fontSize:"18px",margin:0}}>🏆 世界盃競猜</h2>

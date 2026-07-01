@@ -17,6 +17,15 @@ async function fbSet(path, val) {
   if (!r.ok) throw new Error(`SET ${path} failed: ${r.status}`);
 }
 
+async function fbPost(path, val) {
+  const r = await fetch(`${DB}/${path}.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(val),
+  });
+  if (!r.ok) throw new Error(`POST ${path} failed: ${r.status}`);
+}
+
 async function fbPatch(path, val) {
   const r = await fetch(`${DB}/${path}.json`, {
     method: "PATCH",
@@ -90,7 +99,65 @@ async function updateOdds() {
   console.log(`✅ Odds: ${Object.keys(updates).length} 場已更新`);
 }
 
+const WC_TEAM_ZH = {
+  "Algeria":"阿爾及利亞","Argentina":"阿根廷","Australia":"澳洲","Austria":"奧地利",
+  "Belgium":"比利時","Bosnia-H.":"波赫","Bosnia-Herzegovina":"波赫","Brazil":"巴西",
+  "Canada":"加拿大","Cape Verde":"維德角","Cape Verde Islands":"維德角",
+  "Colombia":"哥倫比亞","Congo DR":"剛果（金）","Croatia":"克羅埃西亞",
+  "Czechia":"捷克","Ecuador":"厄瓜多","Egypt":"埃及","England":"英格蘭",
+  "France":"法國","Germany":"德國","Ghana":"迦納","Haiti":"海地",
+  "Iran":"伊朗","Iraq":"伊拉克","Ivory Coast":"象牙海岸","Japan":"日本",
+  "Jordan":"約旦","Korea Republic":"韓國","Mexico":"墨西哥","Morocco":"摩洛哥",
+  "Netherlands":"荷蘭","New Zealand":"紐西蘭","Nigeria":"奈及利亞","Norway":"挪威",
+  "Panama":"巴拿馬","Paraguay":"巴拉圭","Portugal":"葡萄牙","Qatar":"卡達",
+  "Saudi Arabia":"沙烏地阿拉伯","Scotland":"蘇格蘭","Senegal":"塞內加爾",
+  "South Africa":"南非","South Korea":"韓國","Spain":"西班牙","Sweden":"瑞典",
+  "Switzerland":"瑞士","Tunisia":"突尼西亞","Turkey":"土耳其",
+  "United States":"美國","USA":"美國","Uruguay":"烏拉圭","Uzbekistan":"烏茲別克",
+};
+const zhTeam = n => WC_TEAM_ZH[n] || n;
+
+async function settleMatches() {
+  const [allBets, matches, odds] = await Promise.all([
+    fbGet("wc2026/bets"),
+    fbGet("wc2026/matches"),
+    fbGet("wc2026/odds"),
+  ]);
+  if (!allBets || !matches) { console.log("⏭  Settlement: 無投注資料"); return; }
+
+  const now = Date.now();
+  let settled = 0;
+
+  for (const [mid, bets] of Object.entries(allBets)) {
+    const m = matches[mid];
+    if (!m || now < new Date(m.utcDate).getTime()) continue;
+    if (m.homeScore === null || m.homeScore === undefined ||
+        m.awayScore === null || m.awayScore === undefined) continue;
+
+    const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
+    const o = (odds && odds[mid]) || {};
+    const mName = `${zhTeam(m.homeTeam)} vs ${zhTeam(m.awayTeam)}`;
+
+    for (const [uKey, bet] of Object.entries(bets)) {
+      if (bet.settled) continue;
+      const payout = bet.pick === result ? Math.round(bet.amount * (o[result] || 1)) : 0;
+      if (payout > 0) {
+        const cur = (await fbGet(`userPoints/${uKey}`)) || 0;
+        await fbSet(`userPoints/${uKey}`, cur + payout);
+        await fbPost(`pointsLog/${uKey}`, { type: "wc_win", delta: payout, note: mName, ts: now });
+      } else {
+        await fbPost(`pointsLog/${uKey}`, { type: "wc_lose", delta: 0, note: mName, ts: now });
+      }
+      await fbPatch(`wc2026/bets/${mid}/${uKey}`, { settled: true, payout });
+      settled++;
+    }
+  }
+
+  console.log(settled > 0 ? `✅ Settlement: ${settled} 筆投注已結算` : "⏭  Settlement: 無待結算投注");
+}
+
 (async () => {
   try { await updateMatches(); } catch (e) { console.error("Matches error:", e.message); }
   try { await updateOdds(); } catch (e) { console.error("Odds error:", e.message); }
+  try { await settleMatches(); } catch (e) { console.error("Settlement error:", e.message); }
 })();
