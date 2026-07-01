@@ -131,6 +131,7 @@ async function settleMatches() {
   for (const [mid, bets] of Object.entries(allBets)) {
     const m = matches[mid];
     if (!m || now < new Date(m.utcDate).getTime()) continue;
+    if (!["FINISHED","AWARDED"].includes(m.status)) continue;
     if (m.homeScore === null || m.homeScore === undefined ||
         m.awayScore === null || m.awayScore === undefined) continue;
 
