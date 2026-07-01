@@ -56,6 +56,7 @@ async function updateMatches() {
     };
   }
   await fbSet("wc2026/matches", ms);
+  await fbSet("wc2026/lastMatchesFetch", Date.now());
   console.log(`✅ Matches: ${Object.keys(ms).length} 場已更新`);
 }
 

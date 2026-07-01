@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-01 09:43";
+  const BUILD_TIME = "2026-07-01 11:18";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3970,6 +3970,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
   const [allBets, setAllBets] = React.useState({});
   const [betInputs, setBetInputs] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
+  const [lastFetch, setLastFetch] = React.useState(null);
   const sKey = boundName ? sanitizeKey(boundName) : null;
 
   React.useEffect(() => {
@@ -3979,6 +3980,9 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     listen("wc2026/matches", setMatches);
     listen("wc2026/odds", setOdds);
     listen("wc2026/bets", setAllBets);
+    const lfRef = db.ref(`${DB_PREFIX}/wc2026/lastMatchesFetch`);
+    lfRef.on("value", s => setLastFetch(s.val()));
+    refs.push(lfRef);
     return () => refs.forEach(r => r.off("value"));
   }, []);
 
@@ -4096,10 +4100,11 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
   return (
     <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal" style={{maxWidth:"460px",width:"95vw",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexShrink:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px",flexShrink:0}}>
           <h2 style={{fontSize:"18px",margin:0}}>🏆 世界盃競猜</h2>
           <button className="ghost btn-sm" onClick={onClose} style={{marginBottom:0}}>✕ 關閉</button>
         </div>
+        {lastFetch && <div style={{fontSize:"11px",color:"var(--t3)",marginBottom:"12px",flexShrink:0}}>資料更新：{toTaipei(new Date(lastFetch).toISOString())}</div>}
         <div style={{display:"flex",gap:"8px",marginBottom:"16px",flexShrink:0}}>
           {[["upcoming","賽程"],["mybets","我的投注"]].map(([key,label])=>(
             <button key={key} onClick={()=>{ setTab(key); if(key==="mybets" && onBetsTabSeen) onBetsTabSeen(); }} style={{marginBottom:0,flex:1,padding:"6px",fontSize:"13px",fontWeight:"600",borderRadius:"20px",position:"relative",
