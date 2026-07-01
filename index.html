@@ -543,7 +543,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-01 09:41";
+  const BUILD_TIME = "2026-07-01 09:43";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4186,14 +4186,17 @@ function App() {
   React.useEffect(() => {
     if (!boundName || TEST_MODE) return;
     const sKey = sanitizeKey(boundName);
-    const lastSeen = parseInt(localStorage.getItem("lastSeenWCSettle") || "0");
-    fGet(`pointsLog/${sKey}`).then(log => {
+    const ref = db.ref(`${DB_PREFIX}/pointsLog/${sKey}`);
+    ref.on("value", snap => {
+      const log = snap.val();
       if (!log) return;
+      const lastSeen = parseInt(localStorage.getItem("lastSeenWCSettle") || "0");
       const hasNew = Object.values(log).some(
         e => (e.type === "wc_win" || e.type === "wc_lose") && e.ts > lastSeen
       );
       setWcSettleNews(hasNew);
     });
+    return () => ref.off("value");
   }, [boundName]);
   const [shopConfig, setShopConfig] = useState({});
   const [titleShopConfig, setTitleShopConfig] = useState({});
