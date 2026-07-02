@@ -79,6 +79,7 @@ async function updateOdds() {
   const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   const lookup = {};
   for (const [mid, m] of Object.entries(matches)) {
+    if (!m.homeTeam || !m.awayTeam) continue; // 淘汰賽對戰隊伍未定（TBD）
     lookup[`${norm(m.homeTeam)}|${norm(m.awayTeam)}`] = mid;
   }
 
