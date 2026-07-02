@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-02 10:18";
+  const BUILD_TIME = "2026-07-02 10:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1118,6 +1118,20 @@ async function returnCardToPool(name, cardId) {
   return true;
 }
 
+// 開獎時統一結算「開獎前已使用、暫記待歸還」的卡牌，避免卡牌池數字在開獎前提早跳動
+async function reconcilePendingCardReturns(today) {
+  const pendingReturns = await fGet(`pendingCardReturns/${today}`);
+  if (!pendingReturns) return;
+  const returnUpdates = {};
+  for (const type of Object.values(pendingReturns)) {
+    if (CARD_DEFAULTS[type]) returnUpdates[type] = (returnUpdates[type] || 0) + 1;
+  }
+  for (const [type, count] of Object.entries(returnUpdates)) {
+    await fRef(`cardPool/${type}`).transaction(n => (n || 0) + count);
+  }
+  await fRef(`pendingCardReturns/${today}`).remove();
+}
+
 function getPreviousStreak(weekly, name, today) {
   const past = Object.keys(weekly||{}).filter(d => d < today).sort().reverse();
   let count = 0;
@@ -1285,7 +1299,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
             </div>
           )})}
           <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>
-            💡 卡牌池總量有限，用完就沒了。使用後卡牌歸還牌池，下次還有機會再抽到。未被領取的卡隔天重新分配位置。
+            💡 卡牌池總量有限，用完就沒了。使用後卡牌歸還牌池，開獎時才會反映在池子數字上（避免開獎前提早洩漏），下次還有機會再抽到。未被領取的卡隔天重新分配位置。
           </div>
         </div>
       </div>
@@ -4832,6 +4846,7 @@ function App() {
         });
         if (didWrite) {
           await givePointsForDay(pts, absent, today);
+          await reconcilePendingCardReturns(today);
           fetch(WEBHOOK_URL, {
             method: "POST", headers: {"Content-Type":"application/json"},
             body: JSON.stringify({ noParticipants: 1, totalPeople: pts.length, absent: absent.join(", ") })
@@ -4881,6 +4896,8 @@ function App() {
         }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
         await ensureDailyCards(today, effectiveNumMax);
+        // 結算今日已使用卡牌的歸還（開獎前使用時只從手牌移除，避免卡牌池提早跳動；即使中途取消參加也會歸還，因為記錄跟參加者名單脫鉤）
+        await reconcilePendingCardReturns(today);
         // 集中結算被動卡與隱藏成就：由天選客戶端統一掃描所有參賽者，確保離線者也生效
         const winnerNameSet = new Set(soloWinners.map(w => w.name));
         if (!result.soloWin && streak >= 3) {
@@ -5132,8 +5149,10 @@ function App() {
       if (form.rest==="cust" && rest) { await fRef(`restaurants_managed/${form.category}/${rest}`).set(true); }
 
       // 消耗卡牌（被動卡與未成功的盜牌卡不消耗）
+      // 卡牌先從手牌移除，但暫不還池，避免開獎前卡牌池數字提早跳動；改記錄待歸還，開獎時統一結算（即使中途取消參加也不會遺失）
       if (cardConsumed) {
-        await returnCardToPool(name, activeCard.id);
+        await fRef(`userCards/${sanitizeKey(name)}/${activeCard.id}`).remove();
+        await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set(activeCard.type);
         logNotification(sanitizeKey(name), "card_used", { cardType: activeCard.type, date: todayStr() });
         setCardToUse(""); setNumber2("");
       }
