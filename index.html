@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-02 10:45";
+  const BUILD_TIME = "2026-07-02 13:28";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2998,7 +2998,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
   const sortedSolo = Object.entries(soloMap).sort((a,b) => b[1].length - a[1].length);
 
   const winMap = {};
-  allRecords.forEach(([, rec]) => { if (rec?.winner) { (rec.winners || [rec.winner]).forEach(name => { if (!winMap[name]) winMap[name] = { wins: 0, soloWins: 0 }; winMap[name].wins++; if (rec.soloWin) winMap[name].soloWins++; }); } });
+  allRecords.forEach(([, rec]) => { if (rec?.winner) { (rec.winners || [rec.winner]).forEach(name => { if (!winMap[name]) winMap[name] = { wins: 0 }; winMap[name].wins++; }); } });
   const sortedPersonal = Object.entries(winMap).sort((a,b) => b[1].wins - a[1].wins);
 
   const base = isDark ? "96,165,250" : "0,113,227";
@@ -3034,7 +3034,6 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
                 {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
-              {stat.soloWins > 0 && <span className="badge badge-gold" style={{marginLeft:"8px",fontSize:"10px",flexShrink:0}}>🎯 獨贏 {stat.soloWins}</span>}
             </div>
             {isMe && unlocked.filter(k => k !== chosenKey).length > 0 && (
               <div style={{marginTop:"8px",marginLeft:"30px",display:"flex",flexWrap:"wrap",gap:"4px"}}>
