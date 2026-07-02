@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-02 13:28";
+  const BUILD_TIME = "2026-07-02 22:37";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2946,6 +2946,7 @@ function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsCha
 function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber && !rec.specialDay) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
+  const totalDraws = Object.values(weekly).filter(rec => rec?.drawnNumber && !rec.specialDay).length;
   const maxCount = Math.max(0, ...Object.values(numCounts));
   const hasData = Object.keys(numCounts).length > 0;
   const base = isDark ? "96,165,250" : "0,113,227";
@@ -2953,7 +2954,11 @@ function DrawnNumberChart({ weekly, isDark, numMax = 99 }) {
     <div className="card">
       <div style={{display:"flex",alignItems:"center",marginBottom:"14px"}}>
         <p className="section-label" style={{marginBottom:0,flex:1}}>開獎號碼分佈</p>
-        {hasData && <span style={{fontSize:"10px",color:"var(--t3)"}}>{isDark ? "淺色" : "深色"} = 出現較多次</span>}
+        {hasData && <span style={{fontSize:"11px",color:"var(--t3)",display:"flex",alignItems:"center",gap:"8px"}}>
+          <span>共 {totalDraws} 次開獎</span>
+          <span style={{opacity:.5}}>|</span>
+          <span>{isDark ? "淺色" : "深色"} = 出現較多次</span>
+        </span>}
       </div>
       {!hasData
         ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p>
