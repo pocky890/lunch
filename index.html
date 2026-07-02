@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-02 09:30";
+  const BUILD_TIME = "2026-07-02 09:48";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1476,7 +1476,7 @@ function MembersTab() {
           const poolUpdates = {};
           for (const [cardId, card] of Object.entries(cards)) {
             if (card.expiresAt >= today) {
-              poolUpdates[card.type] = (poolUpdates[card.type] || 0) + 1;
+              if (CARD_DEFAULTS[card.type]) poolUpdates[card.type] = (poolUpdates[card.type] || 0) + 1;
               await fRef(`userCards/${sanitizeKey(member.name)}/${cardId}`).remove();
             }
           }
