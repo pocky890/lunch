@@ -544,7 +544,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-01 11:41";
+  const BUILD_TIME = "2026-07-02 09:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2274,8 +2274,8 @@ function StatCards({deadline, ptsCount, cardPool}) {
     <div className={totalCards > 0 ? "grid-4-meta" : "grid-3-meta"}>
       <div className="stat-card"><div className="stat-label">截止時間</div><div className="stat-value">{deadline}</div><div className="stat-sub">今日開獎時間</div></div>
       <div className="stat-card"><div className="stat-label">已加入人數</div><div className="stat-value">{ptsCount}<span style={{fontSize:"18px",fontWeight:"500",color:"var(--t3)"}}> 人</span></div><div className="stat-sub">一起選、一起吃、一起中</div></div>
-      <div className="stat-card active-card"><div className="stat-label">開獎倒數</div><div className="stat-value accent">{cd}</div><div className="stat-sub">即時倒數中</div></div>
       {totalCards > 0 && <div className="stat-card"><div className="stat-label">🃏 卡牌池</div><div className="stat-value">{totalCards}<span style={{fontSize:"18px",fontWeight:"500",color:"var(--t3)"}}> 張</span></div><div className="stat-sub">今日剩餘可抽</div></div>}
+      <div className="stat-card active-card"><div className="stat-label">開獎倒數</div><div className="stat-value accent">{cd}</div><div className="stat-sub">即時倒數中</div></div>
     </div>
   );
 }
