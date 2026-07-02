@@ -148,6 +148,7 @@ const oc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } 
 
 ## 卡牌系統
 - extra_number（加號卡）、follow_rest（跟著我吃）、no_pay（免付卡）、thirsty_card（口渴卡 1 張）、streak_protect（連勝保護卡）
+- birthday_card（生日卡）：生日前一天自動發放（不透過每日卡牌池抽取），7 天內需使用完畢，效果同加號卡但多選 4 個號碼。不列入 `cardPool`/`CARD_DEFAULTS`，不可在點數商店上架。
 - 卡牌設定存 Firebase `cardConfig/`
 
 ## 版本顯示
