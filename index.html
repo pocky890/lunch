@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-02 09:51";
+  const BUILD_TIME = "2026-07-02 10:18";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4035,7 +4035,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
   const now = Date.now();
   const matchArr = Object.values(matches).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
   const upcomingArr = matchArr.filter(m => now < new Date(m.utcDate).getTime());
-  const myBetEntries = sKey ? matchArr.filter(m => allBets[String(m.id)]?.[sKey]) : [];
+  const myBetEntries = sKey ? matchArr.filter(m => allBets[String(m.id)]?.[sKey]).reverse() : [];
 
   function MatchCard({ match }) {
     const mid = String(match.id);
