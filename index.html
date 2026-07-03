@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-03 23:25";
+  const BUILD_TIME = "2026-07-03 23:29";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3027,8 +3027,6 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>Top 10 店家中選次數 (持續統計)</p>{sortedRests.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : <div style={{height:`${Math.max(160,sortedRests.length*48)}px`,position:"relative"}}><canvas ref={chartRef} /></div>}</div>
       <div className="card"><p className="section-label" style={{marginBottom:"20px"}}>個人戰績 (持續統計)</p>{sortedPersonal.length === 0 ? <p style={{textAlign:"center",color:"var(--t3)",fontSize:"14px"}}>尚無紀錄</p> : sortedPersonal.map(([name, stat], i) => {
         const sKey = sanitizeKey(name);
-        const isMe = name === boundName;
-        const unlocked = computeAchievements(name, weekly, participationCounts[sKey] || 0, isMe ? mySpecialAchievements : {});
         const chosenKey = userTitles[sKey];
         return (
           <div key={name} style={{padding:"10px 12px",borderRadius:"var(--r)",border:"1px solid var(--b1)",background:"var(--s3)",marginBottom:"6px"}}>
@@ -3040,14 +3038,6 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
             </div>
-            {isMe && unlocked.filter(k => k !== chosenKey).length > 0 && (
-              <div style={{marginTop:"8px",marginLeft:"30px",display:"flex",flexWrap:"wrap",gap:"4px"}}>
-                {unlocked.filter(k => k !== chosenKey).map(key => {
-                  const a = ACHIEVEMENTS.find(x => x.key === key);
-                  return <span key={key} title={a.desc} className="badge badge-title">{a.emoji} {a.name}</span>;
-                })}
-              </div>
-            )}
           </div>
         );
       })}</div>
