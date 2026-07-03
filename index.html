@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-02 22:37";
+  const BUILD_TIME = "2026-07-03 23:25";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3300,12 +3300,12 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
             const isChosen = chosenKey === a.key;
             return (
               <div key={a.key} onClick={isUnlocked ? () => onTitleChange(isChosen ? null : a.key) : undefined}
-                style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"var(--a)":isUnlocked?"var(--b1)":"var(--b1)"}`,background:isChosen?"var(--a-dim,rgba(99,102,241,0.08))":isUnlocked?"var(--s3)":"transparent",opacity:isUnlocked?1:0.4,cursor:isUnlocked?"pointer":"default"}}>
-                <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{a.emoji}</span>
+                style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"var(--a)":"var(--b1)"}`,background:isChosen?"var(--a-dim,rgba(99,102,241,0.08))":isUnlocked?"var(--s3)":"transparent",cursor:isUnlocked?"pointer":"default"}}>
+                <span style={{fontSize:"22px",width:"28px",textAlign:"center",opacity:isUnlocked?1:0.4}}>{a.emoji}</span>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"var(--a)":"var(--t1)"}}>{a.name}</div>
+                  <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"var(--a)":isUnlocked?"var(--t1)":"var(--t3)"}}>{a.name}</div>
                   <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{a.desc}</div>
-                  <div style={{fontSize:"11px",color:"var(--amber)",marginTop:"2px",letterSpacing:"1px"}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)}</div>
+                  <div style={{fontSize:"11px",color:isUnlocked?"var(--amber)":"var(--t3)",marginTop:"2px",letterSpacing:"1px",opacity:isUnlocked?1:0.6}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)}</div>
                 </div>
                 {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"var(--a)",flexShrink:0}}>使用中</span>}
                 {!isUnlocked && <span style={{fontSize:"11px",color:"var(--t3)",flexShrink:0}}>🔒</span>}
@@ -3321,12 +3321,12 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
                 const isChosen = chosenKey === a.key;
                 return (
                   <div key={a.key} onClick={isUnlocked ? () => onTitleChange(isChosen ? null : a.key) : undefined}
-                    style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"#a855f7":isUnlocked?"rgba(168,85,247,0.3)":"var(--b1)"}`,background:isChosen?"rgba(168,85,247,0.1)":isUnlocked?"rgba(168,85,247,0.05)":"transparent",opacity:isUnlocked?1:0.45,cursor:isUnlocked?"pointer":"default"}}>
-                    <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{a.emoji}</span>
+                    style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"#a855f7":isUnlocked?"rgba(168,85,247,0.3)":"var(--b1)"}`,background:isChosen?"rgba(168,85,247,0.1)":isUnlocked?"rgba(168,85,247,0.05)":"transparent",cursor:isUnlocked?"pointer":"default"}}>
+                    <span style={{fontSize:"22px",width:"28px",textAlign:"center",opacity:isUnlocked?1:0.4}}>{a.emoji}</span>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"#a855f7":"var(--t1)"}}>{a.name}</div>
+                      <div style={{fontSize:"13px",fontWeight:"600",color:isChosen?"#a855f7":isUnlocked?"var(--t1)":"var(--t3)"}}>{a.name}</div>
                       <div style={{fontSize:"11px",color:"var(--t3)",marginTop:"1px"}}>{isUnlocked ? a.desc : "???"}</div>
-                      <div style={{fontSize:"11px",color:"#a855f7",marginTop:"2px",letterSpacing:"1px"}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)} · 隱藏</div>
+                      <div style={{fontSize:"11px",color:isUnlocked?"#a855f7":"var(--t3)",marginTop:"2px",letterSpacing:"1px",opacity:isUnlocked?1:0.6}}>{"★".repeat(a.rarity)}{"☆".repeat(5-a.rarity)} · 隱藏</div>
                     </div>
                     {isChosen && <span style={{fontSize:"11px",fontWeight:"700",color:"#a855f7",flexShrink:0}}>使用中</span>}
                     {!isUnlocked && <span style={{fontSize:"11px",color:"var(--t3)",flexShrink:0}}>🔒</span>}
