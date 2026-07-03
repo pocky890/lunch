@@ -4786,15 +4786,13 @@ function App() {
         setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
         setPhase("results");
       } else {
-        let joinedDate = "", absentDate = "";
-        try { joinedDate = localStorage.getItem("lunch_joined_date") || ""; absentDate = localStorage.getItem("lunch_absent_date") || ""; } catch(e) {}
         // form.name 在 auth 完成前可能還是空的，直接從 Firebase 查綁定名稱
         const uid = auth.currentUser?.uid;
         const savedName = uid ? (await fGet(`userNames/${uid}`)) || "" : "";
         if (savedName) { setForm(f => ({...f, name: savedName})); setBoundName(savedName); }
-        if (absentDate === today && savedName && absentNames.includes(savedName)) {
+        if (savedName && absentNames.includes(savedName)) {
           setPhase("absent");
-        } else if (joinedDate === today && savedName && p.some(pt => pt.name === savedName)) {
+        } else if (savedName && p.some(pt => pt.name === savedName)) {
           setPhase("joined");
         } else {
           setPhase("join");
@@ -5194,7 +5192,7 @@ function App() {
         }
       }
 
-      try { localStorage.setItem("lunch_name", name); localStorage.setItem("lunch_joined_date", todayStr()); } catch(e) {}
+      try { localStorage.setItem("lunch_name", name); } catch(e) {}
       setPhase("joined");
     } catch (e) {
       showToast("加入失敗，請重試");
@@ -5356,10 +5354,8 @@ function App() {
         if (entry) {
           await fRef(`participants/${entry[0]}`).remove();
           await fRef(`participationCount/${sanitizeKey(name)}`).transaction(n => Math.max(0, (n || 0) - 1));
-          try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
         }
       }
-      try { localStorage.setItem("lunch_absent_date", todayStr()); } catch(e) {}
       setPhase("absent");
     } catch(e) {
       showToast("標記失敗，請重試");
@@ -5371,7 +5367,6 @@ function App() {
   async function doCancelAbsent() {
     const name = form.name.trim();
     await fRef(`absent/${sanitizeKey(name)}`).remove();
-    try { localStorage.removeItem("lunch_absent_date"); } catch(e) {}
     setPhase("join");
   }
 
@@ -5381,7 +5376,6 @@ function App() {
       await fRef(`participants/${myEntry.id}`).remove();
       await fRef(`participationCount/${sanitizeKey(form.name)}`).transaction(n => Math.max(0, (n || 0) - 1));
     }
-    try { localStorage.removeItem("lunch_joined_date"); } catch(e) {}
     setIsEditing(false);
     setPhase("join");
   }
