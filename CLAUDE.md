@@ -148,7 +148,8 @@ const oc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } 
 
 ## 卡牌系統
 - extra_number（加號卡）、follow_rest（跟著我吃）、no_pay（免付卡）、thirsty_card（口渴卡 1 張）、streak_protect（連勝保護卡）
-- birthday_card（生日卡）：生日前一天自動發放（不透過每日卡牌池抽取），7 天內需使用完畢，效果同加號卡但多選 4 個號碼。不列入 `cardPool`/`CARD_DEFAULTS`，不可在點數商店上架，不可被盜牌卡偷取。
+- birthday_card（生日卡）：生日前一天自動發放（前一天無人上線則生日後 5 天內補發；2/29 平年視為 2/28），用 `userBirthdayCardIssued/{uid}` transaction 原子搶佔防止多 client 重複發卡。7 天內需使用完畢，效果同加號卡但多選 4 個號碼。不列入 `cardPool`/`CARD_DEFAULTS`，不可在點數商店上架，不可被盜牌卡偷取。
+- 卡牌使用流程：doJoin 先以 transaction 原子認領（從 `userCards` 移除，防與盜牌卡競態），寫入 `pendingCardReturns/{date}`，開獎時 `reconcilePendingCardReturns` 統一還池（含補掃過去日期的滯留記錄）。商店購買的卡帶 `fromShop: true`，任何歸還路徑（reconcile / returnCardToPool / 離職回收）都不回 `cardPool`（商店庫存與卡牌池獨立）。
 - 卡牌設定存 Firebase `cardConfig/`
 
 ## 版本顯示

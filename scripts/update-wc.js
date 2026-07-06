@@ -1,6 +1,7 @@
 const DB = "https://launch-fdd3a-default-rtdb.firebaseio.com/lunch";
-const FD_KEY = "5d480cad43b349ac9a56f79fc3ee8552";
-const ODDS_KEY = "f017ab09768e8e7b9a1cc60340809ce3";
+const FD_KEY = process.env.FD_KEY;
+const ODDS_KEY = process.env.ODDS_KEY;
+if (!FD_KEY || !ODDS_KEY) { console.error("❌ 缺少 FD_KEY / ODDS_KEY 環境變數"); process.exit(1); }
 
 async function fbGet(path) {
   const r = await fetch(`${DB}/${path}.json`);
@@ -26,13 +27,25 @@ async function fbPost(path, val) {
   if (!r.ok) throw new Error(`POST ${path} failed: ${r.status}`);
 }
 
-async function fbPatch(path, val) {
-  const r = await fetch(`${DB}/${path}.json`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(val),
-  });
-  if (!r.ok) throw new Error(`PATCH ${path} failed: ${r.status}`);
+// ETag 條件寫入：讀值 + ETag，寫入時 if-match，衝突（412）就重讀重試。
+// 避免 GET+PUT 蓋掉使用者同時在瀏覽器做的點數異動（lost update）。
+async function fbCasUpdate(path, updateFn, retries = 5) {
+  for (let i = 0; i < retries; i++) {
+    const r = await fetch(`${DB}/${path}.json`, { headers: { "X-Firebase-ETag": "true" } });
+    if (!r.ok) throw new Error(`GET ${path} failed: ${r.status}`);
+    const etag = r.headers.get("ETag");
+    const cur = await r.json();
+    const next = updateFn(cur);
+    if (next === undefined) return { committed: false, value: cur };
+    const w = await fetch(`${DB}/${path}.json`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "if-match": etag },
+      body: JSON.stringify(next),
+    });
+    if (w.ok) return { committed: true, value: next };
+    if (w.status !== 412) throw new Error(`PUT ${path} failed: ${w.status}`);
+  }
+  throw new Error(`PUT ${path} failed: too many etag conflicts`);
 }
 
 async function updateMatches() {
@@ -41,8 +54,12 @@ async function updateMatches() {
   });
   if (!resp.ok) { console.log(`❌ Matches: HTTP ${resp.status}`); return; }
   const data = await resp.json();
+  if (!Array.isArray(data.matches) || data.matches.length === 0) {
+    console.log("⚠️ Matches: API 回傳空資料，跳過覆寫以保護現有賽程");
+    return;
+  }
   const ms = {};
-  for (const m of (data.matches || [])) {
+  for (const m of data.matches) {
     ms[m.id] = {
       id: m.id,
       homeTeam: m.homeTeam.shortName || m.homeTeam.name,
@@ -53,6 +70,7 @@ async function updateMatches() {
       group: m.group || null,
       homeScore: m.score?.fullTime?.home ?? null,
       awayScore: m.score?.fullTime?.away ?? null,
+      duration: m.score?.duration || null,
     };
   }
   await fbSet("wc2026/matches", ms);
@@ -96,7 +114,14 @@ async function updateOdds() {
     updates[mid] = { home: homeO.price, draw: drawO?.price || 0, away: awayO.price };
   }
 
-  if (Object.keys(updates).length > 0) await fbPatch("wc2026/odds", updates);
+  if (Object.keys(updates).length > 0) {
+    const r = await fetch(`${DB}/wc2026/odds.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    if (!r.ok) throw new Error(`PATCH odds failed: ${r.status}`);
+  }
   await fbSet("wc2026/lastOddsFetch", Date.now());
   console.log(`✅ Odds: ${Object.keys(updates).length} 場已更新`);
 }
@@ -137,21 +162,29 @@ async function settleMatches() {
     if (m.homeScore === null || m.homeScore === undefined ||
         m.awayScore === null || m.awayScore === undefined) continue;
 
-    const result = m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
+    // 淘汰賽進延長賽/PK = 90 分鐘打平，依博弈慣例以平局結算
+    const result = (m.duration && m.duration !== "REGULAR") ? "draw"
+      : m.homeScore > m.awayScore ? "home" : m.homeScore < m.awayScore ? "away" : "draw";
     const o = (odds && odds[mid]) || {};
     const mName = `${zhTeam(m.homeTeam)} vs ${zhTeam(m.awayTeam)}`;
 
     for (const [uKey, bet] of Object.entries(bets)) {
       if (bet.settled) continue;
-      const payout = bet.pick === result ? Math.round(bet.amount * (o[result] || 1)) : 0;
+      // 優先用下注當下鎖定的賠率，沒有才退回目前賠率
+      const oddsUsed = (bet.odds && bet.odds[result]) || o[result] || 1;
+      const payout = bet.pick === result ? Math.round(bet.amount * oddsUsed) : 0;
+      // ETag 搶佔結算權：兩個 workflow 同時跑也不會重複派彩
+      const claim = await fbCasUpdate(`wc2026/bets/${mid}/${uKey}`, cur => {
+        if (!cur || cur.settled) return undefined;
+        return { ...cur, settled: true, payout };
+      });
+      if (!claim.committed) continue;
       if (payout > 0) {
-        const cur = (await fbGet(`userPoints/${uKey}`)) || 0;
-        await fbSet(`userPoints/${uKey}`, cur + payout);
+        await fbCasUpdate(`userPoints/${uKey}`, cur => (cur || 0) + payout);
         await fbPost(`pointsLog/${uKey}`, { type: "wc_win", delta: payout, note: mName, ts: now });
       } else {
         await fbPost(`pointsLog/${uKey}`, { type: "wc_lose", delta: 0, note: mName, ts: now });
       }
-      await fbPatch(`wc2026/bets/${mid}/${uKey}`, { settled: true, payout });
       settled++;
     }
   }
