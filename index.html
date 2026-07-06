@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-06 14:58";
+  const BUILD_TIME = "2026-07-06 15:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1110,11 +1110,32 @@ async function checkAndAwardCard(name, number, today) {
   return type;
 }
 
+// 卡牌還池統一入口：若該卡種還欠著調降總量時沒扣完的差額（cardPoolDebt），優先拿這次歸還去扣債，
+// 扣完債才真的進池子。確保「調低總量」對已經在外流通的卡最終仍然生效，而不是被歸還悄悄補回超標。
+async function creditCardPool(type, count) {
+  if (count <= 0) return;
+  const debt = (await fGet(`cardPoolDebt/${type}`)) || 0;
+  const consumed = Math.min(debt, count);
+  const toPool = count - consumed;
+  if (consumed > 0) await fRef(`cardPoolDebt/${type}`).transaction(n => Math.max(0, (n || 0) - consumed));
+  if (toPool > 0) await fRef(`cardPool/${type}`).transaction(n => (n || 0) + toPool);
+}
+
+// creditCardPool 的鏡像：管理員調降總量時，優先扣現有池子，扣不夠的差額記成欠額
+async function debitCardPool(type, count) {
+  if (count <= 0) return;
+  const cur = (await fGet(`cardPool/${type}`)) || 0;
+  const applied = Math.min(cur, count);
+  const shortfall = count - applied;
+  if (applied > 0) await fRef(`cardPool/${type}`).transaction(n => Math.max(0, (n || 0) - applied));
+  if (shortfall > 0) await fRef(`cardPoolDebt/${type}`).transaction(n => (n || 0) + shortfall);
+}
+
 async function returnCardToPool(name, cardId) {
   const card = await fGet(`userCards/${sanitizeKey(name)}/${cardId}`);
   if (!card) return false;
   await fRef(`userCards/${sanitizeKey(name)}/${cardId}`).remove();
-  if (!card.fromShop && CARD_DEFAULTS[card.type]) await fRef(`cardPool/${card.type}`).transaction(n => (n||0)+1);
+  if (!card.fromShop && CARD_DEFAULTS[card.type]) await creditCardPool(card.type, 1);
   return true;
 }
 
@@ -1132,7 +1153,7 @@ async function reconcilePendingCardReturns(today) {
       if (!fromShop && CARD_DEFAULTS[type]) returnUpdates[type] = (returnUpdates[type] || 0) + 1;
     }
     for (const [type, count] of Object.entries(returnUpdates)) {
-      await fRef(`cardPool/${type}`).transaction(n => (n || 0) + count);
+      await creditCardPool(type, count);
     }
     await fRef(`pendingCardReturns/${date}`).remove();
   }
@@ -1501,7 +1522,7 @@ function MembersTab() {
             }
           }
           for (const [type, count] of Object.entries(poolUpdates)) {
-            await fRef(`cardPool/${type}`).transaction(n => (n || 0) + count);
+            await creditCardPool(type, count);
           }
         }
       }
@@ -1900,7 +1921,8 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
                 }
                 await fRef("cardConfig").update(configUpdates);
                 for (const [type, d] of Object.entries(deltas)) {
-                  if (d !== 0) await fRef(`cardPool/${type}`).transaction(n => Math.max(0, (n || 0) + d));
+                  if (d > 0) await creditCardPool(type, d);       // 調高：先還清舊欠額，剩下才真的加進池子
+                  else if (d < 0) await debitCardPool(type, -d);  // 調低：先扣池子，扣不夠記欠額，等流通中的卡回來扣抵
                 }
                 setCardConfigMsg("已儲存 ✓"); setTimeout(()=>setCardConfigMsg(""),2000);
               }} style={{marginBottom:"8px"}}>儲存卡牌設定</button>
