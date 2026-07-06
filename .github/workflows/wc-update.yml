@@ -12,6 +12,3 @@ jobs:
         with:
           node-version: '24'
       - run: node scripts/update-wc.js
-        env:
-          FD_KEY: ${{ secrets.FD_KEY }}
-          ODDS_KEY: ${{ secrets.ODDS_KEY }}

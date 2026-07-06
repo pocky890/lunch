@@ -1,7 +1,6 @@
 const DB = "https://launch-fdd3a-default-rtdb.firebaseio.com/lunch";
-const FD_KEY = process.env.FD_KEY;
-const ODDS_KEY = process.env.ODDS_KEY;
-if (!FD_KEY || !ODDS_KEY) { console.error("❌ 缺少 FD_KEY / ODDS_KEY 環境變數"); process.exit(1); }
+const FD_KEY = "5d480cad43b349ac9a56f79fc3ee8552";
+const ODDS_KEY = "f017ab09768e8e7b9a1cc60340809ce3";
 
 async function fbGet(path) {
   const r = await fetch(`${DB}/${path}.json`);
