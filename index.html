@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-06 15:24";
+  const BUILD_TIME = "2026-07-06 15:48";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4124,8 +4124,9 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
           <div style={{display:"flex",gap:"6px",marginBottom:"6px"}}>
             {[["home","主",o.home],["draw","平",o.draw],["away","客",o.away]].map(([key,label,odd]) => {
               const isBet = myBet?.pick === key;
-              const isWin = isBet && result === key;
-              const isLose = isBet && result && result !== key;
+              // 已結算的注以實際派彩結果為準（不受之後規則調整影響），未結算才用即時比分預覽
+              const isWin = isBet && (myBet.settled ? myBet.payout > 0 : result === key);
+              const isLose = isBet && (myBet.settled ? myBet.payout === 0 : !!(result && result !== key));
               const isSel = !myBet && input.pick === key;
               return (
                 <button key={key} type="button"
