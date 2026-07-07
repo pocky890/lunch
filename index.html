@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-06 15:48";
+  const BUILD_TIME = "2026-07-07 09:25";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4591,8 +4591,10 @@ function App() {
               const sKey = sanitizeKey(names[uid]);
               const exp = new Date(Date.now() + BIRTHDAY_CARD_EXPIRE_DAYS * 86400000);
               const expiresAt = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
-              await fRef(`userCards/${sKey}`).push().set({ type: "birthday_card", expiresAt, obtainedAt: today });
-              logNotification(sKey, "card_received", { cardType: "birthday_card", date: today });
+              // 用固定 key（非隨機 push id）＋ create-only transaction 二次防呆：即使前面的 transaction 極端情況下被兩邊同時搶到，
+              // 這裡也只會真的新增一次，不會發出兩張卡或兩則通知
+              const cardTx = await fRef(`userCards/${sKey}/birthday_${uid}`).transaction(cur => cur === null ? { type: "birthday_card", expiresAt, obtainedAt: today } : undefined);
+              if (cardTx?.committed) logNotification(sKey, "card_received", { cardType: "birthday_card", date: today });
             }
           }
           break;
