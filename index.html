@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-07 14:55";
+  const BUILD_TIME = "2026-07-07 15:32";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5484,15 +5484,14 @@ function App() {
     else { await fSet(`userTitles/${sKey}`, key); }
   }
 
-  // 偵測新成就：與 localStorage 已看過的比對
+  // 偵測新成就：與 Firebase 已看過清單比對（跨裝置一致，不用 localStorage）
   useEffect(() => {
     if (!boundName || !weekly) return;
     const sKey = sanitizeKey(boundName);
-    Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`)]).then(([pc, sa]) => {
+    Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`), fGet(`userSeenAchievements/${sKey}`)]).then(([pc, sa, seenRaw]) => {
       setMySpecialAchievements(sa || {});
       const unlocked = computeAchievements(boundName, weekly, pc || 0, sa || {});
-      const storageKey = `lunch_seen_ach_${sKey}`;
-      const seen = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const seen = seenRaw || [];
       const hasNew = unlocked.some(k => !seen.includes(k));
       setHasNewAchievement(hasNew);
       // 唯一成就且尚未選稱號 → 自動選
@@ -5610,7 +5609,7 @@ function App() {
       const sKey = sanitizeKey(boundName);
       Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`)]).then(([pc, sa]) => {
         const unlocked = computeAchievements(boundName, weekly, pc || 0, sa || {});
-        localStorage.setItem(`lunch_seen_ach_${sKey}`, JSON.stringify(unlocked));
+        fSet(`userSeenAchievements/${sKey}`, unlocked);
       });
     }} onLogout={() => { setShowProfile(false); auth.signOut(); }} />}
     {userActivePet && PET_GIFS[userActivePet] && <PetOverlay petKey={userActivePet} />}
