@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-07 14:12";
+  const BUILD_TIME = "2026-07-07 14:55";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5052,9 +5052,12 @@ function App() {
           for (const w of soloWinners) {
             const pt = pts.find(p => p.id === w.id);
             if (pt?.cardUsed === "thirsty_card") {
-              await fRef(`specialAchievements/${sanitizeKey(w.name)}/bloodyLeech`).set(true);
-              logNotification(sanitizeKey(w.name), "achievement", { key: "bloodyLeech", date: today });
-              if (w.name === boundName) setMySpecialAchievements(prev => ({...prev, bloodyLeech: true}));
+              const hasIt = (await fGet(`specialAchievements/${sanitizeKey(w.name)}/bloodyLeech`)) === true;
+              if (!hasIt) {
+                await fRef(`specialAchievements/${sanitizeKey(w.name)}/bloodyLeech`).set(true);
+                logNotification(sanitizeKey(w.name), "achievement", { key: "bloodyLeech", date: today });
+                if (w.name === boundName) setMySpecialAchievements(prev => ({...prev, bloodyLeech: true}));
+              }
             }
           }
         }
@@ -5181,7 +5184,7 @@ function App() {
             await newRef.set(stolen);
             stealSucceeded = true;
             logNotification(sanitizeKey(name), "card_received", { cardType: stolen.type, date: todayStr(), from: stolenVictim.name });
-            if (stolen.type === "steal_card") {
+            if (stolen.type === "steal_card" && !mySpecialAchievements?.stealSteal) {
               await fRef(`specialAchievements/${sanitizeKey(name)}/stealSteal`).set(true);
               setMySpecialAchievements(prev => ({...prev, stealSteal: true}));
               logNotification(sanitizeKey(name), "achievement", { key: "stealSteal", date: todayStr() });
