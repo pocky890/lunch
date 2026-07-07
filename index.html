@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-07 13:16";
+  const BUILD_TIME = "2026-07-07 14:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4996,6 +4996,8 @@ function App() {
           const sns = await fGet(`sameNumberStreak/${pKey}`);
           if (!sns || (sns.count || 0) < 10) continue;
           const achKey = winnerNameSet.has(p.name) ? "lateJustice" : "obsessed";
+          const existingSA = await fGet(`specialAchievements/${pKey}`);
+          if (existingSA?.[achKey]) continue; // 已經拿過這個成就，避免每天重複通知
           await fRef(`specialAchievements/${pKey}/${achKey}`).set(true);
           logNotification(pKey, "achievement", { key: achKey, date: today });
           if (p.name === boundName) setMySpecialAchievements(prev => ({...prev, [achKey]: true}));
