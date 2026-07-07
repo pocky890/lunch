@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-07 13:09";
+  const BUILD_TIME = "2026-07-07 13:16";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5035,6 +5035,11 @@ function App() {
         if (result.soloWin) {
           let isFirstBlood = false;
           await fRef("gameFlags/firstBlood").transaction(cur => { if (cur) return; isFirstBlood = true; return today; });
+          // 二次防呆：改查另一個獨立資料源（specialAchievements），確認真的還沒有人拿過，避免 gameFlags 萬一失效就重複發獎
+          if (isFirstBlood) {
+            const existingSA = await fGet("specialAchievements");
+            if (Object.values(existingSA || {}).some(sa => sa?.firstBlood)) isFirstBlood = false;
+          }
           if (isFirstBlood) {
             for (const w of soloWinners) {
               await fRef(`specialAchievements/${sanitizeKey(w.name)}/firstBlood`).set(true);
