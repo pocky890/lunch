@@ -546,7 +546,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-07 09:25";
+  const BUILD_TIME = "2026-07-07 09:33";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2891,8 +2891,11 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
       </>}
       {list.length > 0 && (() => {
         const today = todayStr();
-        const streaks = list.map(p => ({ name: p.name, s: computeLoserStreak(weekly, p.name, today) }));
-        const maxS = Math.max(...streaks.map(x => x.s));
+        // 全公司歷史範圍：不限今天有沒有加入，只要出現在過歷史紀錄裡就一起比
+        const allNames = new Set();
+        Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
+        const streaks = [...allNames].map(name => ({ name, s: computeLoserStreak(weekly, name, today) }));
+        const maxS = Math.max(0, ...streaks.map(x => x.s));
         if (maxS < 2) return null;
         const losers = streaks.filter(x => x.s === maxS);
         return <div style={{marginTop:"16px",textAlign:"center",fontSize:"12px",color:"var(--t3)"}}>😢 最久未中：<strong style={{color:"var(--t2)"}}>{losers.map(x=>x.name).join("、")}</strong>（連續 {maxS} 次）</div>;
