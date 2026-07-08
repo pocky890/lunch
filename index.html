@@ -267,6 +267,8 @@
     .badge-gold  { background: var(--c-amber-bg);  color: var(--c-amber-tx);  border: 1px solid var(--c-amber-bd); }
     .badge-green { background: var(--c-green-bg);  color: var(--c-green-tx);  border: 1px solid var(--c-green-bd); }
     .badge-title { background: rgba(124,58,237,0.1); color: #6d28d9; border: 1px solid rgba(124,58,237,0.4); border-radius: 5px; padding: 2px 6px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+    .badge-title-legendary { animation: titleLegendaryGlow 2.4s ease-in-out infinite; }
+    @keyframes titleLegendaryGlow { 0%,100% { box-shadow: 0 0 3px 0 var(--amber); } 50% { box-shadow: 0 0 8px 1px var(--amber); } }
 
     .page-footer { border-top: 1px solid var(--b1); margin-top: 64px; padding: 32px 0; text-align: center; }
     
@@ -545,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-08 10:50";
+  const BUILD_TIME = "2026-07-08 10:56";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2868,7 +2870,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
             <div style={{width:"18px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
             <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"4px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
-              {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title" style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
+              {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")} style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
             </span>
             {bonusDayToday && diceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px",marginRight:"4px"}}>×{diceRolls[sanitizeKey(p.name)]}</span>}
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"4px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
@@ -2882,7 +2884,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
         {absent.map(name => (
           <div key={name} style={{display:"flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"var(--s3)",border:"1px solid var(--b1)",marginBottom:"4px",opacity:0.7}}>
             <span style={{fontSize:"13px",color:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>🙅 {name}</span>
-            {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(name)], titleShopConfig); return a ? <span className="badge badge-title" style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
+            {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(name)], titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")} style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
             {bonusDayToday && diceRolls[sanitizeKey(name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px"}}>×{diceRolls[sanitizeKey(name)]}</span>}
           </div>
         ))}
@@ -3063,7 +3065,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span>
               <span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
                 {name}
-                {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
+                {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")}>{a.emoji} {a.name}</span> : null; })()}
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
             </div>
@@ -5999,7 +6001,7 @@ function App() {
                       <div style={{flex:1,display:"flex",flexDirection:"column",gap:"2px",minWidth:0}}>
                         <span style={{fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)",display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
                           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                          {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className="badge badge-title">{a.emoji} {a.name}</span> : null; })()}
+                          {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")}>{a.emoji} {a.name}</span> : null; })()}
                           {bonusDayToday && allDiceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 5px"}}>×{allDiceRolls[sanitizeKey(p.name)]}</span>}
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
