@@ -148,7 +148,7 @@ const oc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } 
 
 ## 卡牌系統
 - extra_number（加號卡）、follow_rest（跟著我吃）、no_pay（免付卡）、thirsty_card（口渴卡 1 張）、streak_protect（連勝保護卡）
-- birthday_card（生日卡）：生日前一天自動發放（前一天無人上線則生日後 5 天內補發；2/29 平年視為 2/28），用 `userBirthdayCardIssued/{uid}` transaction 原子搶佔防止多 client 重複發卡。7 天內需使用完畢，效果同加號卡但多選 4 個號碼。不列入 `cardPool`/`CARD_DEFAULTS`，不可在點數商店上架，不可被盜牌卡偷取。
+- birthday_card（生日卡）：生日當月 1 號自動發放（1 號當天無人上線則當月內首位上線者補發；2/29 平年視為 2/28），用 `userBirthdayCardIssued/{uid}` transaction 原子搶佔防止多 client 重複發卡。固定當月底到期（逾期作廢），效果同加號卡但多選 4 個號碼。不列入 `cardPool`/`CARD_DEFAULTS`，不可在點數商店上架，不可被盜牌卡偷取。
 - 卡牌使用流程：doJoin 先以 transaction 原子認領（從 `userCards` 移除，防與盜牌卡競態），寫入 `pendingCardReturns/{date}`，開獎時 `reconcilePendingCardReturns` 統一還池（含補掃過去日期的滯留記錄）。商店購買的卡帶 `fromShop: true`，任何歸還路徑（reconcile / returnCardToPool / 離職回收）都不回 `cardPool`（商店庫存與卡牌池獨立）。
 - 卡牌池還池／扣池一律走 `creditCardPool` / `debitCardPool`（index.html），兩者對稱處理 `cardPoolDebt/{type}`：管理員調低總量時，扣不夠池子的差額記成欠額，之後流通在外的卡陸續歸還時優先拿去扣債，扣完債才真的進池子，確保調低的總量最終確實生效而不會被歸還悄悄補回超標；調高總量則相反，先還清舊欠額，剩下才真的加進池子。
 - 卡牌設定存 Firebase `cardConfig/`

@@ -432,8 +432,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 9, rules: 7, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"] };
+  const WHATSNEW_VERSION       = { cards: 10, rules: 7, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -458,9 +458,8 @@
     cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者合請你一杯，上限 100 元。被核彈炸出局則效果取消。" },
     nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選號碼為核心，九宮格內其他人出局" },
-    birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日前一天自動發放，7 天內需使用完畢" },
+    birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日當月 1 號自動發放，當月底前需使用完畢" },
   };
-  const BIRTHDAY_CARD_EXPIRE_DAYS = 7;
   const CARD_DEFAULTS = {
     follow_restaurant: { total:3, expireDays:30 },
     extra_number:      { total:5, expireDays:30 },
@@ -546,7 +545,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-07 15:32";
+  const BUILD_TIME = "2026-07-08 10:50";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1297,7 +1296,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
     { type:"nuke_card",         desc:"加入時選一個號碼為核心。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
-    { type:"birthday_card",     desc:"生日前一天自動發放到你的手牌，無需抽取（若前一天無人上線，生日後 5 天內會自動補發）。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
+    { type:"birthday_card",     desc:"生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）。當月底前需使用完畢，逾期作廢。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
     Object.values(CARD_DEFAULTS).reduce((s, c) => s + c.total, 0);
@@ -1320,7 +1319,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
                 <span style={{fontSize:"18px"}}>{ct.emoji}</span>
                 <span>{ct.name}{newCardTypes.includes(c.type) && <NewDot />}</span>
-                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{c.type==="birthday_card" ? `生日禮 · ${BIRTHDAY_CARD_EXPIRE_DAYS} 天` : `${cfg.total ?? "?"} 張 · ${cfg.expireDays ?? "?"} 天`}</span>
+                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{c.type==="birthday_card" ? "生日禮 · 當月底到期" : `${cfg.total ?? "?"} 張 · ${cfg.expireDays ?? "?"} 天`}</span>
               </div>
               <div>{c.desc}</div>
             </div>
@@ -4561,7 +4560,7 @@ function App() {
     return () => { ref1.off("value", h1); ref2.off("value", h2); };
   }, [boundName]);
 
-  // 生日資料載入（過濾離職者）+ 生日卡發放（生日前一天～生日後 5 天內首位上線者代發，transaction 原子搶佔防重複）
+  // 生日資料載入（過濾離職者）+ 生日卡發放（生日當月 1 號發放，當月內首位上線者代發，transaction 原子搶佔防重複，當月底到期）
   useEffect(() => {
     async function loadBirthdays() {
       const today = todayStr();
@@ -4582,25 +4581,23 @@ function App() {
       const result = [];
       for (const [uid, mmdd] of Object.entries(birthdays || {})) {
         if ((statuses || {})[uid] === "resigned" || !(names || {})[uid]) continue;
-        if (birthdayDateFor(mmdd, todayDate.getFullYear()) === today) result.push({ uid, name: names[uid] });
-        // 發卡視窗跨年（12/31→1/1），前後年份都要檢查
-        for (const year of [todayDate.getFullYear() - 1, todayDate.getFullYear(), todayDate.getFullYear() + 1]) {
-          const bd = birthdayDateFor(mmdd, year);
-          const diff = Math.round((new Date(bd + "T00:00:00").getTime() - todayDate.getTime()) / 86400000);
-          if (diff > 1 || diff < -5) continue;
+        const bd = birthdayDateFor(mmdd, todayDate.getFullYear());
+        if (bd === today) result.push({ uid, name: names[uid] });
+        // 發卡視窗＝生日當月（1 號～月底），當月內任何一天首位上線者都會補發，卡片固定當月底到期
+        const bdDate = new Date(bd + "T00:00:00");
+        const monthEnd = new Date(bdDate.getFullYear(), bdDate.getMonth() + 1, 0);
+        if (todayDate.getMonth() === bdDate.getMonth()) {
           if ((issuedMap || {})[uid] !== bd && !TEST_MODE) {
             const tx = await fRef(`userBirthdayCardIssued/${uid}`).transaction(cur => cur === bd ? undefined : bd);
             if (tx?.committed) {
               const sKey = sanitizeKey(names[uid]);
-              const exp = new Date(Date.now() + BIRTHDAY_CARD_EXPIRE_DAYS * 86400000);
-              const expiresAt = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
+              const expiresAt = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth()+1).padStart(2,"0")}-${String(monthEnd.getDate()).padStart(2,"0")}`;
               // 用固定 key（非隨機 push id）＋ create-only transaction 二次防呆：即使前面的 transaction 極端情況下被兩邊同時搶到，
               // 這裡也只會真的新增一次，不會發出兩張卡或兩則通知
               const cardTx = await fRef(`userCards/${sKey}/birthday_${uid}`).transaction(cur => cur === null ? { type: "birthday_card", expiresAt, obtainedAt: today } : undefined);
               if (cardTx?.committed) logNotification(sKey, "card_received", { cardType: "birthday_card", date: today });
             }
           }
-          break;
         }
       }
       setTodayBirthdays(result);
