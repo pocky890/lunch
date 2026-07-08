@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-08 10:56";
+  const BUILD_TIME = "2026-07-08 11:05";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -966,7 +966,8 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   });
   let maxLose = 0, curLose = 0;
   recs.forEach(r => {
-    if (r.noParticipants) return;
+    if (r.noParticipants || r.skipStreak) return;
+    if (!r.participantNames || !r.participantNames.includes(name)) return;
     if (isWinnerOf(r, name)) { curLose = 0; } else { curLose++; maxLose = Math.max(maxLose, curLose); }
   });
   const luckyDay   = recs.some(r => isWinnerOf(r, name) && r.specialDay);
