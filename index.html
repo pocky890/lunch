@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-09 13:01";
+  const BUILD_TIME = "2026-07-09 13:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4054,41 +4054,39 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
   async function placeBet(matchId) {
     if (!sKey) return;
     const input = betInputs[matchId] || {};
-    if (!input.pick) return showToast("請選擇隊伍");
-    const amount = parseInt(input.amount);
+    const existing = allBets[matchId]?.[sKey] || null;
+    const pick = input.pick !== undefined ? input.pick : (existing?.pick ?? null);
+    if (!pick) return showToast("請選擇隊伍");
+    const amount = parseInt(input.amount ?? existing?.amount);
     if (!amount || amount < 10) return showToast("最少押 10 點");
     if (amount % 10 !== 0) return showToast("押注點數須為 10 的倍數");
-    if (amount > userPoints) return showToast("點數不足");
+    const oldAmount = existing?.amount || 0;
+    if (amount > userPoints + oldAmount) return showToast("點數不足");
     const match = matches[matchId];
     if (!match) return;
     if (Date.now() >= new Date(match.utcDate).getTime()) return showToast("比賽已開始，無法下注");
-    if (allBets[matchId]?.[sKey]) return showToast("已有投注");
     setSubmitting(true);
     if (TEST_MODE) {
-      setUserPoints(p => (p || 0) - amount);
-      setBetInputs(p => ({...p, [matchId]: { amount: "", pick: null }}));
-      showToast("✅ 投注成功！");
+      setUserPoints(p => (p || 0) + oldAmount - amount);
+      setBetInputs(p => { const n = {...p}; delete n[matchId]; return n; });
+      showToast(existing ? "✅ 已更新投注！" : "✅ 投注成功！");
       setSubmitting(false);
       return;
     }
     try {
-      // 先扣點（transaction 內檢查餘額，跨裝置同時下注也不會扣成負數）
-      const deduct = await fRef(`userPoints/${sKey}`).transaction(p => (p || 0) < amount ? undefined : (p || 0) - amount);
+      // 修改注時把舊金額退回、扣新金額，兩者在同一個 transaction 內完成（沒有舊注則 oldAmount=0，等同原本的扣點）
+      const deduct = await fRef(`userPoints/${sKey}`).transaction(p => {
+        const bal = (p || 0) + oldAmount;
+        return bal < amount ? undefined : bal - amount;
+      });
       if (!deduct?.committed) { showToast("點數不足"); setSubmitting(false); return; }
-      // 再以 transaction 搶佔投注（另一裝置已下注時退點，避免重複扣款）；記下當下賠率，結算以此為準
-      const betObj = { pick: input.pick, amount, odds: odds[matchId] || null, placedAt: Date.now(), settled: false, payout: null };
-      const claim = await fRef(`wc2026/bets/${matchId}/${sKey}`).transaction(cur => cur === null ? betObj : undefined);
-      if (!claim?.committed) {
-        await fRef(`userPoints/${sKey}`).transaction(p => (p || 0) + amount);
-        showToast("已有投注");
-        setSubmitting(false);
-        return;
-      }
-      await fRef(`pointsLog/${sKey}`).push({ type: "wc_bet", delta: -amount, note: `${zhTeam(match.homeTeam)} vs ${zhTeam(match.awayTeam)}`, ts: Date.now() });
+      const betObj = { pick, amount, odds: odds[matchId] || null, placedAt: Date.now(), settled: false, payout: null };
+      await fRef(`wc2026/bets/${matchId}/${sKey}`).set(betObj);
+      await fRef(`pointsLog/${sKey}`).push({ type: "wc_bet", delta: oldAmount - amount, note: `${zhTeam(match.homeTeam)} vs ${zhTeam(match.awayTeam)}${existing ? "（修改）" : ""}`, ts: Date.now() });
       const newPts = await fGet(`userPoints/${sKey}`);
       setUserPoints(newPts);
-      setBetInputs(p => ({...p, [matchId]: { amount: "", pick: null }}));
-      showToast("✅ 投注成功！");
+      setBetInputs(p => { const n = {...p}; delete n[matchId]; return n; });
+      showToast(existing ? "✅ 已更新投注！" : "✅ 投注成功！");
     } catch(e) { showToast("投注失敗"); }
     setSubmitting(false);
   }
@@ -4106,7 +4104,8 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
     const input = betInputs[mid] || {};
     const started = Date.now() >= new Date(match.utcDate).getTime();
     const isFinished = ["FINISHED","AWARDED"].includes(match.status);
-    const canBet = hasOdds && !myBet && !started && !!sKey;
+    const canBet = hasOdds && !started && !!sKey;
+    const effectivePick = !started ? (input.pick !== undefined ? input.pick : (myBet?.pick ?? null)) : null;
     // 淘汰賽進入延長賽/PK 代表 90 分鐘打平，依博弈慣例以「平局」結算
     const result = isFinished && match.homeScore !== null
       ? ((match.duration && match.duration !== "REGULAR") ? "draw"
@@ -4135,19 +4134,18 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
               // 已結算的注以實際派彩結果為準（不受之後規則調整影響），未結算才用即時比分預覽
               const isWin = isBet && (myBet.settled ? myBet.payout > 0 : result === key);
               const isLose = isBet && (myBet.settled ? myBet.payout === 0 : !!(result && result !== key));
-              const isSel = !myBet && input.pick === key;
+              const isSel = effectivePick === key;
               return (
                 <button key={key} type="button"
                   onClick={() => {
                     if (started) return showToast("比賽已開始，無法下注");
                     if (!sKey) return showToast("請先登入");
-                    if (myBet) return;
-                    setBetInputs(p => ({...p, [mid]: {...(p[mid]||{}), pick: input.pick===key?null:key}}));
+                    setBetInputs(p => ({...p, [mid]: {...(p[mid]||{}), pick: effectivePick===key?null:key}}));
                   }}
-                  style={{flex:1,padding:"6px 4px",borderRadius:"8px",fontSize:"11px",fontWeight:"600",marginBottom:0,lineHeight:1.4,cursor:started||myBet?"default":"pointer",opacity:started&&!myBet?0.5:1,
-                    background:isWin?"rgba(34,197,94,0.15)":isLose?"rgba(239,68,68,0.1)":isBet||isSel?"var(--a)":"var(--s2)",
-                    color:isWin?"#15803d":isLose?"#b91c1c":isBet||isSel?"#fff":"var(--t2)",
-                    border:`1px solid ${isWin?"rgba(34,197,94,0.4)":isLose?"rgba(239,68,68,0.3)":isBet||isSel?"var(--a)":"var(--b1)"}`}}>
+                  style={{flex:1,padding:"6px 4px",borderRadius:"8px",fontSize:"11px",fontWeight:"600",marginBottom:0,lineHeight:1.4,cursor:started?"default":"pointer",opacity:started&&!myBet?0.5:1,
+                    background:isWin?"rgba(34,197,94,0.15)":isLose?"rgba(239,68,68,0.1)":isSel?"var(--a)":"var(--s2)",
+                    color:isWin?"#15803d":isLose?"#b91c1c":isSel?"#fff":"var(--t2)",
+                    border:`1px solid ${isWin?"rgba(34,197,94,0.4)":isLose?"rgba(239,68,68,0.3)":isSel?"var(--a)":"var(--b1)"}`}}>
                   <div style={{opacity:.8}}>{label}</div>
                   <div style={{fontSize:"14px",fontWeight:"700"}}>{odd}</div>
                 </button>
@@ -4155,13 +4153,14 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
             })}
           </div>
         )}
-        {canBet && input.pick && (
+        {canBet && effectivePick && (
           <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-            <input type="number" min="10" step="10" max={userPoints} placeholder={`點數（最少10，剩 ${userPoints}）`}
-              value={input.amount||""}
-              onChange={e=>setBetInputs(p=>({...p,[mid]:{...(p[mid]||{}),amount:e.target.value}}))}
+            <input type="number" min="10" step="10" max={userPoints + (myBet?.amount||0)}
+              placeholder={`點數（最少10，可用 ${userPoints + (myBet?.amount||0)}）`}
+              value={input.amount ?? (myBet ? String(myBet.amount) : "")}
+              onChange={e=>setBetInputs(p=>({...p,[mid]:{...(p[mid]||{}), pick: (p[mid]?.pick !== undefined ? p[mid].pick : myBet?.pick), amount:e.target.value}}))}
               style={{flex:1,marginBottom:0,padding:"6px 10px",fontSize:"13px"}} />
-            <button onClick={()=>placeBet(mid)} disabled={submitting} style={{marginBottom:0,width:"auto",padding:"6px 16px",fontSize:"13px"}}>押注</button>
+            <button onClick={()=>placeBet(mid)} disabled={submitting} style={{marginBottom:0,width:"auto",padding:"6px 16px",fontSize:"13px"}}>{myBet ? "修改" : "押注"}</button>
           </div>
         )}
         {myBet && (
@@ -4169,7 +4168,7 @@ function WorldCupModal({ onClose, boundName, userPoints, setUserPoints, showToas
             background:myBet.settled?(myBet.payout>0?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.08)"):"var(--s2)",
             color:myBet.settled?(myBet.payout>0?"#15803d":"#b91c1c"):"var(--t2)"}}>
             {myBet.pick==="home"?"主隊":myBet.pick==="away"?"客隊":"平局"} · {myBet.amount} 點
-            {myBet.settled?(myBet.payout>0?` · 獲得 ${myBet.payout} 點（+${myBet.payout-myBet.amount}）`:" · 落空"):" · 待開獎"}
+            {myBet.settled?(myBet.payout>0?` · 獲得 ${myBet.payout} 點（+${myBet.payout-myBet.amount}）`:" · 落空"):(started?" · 待開獎":" · 開賽前可修改")}
           </div>
         )}
         {!hasOdds && !isFinished && <div style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"4px"}}>賠率待設定</div>}
