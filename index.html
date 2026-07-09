@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-08 11:05";
+  const BUILD_TIME = "2026-07-09 13:01";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2463,17 +2463,20 @@ function StreakWarning({ pts, weekly }) {
   );
 }
 
-function CardPoolDisplay({ cardPool }) {
+function CardPoolDisplay({ cardPool, cardConfig = {} }) {
   if (!cardPool || Object.keys(cardPool).length === 0) return null;
   const total = Object.values(cardPool).reduce((s,n) => s+(n||0), 0);
+  const grandTotal = Object.keys(CARD_TYPES).filter(type => CARD_DEFAULTS[type])
+    .reduce((s,type) => s + (cardConfig[type]?.total ?? CARD_DEFAULTS[type].total), 0);
   return (
     <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",display:"flex",alignItems:"center",justifyContent:"center",flexWrap:"wrap",gap:"12px",fontSize:"13px"}}>
-      <span style={{fontWeight:"600",color:"var(--t3)",flexShrink:0}}>🃏 卡牌池 ×{total}</span>
+      <span style={{fontWeight:"600",color:"var(--t3)",flexShrink:0}}>🃏 卡牌池 ×{total}/{grandTotal}</span>
       {Object.entries(CARD_TYPES).filter(([type]) => CARD_DEFAULTS[type]).map(([type, ct]) => {
         const cnt = (cardPool[type]||0);
+        const m = cardConfig[type]?.total ?? CARD_DEFAULTS[type].total;
         return (
           <span key={type} style={{color:"var(--t2)",opacity:cnt>0?1:0.35}}>
-            {ct.emoji} {ct.name} <strong style={{color:cnt>0?"var(--a)":"var(--t3)"}}>{cnt}</strong>
+            {ct.emoji} {ct.name} <strong style={{color:cnt>0?"var(--a)":"var(--t3)"}}>{cnt}/{m}</strong>
           </span>
         );
       })}
@@ -5656,7 +5659,7 @@ function App() {
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning pts={pts} weekly={weekly} />
-        <CardPoolDisplay cardPool={cardPool} />
+        <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -5828,7 +5831,7 @@ function App() {
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning pts={pts} weekly={weekly} />
-          <CardPoolDisplay cardPool={cardPool} />
+          <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
           <div className="grid-3">
             <div className="col">
               <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
@@ -5991,7 +5994,7 @@ function App() {
                   🎂 <strong>{p.name}</strong> 使用了生日卡，本局選了 {1+(p.birthdayNumbers?.length||0)+(p.number2?1:0)} 個號碼：{[p.number,...(p.birthdayNumbers||[]),...(p.number2?[p.number2]:[])].map(n=>`#${n}`).join("、")}
                 </div>
               ))}
-              <CardPoolDisplay cardPool={cardPool} />
+              <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
                   const dist = Math.abs(p.number - drawnNumber), isWinner = (result.winners || [winner]).some(w => w.id === p.id), ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];
