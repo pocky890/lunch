@@ -267,7 +267,7 @@
     .badge-gold  { background: var(--c-amber-bg);  color: var(--c-amber-tx);  border: 1px solid var(--c-amber-bd); }
     .badge-green { background: var(--c-green-bg);  color: var(--c-green-tx);  border: 1px solid var(--c-green-bd); }
     .badge-title { background: rgba(124,58,237,0.1); color: #6d28d9; border: 1px solid rgba(124,58,237,0.4); border-radius: 5px; padding: 2px 6px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-    .badge-title-legendary { animation: titleLegendaryGlow 2.4s ease-in-out infinite; }
+    .badge-title-legendary { animation: titleLegendaryGlow 2.4s ease-in-out infinite; background: var(--c-amber-bg) !important; color: var(--c-amber-tx) !important; border-color: var(--c-amber-bd) !important; }
     @keyframes titleLegendaryGlow { 0%,100% { box-shadow: 0 0 3px 0 var(--amber); } 50% { box-shadow: 0 0 8px 1px var(--amber); } }
 
     .page-footer { border-top: 1px solid var(--b1); margin-top: 64px; padding: 32px 0; text-align: center; }
@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-09 18:03";
+  const BUILD_TIME = "2026-07-09 18:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
