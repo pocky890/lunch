@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-09 18:12";
+  const BUILD_TIME = "2026-07-16 20:15";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5490,12 +5490,27 @@ function App() {
   useEffect(() => {
     if (!boundName || !weekly) return;
     const sKey = sanitizeKey(boundName);
-    Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`), fGet(`userSeenAchievements/${sKey}`)]).then(([pc, sa, seenRaw]) => {
+    Promise.all([fGet(`participationCount/${sKey}`), fGet(`specialAchievements/${sKey}`), fGet(`userSeenAchievements/${sKey}`), fGet(`userNotifiedAchievements/${sKey}`)]).then(async ([pc, sa, seenRaw, notifiedRaw]) => {
       setMySpecialAchievements(sa || {});
       const unlocked = computeAchievements(boundName, weekly, pc || 0, sa || {});
       const seen = seenRaw || [];
       const hasNew = unlocked.some(k => !seen.includes(k));
       setHasNewAchievement(hasNew);
+      // 一般數字門檻成就（join/solo/streak/lose/luckyDay/birthday/sharedWin/fatedTie）解鎖當下跳 Toast + 寫入通知記錄。
+      // 特殊／隱藏成就（stealSteal 等）已在各自觸發點即時通知，這裡排除避免重複；transaction 原子搶佔確保每個成就只通知一次
+      const notified = notifiedRaw || {};
+      const alreadyNotifiedElsewhere = ["stealSteal","bloodyLeech","cardKing","firstBlood","cornerCreature","lastMinuteDriver","obsessed","lateJustice"];
+      for (const key of unlocked) {
+        if (notified[key] || alreadyNotifiedElsewhere.includes(key)) continue;
+        const tx = await fRef(`userNotifiedAchievements/${sKey}/${key}`).transaction(cur => cur ? undefined : true);
+        if (tx?.committed) {
+          const ach = ACHIEVEMENTS.find(x => x.key === key);
+          if (ach) {
+            logNotification(sKey, "achievement", { key, date: todayStr() });
+            showToast(`🎉 成就解鎖：${ach.emoji} ${ach.name}！`, 5000);
+          }
+        }
+      }
       // 唯一成就且尚未選稱號 → 自動選
       if (unlocked.length >= 1 && !userTitles[sKey]) {
         const best = unlocked.reduce((a, b) => {
