@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 10, rules: 7, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 10, rules: 8, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-16 20:15";
+  const BUILD_TIME = "2026-07-21 11:45";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1263,8 +1263,8 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             </div>
           </div>
           <div>
-            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>✏️ 修改 / 取消</div>
-            <div>截止前可以隨時<strong style={{color:"var(--t1)"}}>修改餐廳</strong>，或直接取消參加、標記今日不參加。號碼與卡牌送出後<strong style={{color:"var(--t1)"}}>無法修改</strong>。</div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>✏️ 修改 / 取消{newSections.includes("cardEdit") && <NewDot />}</div>
+            <div>截止前可以隨時<strong style={{color:"var(--t1)"}}>修改餐廳</strong>，或直接取消參加、標記今日不參加。號碼<strong style={{color:"var(--t1)"}}>送出後無法修改</strong>；卡牌如果<strong style={{color:"var(--t1)"}}>當天還沒用過</strong>，回來編輯時仍可以補選一張使用，但用過的卡就不能再換。</div>
           </div>
 
           {/* ── 特殊日子 ── */}
@@ -2911,7 +2911,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
 
 // slots: [{num, color, outline}], maxSlots, onSlotsChange
 // takenBy: nums taken by others; weekly: for heatmap
-function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark, nukeZone = [] }) {
+function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsChange, takenBy = [], weekly = {}, isDark, nukeZone = [], lockedKeys = [] }) {
   const renderMax = fullNumMax || numMax;
   const numCounts = {};
   Object.values(weekly).forEach(rec => { if (rec?.drawnNumber) numCounts[rec.drawnNumber] = (numCounts[rec.drawnNumber] || 0) + 1; });
@@ -2929,6 +2929,7 @@ function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsCha
         );
         const slot = slotMap[n];
         const selected = !!slot;
+        const locked = selected && lockedKeys.includes(slot.key);
         const inNuke = nukeSet.has(n) && !selected;
         const taken = takenSet.has(n) && !selected;
         const atMax = !selected && slots.filter(s=>s.num).length >= maxSlots;
@@ -2949,7 +2950,7 @@ function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsCha
           color = count > 0 ? (isDark?"#BFDBFE":"#003580") : "var(--t3)";
         }
         const handleClick = () => {
-          if (taken) return;
+          if (taken || locked) return;
           if (selected) {
             onSlotsChange(slots.map(s => s.num === String(n) ? {...s, num:""} : s));
           } else if (!atMax) {
@@ -2961,15 +2962,15 @@ function NumberPicker({ numMax, fullNumMax, slots = [], maxSlots = 1, onSlotsCha
         };
         return (
           <div key={n}
-            title={taken ? `#${n}（已有人選）` : inNuke ? `#${n}（核彈範圍）` : atMax ? "已選滿" : count > 0 ? `#${n}：出現 ${count} 次` : `#${n}`}
+            title={locked ? `#${n}（已鎖定）` : taken ? `#${n}（已有人選）` : inNuke ? `#${n}（核彈範圍）` : atMax ? "已選滿" : count > 0 ? `#${n}：出現 ${count} 次` : `#${n}`}
             onClick={handleClick}
-            style={{aspectRatio:"1",borderRadius:"4px",userSelect:"none",cursor:taken?"not-allowed":atMax?"default":"pointer",
+            style={{aspectRatio:"1",borderRadius:"4px",userSelect:"none",cursor:taken?"not-allowed":(locked||atMax)?"default":"pointer",
               background:bg,display:"flex",alignItems:"center",justifyContent:"center",
               fontSize:"11px",fontWeight:selected?"700":"600",color,
               outline:selected?`2px solid ${slot.outline}`:"none",outlineOffset:"1px",
               opacity:(taken||atMax)?0.35:1,transition:"transform 0.08s",
             }}
-            onMouseEnter={e=>{if(!taken&&!atMax)e.currentTarget.style.transform="scale(1.15)";}}
+            onMouseEnter={e=>{if(!taken&&!atMax&&!locked)e.currentTarget.style.transform="scale(1.15)";}}
             onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
           >{n}</div>
         );
@@ -5123,6 +5124,7 @@ function App() {
       const s = await fGet("session");
       if (!s || isDeadlinePassed(s.deadline)) return showToast("已超過截止時間！");
       const existing = snapToArr(await fGet("participants")), myEntry = existing.find(p=>p.name===name);
+      const hasUsedCard = !!myEntry?.cardUsed; // 今天已經用過卡才鎖死；沒用過卡的話回來編輯仍可補選一張
 
       // 驗證 加號卡 的第二個號碼
       let num2 = null;
@@ -5139,7 +5141,7 @@ function App() {
 
       // 驗證生日卡的額外號碼
       let bdNums = null;
-      if (activeCard?.type === "birthday_card" && !isEditing) {
+      if (activeCard?.type === "birthday_card" && !hasUsedCard) {
         const parsed = bdNumbers.map(v => parseInt(v));
         if (parsed.some(n => !n || n < 1 || n > effectiveNumMax)) return showToast(`生日號碼請填入 1 到 ${effectiveNumMax} 之間的整數`);
         const allNums = [num, ...parsed, ...(num2 ? [num2] : []), ...(petN ? [petN] : [])];
@@ -5151,7 +5153,7 @@ function App() {
 
       // 盜牌卡：先嘗試偷取，決定是否真的算「使用」（撲空則保留卡牌）
       let stealSucceeded = false;
-      if (activeCard?.type === "steal_card" && !myEntry) {
+      if (activeCard?.type === "steal_card" && !hasUsedCard) {
         const today = todayStr();
         const myKey = sanitizeKey(name);
         const nameMap = {};
@@ -5202,10 +5204,10 @@ function App() {
         }
       }
 
-      // 盜牌卡只有成功偷到才算使用；其餘主動卡照常消耗。已加入者（myEntry）只能改餐廳，卡牌效果寫不進去，一律不消耗
-      const cardConsumed = !myEntry && activeCard && !PASSIVE_TYPES.includes(activeCard.type)
+      // 盜牌卡只有成功偷到才算使用；其餘主動卡照常消耗。今天已經用過卡的人（hasUsedCard）不能再用，卡牌效果寫不進去，一律不消耗
+      const cardConsumed = !hasUsedCard && activeCard && !PASSIVE_TYPES.includes(activeCard.type)
         && (activeCard.type !== "steal_card" || stealSucceeded);
-      if (myEntry && activeCard) showToast("你今天已加入過，本次僅更新餐廳，卡牌未消耗");
+      if (hasUsedCard && activeCard) showToast("今天已經使用過卡牌，本次僅更新餐廳，卡牌未消耗");
 
       // 先原子認領卡牌（transaction 移除手牌），避免同一瞬間被盜牌卡偷走造成卡牌憑空複製
       if (cardConsumed && !TEST_MODE) {
@@ -5220,7 +5222,7 @@ function App() {
       const petExtra = petN ? { hasPet: true, petNumber: petN } : {};
 
       if (myEntry) {
-        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest, isRandomRest: isRandom||false});
+        await fRef(`participants/${myEntry.id}`).update({category:form.category, rest, isRandomRest: isRandom||false, ...cardExtra, ...bdExtra});
         setIsEditing(false);
       } else {
         const newRef = fRef("participants").push();
@@ -5727,17 +5729,29 @@ function App() {
                   </>)}
                 </>
               }
-              {isEditing ? (
-                <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
-                  號碼已鎖定：<strong style={{color:"var(--t1)"}}>#{form.number}</strong>
-                  <span style={{fontSize:"12px",color:"var(--t3)",marginLeft:"8px"}}>修改時只能換餐廳</span>
-                </div>
-              ) : (<>
+              {(() => {
+                const hasUsedCardToday = !!pts.find(p=>p.name===form.name)?.cardUsed;
+                if (isEditing && hasUsedCardToday) {
+                  return (
+                    <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
+                      號碼已鎖定：<strong style={{color:"var(--t1)"}}>#{form.number}</strong>
+                      <span style={{fontSize:"12px",color:"var(--t3)",marginLeft:"8px"}}>修改時只能換餐廳</span>
+                    </div>
+                  );
+                }
+                const lockedKeys = isEditing ? ["main"] : [];
+                return (<>
+                {isEditing && (
+                  <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
+                    號碼已鎖定：<strong style={{color:"var(--t1)"}}>#{form.number}</strong>
+                    <span style={{fontSize:"12px",color:"var(--t3)",marginLeft:"8px"}}>今天還沒用過卡，可以加選一張使用</span>
+                  </div>
+                )}
                 {(() => {
                   const isExtraCard = myCards.find(c=>c.id===cardToUse)?.type === "extra_number";
                   const isNukeCard  = myCards.find(c=>c.id===cardToUse)?.type === "nuke_card";
                   const isBirthdayCard = myCards.find(c=>c.id===cardToUse)?.type === "birthday_card";
-                  const hasPetBonus = !!userActivePet;
+                  const hasPetBonus = !!userActivePet && !isEditing; // 編輯時號碼已鎖定，寵物加號當初就決定了，這裡不重算
                   const nukeCenter  = isNukeCard && form.number ? parseInt(form.number) : null;
                   const nukeZone    = nukeCenter ? getNukeZone(nukeCenter, effectiveNumMax) : [];
                   const slots = [
@@ -5753,12 +5767,14 @@ function App() {
                   ];
                   const handleSlotsChange = (next) => {
                     const get = key => next.find(s=>s.key===key)?.num || "";
-                    const mainNum = get("main");
-                    setForm(f=>({...f, number: mainNum}));
-                    if (hasPetBonus) {
-                      const mn = parseInt(mainNum);
-                      if (mn) setPetNumber(String(mn >= effectiveNumMax ? mn - 1 : mn + 1));
-                      else setPetNumber("");
+                    if (!lockedKeys.includes("main")) {
+                      const mainNum = get("main");
+                      setForm(f=>({...f, number: mainNum}));
+                      if (hasPetBonus) {
+                        const mn = parseInt(mainNum);
+                        if (mn) setPetNumber(String(mn >= effectiveNumMax ? mn - 1 : mn + 1));
+                        else setPetNumber("");
+                      }
                     }
                     if (isExtraCard) setNumber2(get("extra"));
                     if (isBirthdayCard) setBdNumbers([get("bd0"),get("bd1"),get("bd2"),get("bd3")]);
@@ -5766,13 +5782,16 @@ function App() {
                   const doRandom = () => {
                     const avail = Array.from({length:effectiveNumMax},(_,i)=>i+1);
                     if (!avail.length) return;
-                    const mainPick = avail.splice(Math.floor(Math.random()*avail.length),1)[0];
+                    // 鎖定的欄位（例如編輯時的主號碼）不可重骰，先從可用池扣掉
+                    slots.forEach(s => { if (lockedKeys.includes(s.key) && s.num) { const i=avail.indexOf(parseInt(s.num)); if (i>=0) avail.splice(i,1); } });
+                    const mainPick = lockedKeys.includes("main") ? parseInt(form.number) : avail.splice(Math.floor(Math.random()*avail.length),1)[0];
                     if (hasPetBonus) {
                       const petPick = mainPick >= effectiveNumMax ? mainPick - 1 : mainPick + 1;
                       const pi = avail.indexOf(petPick);
                       if (pi >= 0) avail.splice(pi, 1);
                     }
                     const filled = slots.map(s => {
+                      if (lockedKeys.includes(s.key)) return s;
                       if (s.key === "main") return {...s, num: String(mainPick)};
                       if (s.key === "pet") return s;
                       if (!avail.length) return {...s, num:""};
@@ -5805,17 +5824,18 @@ function App() {
                       <NumberPicker numMax={effectiveNumMax} fullNumMax={effectiveNumMax < numMax ? numMax : undefined} slots={slots} maxSlots={slots.length}
                         onSlotsChange={handleSlotsChange}
                         takenBy={[]}
-                        weekly={weekly} isDark={isDarkMode} nukeZone={nukeZone} />
+                        weekly={weekly} isDark={isDarkMode} nukeZone={nukeZone} lockedKeys={lockedKeys} />
                     </>
                   );
                 })()}
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:"8px",marginBottom:"2px"}}>- 送出後號碼與卡牌無法修改</p>
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:0,marginBottom:"12px"}}>- 點已選號碼可取消選擇</p>
                 {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); }} />}
-              </>)}
+                </>);
+              })()}
               <div className="divider" />
               <button onClick={doJoin} disabled={isLoading}>
-                {isLoading ? "處理中..." : isEditing ? "確認修改" : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
+                {isLoading ? "處理中..." : isEditing ? (cardToUse ? `確認修改（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認修改") : cardToUse ? `確認加入（使用 ${CARD_TYPES[myCards.find(c=>c.id===cardToUse)?.type]?.name || "卡牌"}）` : "確認加入"}
               </button>
               <button className="ghost" onClick={doAbsent} disabled={isLoading} style={{color:"var(--t3)",fontSize:"13px"}}>今日不參加</button>
               <div className="divider" />
