@@ -1,7 +1,8 @@
 name: WC Data Update
+# 世足賽已結束，暫停定時抓比數/賠率；下次辦賽事時把 schedule 區塊取消註解即可恢復
 on:
-  schedule:
-    - cron: '0 * * * *'
+  # schedule:
+  #   - cron: '0 * * * *'
   workflow_dispatch:
 jobs:
   update:

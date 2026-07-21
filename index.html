@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-21 11:45";
+  const BUILD_TIME = "2026-07-21 13:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2276,7 +2276,8 @@ function SiteHeader({title, sub, onTheme, themeHasNews, onAdmin, onHelp, onCardH
           <button className={`ghost theme-toggle header-hide-mobile${cardNews?" has-news":""}`} onClick={onCardHelp} title="卡牌說明">🃏</button>
           <button className={`ghost theme-toggle header-hide-mobile${rulesNews?" has-news":""}`} onClick={onHelp} title="遊戲說明" style={{fontSize:"14px",fontWeight:"700"}}>?</button>
           {isAdmin && <button className="ghost theme-toggle" onClick={onAdmin} title="管理員面板">⚙️</button>}
-          <button className={`ghost theme-toggle${wcNews?" has-news":""}`} onClick={onWorldCup} title="世界盃競猜">🏆</button>
+          {/* 世足賽已結束，暫時隱藏入口；下次辦賽事時把這行取消註解即可恢復 */}
+          {false && <button className={`ghost theme-toggle${wcNews?" has-news":""}`} onClick={onWorldCup} title="世界盃競猜">🏆</button>}
           <button className={`ghost theme-toggle header-dark-toggle${themeHasNews?" has-news":""}`} onClick={onTheme} title="主題">🎨</button>
           {userName && <div style={{position:"relative",display:"inline-flex"}}>
             <button className={`ghost theme-toggle${shopNews?" has-news":""}`} onClick={onShop} title="點數商店">🛒</button>
