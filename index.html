@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-21 13:09";
+  const BUILD_TIME = "2026-07-21 13:17";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1207,7 +1207,7 @@ function determineResultWithCards(pts, drawnNumber) {
     const best = validNums.reduce((a,b)=>Math.abs(a-drawnNumber)<=Math.abs(b-drawnNumber)?a:b);
     return {...p, _origMain: p.number, number:best};
   });
-  const nukeExtra = {...(nukedPts.length>0&&{nukedParticipants:nukedPts}), ...(partialNuked.length>0&&{partialNukedParticipants:partialNuked})};
+  const nukeExtra = {nukeUsed: nukers.length>0, ...(nukedPts.length>0&&{nukedParticipants:nukedPts}), ...(partialNuked.length>0&&{partialNukedParticipants:partialNuked})};
   const res = determineResult(effective, drawnNumber);
   if (!res) return null;
   if (!res.soloWin) {
@@ -5918,7 +5918,7 @@ function App() {
     <DrawAnimation drawnNumber={animResult?.drawnNumber} isDark={isDarkMode} onDone={()=>{
       const r = animResult;
       setResult(r); setAnimResult(null);
-      setPhase(r?.nukedParticipants?.length > 0 ? "nuking" : "results");
+      setPhase(r?.nukeUsed ? "nuking" : "results");
     }} />
   );
 
@@ -5980,7 +5980,7 @@ function App() {
               <div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} titleShopConfig={titleShopConfig} /></div>
             </div>
             <div className="layout-main">
-              <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className={`result-number${result.nukedParticipants?.length>0?" result-number-scorched":""}`}>{drawnNumber}</div></div>
+              <div style={{marginBottom:"40px"}}><p className="section-label" style={{marginBottom:"12px"}}>今天的幸運號碼</p><div className={`result-number${result.nukeUsed?" result-number-scorched":""}`}>{drawnNumber}</div></div>
               {soloWin ? (
                 <div style={{background:oc.bg,border:`1px solid ${oc.bd}`,borderRadius:"var(--r2)",padding:"24px",marginBottom:"24px",position:"relative",overflow:"hidden"}}>
                   <div style={{position:"absolute",top:0,left:0,right:0,height:"3px",background:oc.top}} />
