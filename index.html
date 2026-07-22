@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-21 13:17";
+  const BUILD_TIME = "2026-07-22 14:48";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -763,7 +763,13 @@ function getWeeklyBonusDay() {
   const yearStart = new Date(Date.UTC(thu.getUTCFullYear(), 0, 1));
   const weekNum = Math.ceil((((thu - yearStart) / 86400000) + 1) / 7);
   const seed = thu.getUTCFullYear() * 100 + weekNum;
-  const dow = ((seed * 1103515245 + 12345) >>> 0) % 5;
+  // seed 每週固定 +1，舊版用 (seed*a+c)>>>0 這種 LCG 取 %5，因為 a 是 5 的倍數，
+  // 會讓同一個星期連續出現 4 週才輪到下一個（完全可預測，不是隨機），改用 avalanche hash 打散
+  let h = seed >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = (h ^ (h >>> 16)) >>> 0;
+  const dow = h % 5;
   const today = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const daysToMon = d.getDay() === 0 ? -6 : 1 - d.getDay();
   const mon = new Date(today); mon.setDate(today.getDate() + daysToMon);
