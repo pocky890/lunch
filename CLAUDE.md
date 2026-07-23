@@ -50,9 +50,10 @@ session/                當日設定（numMax 等）
 - firstBlood 🩸 — 全遊戲首位獨贏者，唯一解鎖；用 gameFlags/firstBlood transaction 原子搶佔，得主存 specialAchievements/{key}/firstBlood=true
 - obsessed / lateJustice / lateJusticeSolo — 隱藏成就三選一，開獎時依 `sameNumberStreak`（連續押同號碼次數 ≥10）+ 當天輸贏結果判定：沒贏→obsessed(3★)；贏了但非獨贏→lateJustice(4★)；獨贏→lateJusticeSolo(5★)，三者互斥（同一天只會拿到一個）
 
-稱號設定：只能從 Header 名字按鈕 → MyProfileModal 設定。
+稱號設定：只能從 Header 名字按鈕 → MyProfileModal 設定，最多可同時選 **2 個**稱號（`userTitles/{key}` 存陣列，`getTitleKeys()` 相容舊資料的單一字串）。點擊已選的稱號取消，選滿 2 個再點第三個會跳 Toast 提示先取消一個。
+顯示 badge 用共用元件 `TitleBadges`：窄版面（參加者名單、個人戰績）用 `mode="stack"` 上下疊放，寬版面（開獎排名）用 `mode="inline"` 同一行並排。
 有新成就時，Header 名字按鈕發紫光（`.has-news` class）。
-自動選：登入後若有解鎖成就且未選稱號，自動選稀有度最高的。
+自動選：登入後若有解鎖成就且未選稱號，自動選稀有度最高的（只會補上 1 個，不會自動選滿 2 個）。
 
 ## 主題系統
 

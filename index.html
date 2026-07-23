@@ -266,7 +266,7 @@
     .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
     .badge-gold  { background: var(--c-amber-bg);  color: var(--c-amber-tx);  border: 1px solid var(--c-amber-bd); }
     .badge-green { background: var(--c-green-bg);  color: var(--c-green-tx);  border: 1px solid var(--c-green-bd); }
-    .badge-title { background: rgba(124,58,237,0.1); color: #6d28d9; border: 1px solid rgba(124,58,237,0.4); border-radius: 5px; padding: 2px 6px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+    .badge-title { background: rgba(124,58,237,0.1); color: #6d28d9; border: 1px solid rgba(124,58,237,0.4); border-radius: 5px; padding: 2px 6px; font-size: 9px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
     .badge-title-legendary { animation: titleLegendaryGlow 2.4s ease-in-out infinite; background: var(--c-amber-bg) !important; color: var(--c-amber-tx) !important; border-color: var(--c-amber-bd) !important; }
     @keyframes titleLegendaryGlow { 0%,100% { box-shadow: 0 0 3px 0 var(--amber); } 50% { box-shadow: 0 0 8px 1px var(--amber); } }
 
@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-23 10:34";
+  const BUILD_TIME = "2026-07-23 11:02";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1025,6 +1025,23 @@ function getTitleDisplay(key, titleShopConfig) {
   if (!key) return null;
   if (key.startsWith("t_")) return (titleShopConfig || {})[key] || null;
   return ACHIEVEMENTS.find(x => x.key === key) || null;
+}
+// userTitles 的值可能是舊資料的單一字串，也可能是新的稱號陣列（最多 2 個），統一正規化成陣列
+function getTitleKeys(v) { return !v ? [] : Array.isArray(v) ? v : [v]; }
+function getTitleDisplays(v, titleShopConfig) { return getTitleKeys(v).map(k => getTitleDisplay(k, titleShopConfig)).filter(Boolean); }
+
+// 顯示 1~2 個稱號 badge；mode="stack" 上下疊放（窄版面），mode="inline" 同一行並排（寬版面）
+function TitleBadges({ value, titleShopConfig, mode = "stack" }) {
+  const displays = getTitleDisplays(value, titleShopConfig);
+  if (displays.length === 0) return null;
+  return (
+    <span style={{display:"flex", flexDirection: mode==="stack" ? "column" : "row", gap: mode==="stack" ? "2px" : "4px", flexShrink:0, alignItems: mode==="stack" ? "flex-start" : "center"}}>
+      {displays.map((a,i) => (
+        <span key={i} className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")}
+          style={{flexShrink:0, maxWidth: mode==="stack" ? "92px" : "120px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{a.emoji} {a.name}</span>
+      ))}
+    </span>
+  );
 }
 
 function managedToRests(managed) {
@@ -2884,7 +2901,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
             <div style={{width:"18px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
             <span style={{flex:1,fontWeight:"600",fontSize:"14px",color:ramp.tx,marginLeft:"4px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
-              {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")} style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
+              <TitleBadges value={userTitles[sanitizeKey(p.name)]} titleShopConfig={titleShopConfig} mode="stack" />
             </span>
             {bonusDayToday && diceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px",marginRight:"4px"}}>×{diceRolls[sanitizeKey(p.name)]}</span>}
             <span style={{fontSize:"12px",color:ramp.tx,opacity:0.8,marginRight:"4px"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
@@ -2898,7 +2915,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
         {absent.map(name => (
           <div key={name} style={{display:"flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"var(--s3)",border:"1px solid var(--b1)",marginBottom:"4px",opacity:0.7}}>
             <span style={{fontSize:"13px",color:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>🙅 {name}</span>
-            {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(name)], titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")} style={{flexShrink:0}}>{a.emoji} {a.name}</span> : null; })()}
+            <TitleBadges value={userTitles[sanitizeKey(name)]} titleShopConfig={titleShopConfig} mode="stack" />
             {bonusDayToday && diceRolls[sanitizeKey(name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px"}}>×{diceRolls[sanitizeKey(name)]}</span>}
           </div>
         ))}
@@ -3080,7 +3097,7 @@ function StatsPanel({weekly, isDark, userTitles = {}, boundName = "", onTitleCha
               <span style={{fontSize:"12px",color:"var(--t3)",width:"20px",flexShrink:0,fontWeight:"600"}}>{i+1}</span>
               <span style={{flex:1,fontSize:"14px",fontWeight:"600",color:"var(--t1)",marginLeft:"10px",display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
                 {name}
-                {chosenKey && (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")}>{a.emoji} {a.name}</span> : null; })()}
+                <TitleBadges value={chosenKey} titleShopConfig={titleShopConfig} mode="stack" />
               </span>
               <span style={{fontSize:"13px",fontWeight:"700",color:"var(--amber)",flexShrink:0}}>{stat.wins} 勝</span>
             </div>
@@ -3304,7 +3321,7 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
   }, [boundName]);
 
   const unlocked = new Set(computeAchievements(boundName, weekly, participationCount, specialAchievements));
-  const chosenKey = userTitles[sanitizeKey(boundName)];
+  const chosenKeys = getTitleKeys(userTitles[sanitizeKey(boundName)]);
   const today = todayStr();
   const tabBtn = (id, label) => (
     <button key={id} onClick={()=>setTab(id)} style={{marginBottom:0,padding:"6px 16px",fontSize:"13px",borderRadius:"8px",width:"auto",
@@ -3325,18 +3342,18 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
           {tabBtn("cards",`🃏 手牌${myCards.length>0?` (${myCards.filter(c=>c.expiresAt>=today).length})`:""}`)}{tabBtn("pets","🐻 寵物")}</div>
         {tab==="achievements" && <>
         <div style={{marginBottom:"16px",padding:"12px 14px",background:"var(--s3)",borderRadius:"var(--r)",border:"1px solid var(--b1)"}}>
-          <div style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",marginBottom:"6px"}}>目前稱號</div>
-          {chosenKey
-            ? (() => { const a = getTitleDisplay(chosenKey, titleShopConfig); return a ? <span style={{fontSize:"15px",fontWeight:"600",color:"var(--t1)"}}>{a.emoji} {a.name}</span> : null; })()
+          <div style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)",textTransform:"uppercase",marginBottom:"6px"}}>目前稱號（最多 2 個）</div>
+          {chosenKeys.length > 0
+            ? <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>{getTitleDisplays(chosenKeys, titleShopConfig).map((a,i) => <span key={i} style={{fontSize:"15px",fontWeight:"600",color:"var(--t1)"}}>{a.emoji} {a.name}</span>)}</div>
             : <span style={{fontSize:"14px",color:"var(--t3)"}}>尚未選擇，點選下方成就來設定</span>
           }
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:"6px",overflowY:"auto",flex:1}}>
           {ACHIEVEMENTS.filter(a => !a.hidden).map(a => {
             const isUnlocked = unlocked.has(a.key);
-            const isChosen = chosenKey === a.key;
+            const isChosen = chosenKeys.includes(a.key);
             return (
-              <div key={a.key} onClick={isUnlocked ? () => onTitleChange(isChosen ? null : a.key) : undefined}
+              <div key={a.key} onClick={isUnlocked ? () => onTitleChange(a.key) : undefined}
                 style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"var(--a)":"var(--b1)"}`,background:isChosen?"var(--a-dim,rgba(99,102,241,0.08))":isUnlocked?"var(--s3)":"transparent",cursor:isUnlocked?"pointer":"default"}}>
                 <span style={{fontSize:"22px",width:"28px",textAlign:"center",opacity:isUnlocked?1:0.4}}>{a.emoji}</span>
                 <div style={{flex:1,minWidth:0}}>
@@ -3355,9 +3372,9 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
               <div style={{marginTop:"10px",marginBottom:"2px",padding:"6px 14px",fontSize:"11px",fontWeight:"700",color:"#a855f7",letterSpacing:"1px",textTransform:"uppercase",borderTop:"1px solid var(--b1)"}}>✨ 隱藏成就</div>
               {hiddenAll.map(a => {
                 const isUnlocked = unlocked.has(a.key);
-                const isChosen = chosenKey === a.key;
+                const isChosen = chosenKeys.includes(a.key);
                 return (
-                  <div key={a.key} onClick={isUnlocked ? () => onTitleChange(isChosen ? null : a.key) : undefined}
+                  <div key={a.key} onClick={isUnlocked ? () => onTitleChange(a.key) : undefined}
                     style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"#a855f7":isUnlocked?"rgba(168,85,247,0.3)":"var(--b1)"}`,background:isChosen?"rgba(168,85,247,0.1)":isUnlocked?"rgba(168,85,247,0.05)":"transparent",cursor:isUnlocked?"pointer":"default"}}>
                     <span style={{fontSize:"22px",width:"28px",textAlign:"center",opacity:isUnlocked?1:0.4}}>{a.emoji}</span>
                     <div style={{flex:1,minWidth:0}}>
@@ -3378,9 +3395,9 @@ function MyProfileModal({ boundName, weekly, userTitles, onTitleChange, onClose,
             return <>
               <div style={{marginTop:"10px",marginBottom:"2px",padding:"6px 14px",fontSize:"11px",fontWeight:"700",color:"var(--a)",letterSpacing:"1px",textTransform:"uppercase",borderTop:"1px solid var(--b1)"}}>🛒 購買稱號</div>
               {ownedEntries.map(t => {
-                const isChosen = chosenKey === t.key;
+                const isChosen = chosenKeys.includes(t.key);
                 return (
-                  <div key={t.key} onClick={() => onTitleChange(isChosen ? null : t.key)}
+                  <div key={t.key} onClick={() => onTitleChange(t.key)}
                     style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"var(--r)",border:`1px solid ${isChosen?"var(--a)":"var(--b1)"}`,background:isChosen?"var(--a-dim,rgba(99,102,241,0.08))":"var(--s3)",cursor:"pointer"}}>
                     <span style={{fontSize:"22px",width:"28px",textAlign:"center"}}>{t.emoji}</span>
                     <div style={{flex:1,minWidth:0}}>
@@ -5493,9 +5510,18 @@ function App() {
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
   async function confirmReset() { setConfirmModal(false); await doReset(); }
   async function handleTitleChange(key) {
+    if (!key) return;
     const sKey = sanitizeKey(boundName);
-    if (!key) { await fRef(`userTitles/${sKey}`).remove(); }
-    else { await fSet(`userTitles/${sKey}`, key); }
+    const current = getTitleKeys(userTitles[sKey]);
+    let next;
+    if (current.includes(key)) {
+      next = current.filter(k => k !== key);
+    } else {
+      if (current.length >= 2) { showToast("最多只能選 2 個稱號，請先取消一個"); return; }
+      next = [...current, key];
+    }
+    if (next.length === 0) { await fRef(`userTitles/${sKey}`).remove(); }
+    else { await fSet(`userTitles/${sKey}`, next); }
   }
 
   // 偵測新成就：與 Firebase 已看過清單比對（跨裝置一致，不用 localStorage）
@@ -5524,7 +5550,7 @@ function App() {
         }
       }
       // 唯一成就且尚未選稱號 → 自動選
-      if (unlocked.length >= 1 && !userTitles[sKey]) {
+      if (unlocked.length >= 1 && getTitleKeys(userTitles[sKey]).length === 0) {
         const best = unlocked.reduce((a, b) => {
           const ra = ACHIEVEMENTS.find(x => x.key === a)?.rarity || 0;
           const rb = ACHIEVEMENTS.find(x => x.key === b)?.rarity || 0;
@@ -6049,7 +6075,7 @@ function App() {
                       <div style={{flex:1,display:"flex",flexDirection:"column",gap:"2px",minWidth:0}}>
                         <span style={{fontWeight:isWinner?"600":"500",fontSize:"15px",color:isWinner?wr.tx:"var(--t1)",display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
                           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                          {(() => { const a = getTitleDisplay(userTitles[sanitizeKey(p.name)], titleShopConfig); return a ? <span className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")}>{a.emoji} {a.name}</span> : null; })()}
+                          <TitleBadges value={userTitles[sanitizeKey(p.name)]} titleShopConfig={titleShopConfig} mode="inline" />
                           {bonusDayToday && allDiceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 5px"}}>×{allDiceRolls[sanitizeKey(p.name)]}</span>}
                         </span>
                         <span style={{fontSize:"12px",color:isWinner?wr.tx:"var(--t3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.rest}</span>
