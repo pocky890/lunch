@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-23 11:33";
+  const BUILD_TIME = "2026-07-23 12:50";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2491,7 +2491,8 @@ function StreakWarning({ pts, weekly }) {
 }
 
 function CardPoolDisplay({ cardPool, cardConfig = {} }) {
-  if (!cardPool || Object.keys(cardPool).length === 0) return null;
+  const SHOW_CARD_POOL_BANNER = false; // 暫時隱藏卡牌池 banner；要恢復把這個改回 true 即可
+  if (!SHOW_CARD_POOL_BANNER || !cardPool || Object.keys(cardPool).length === 0) return null;
   const total = Object.values(cardPool).reduce((s,n) => s+(n||0), 0);
   const grandTotal = Object.keys(CARD_TYPES).filter(type => CARD_DEFAULTS[type])
     .reduce((s,type) => s + (cardConfig[type]?.total ?? CARD_DEFAULTS[type].total), 0);
