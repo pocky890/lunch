@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-23 10:20";
+  const BUILD_TIME = "2026-07-23 10:34";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -575,6 +575,7 @@
     { key:"lastMinuteDriver", emoji:"🚌", name:"末班車司機", desc:"在截止時間前最後 60 秒內送出",               rarity:3, hidden:true },
     { key:"obsessed",         emoji:"🎲", name:"執迷不悟",   desc:"押同一號碼至少 10 次，始終沒贏",           rarity:3, hidden:true },
     { key:"lateJustice",      emoji:"⚖️", name:"遲來的正義", desc:"押同一號碼至少 10 次後，終於贏了",         rarity:4, hidden:true },
+    { key:"lateJusticeSolo",  emoji:"🔨", name:"遲來的完全正義", desc:"押同一號碼至少 10 次後，終於獨贏了",     rarity:5, hidden:true },
   ];
 </script>
 
@@ -988,6 +989,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const lastMinuteDriver = !!specialAchievements.lastMinuteDriver;
   const obsessed         = !!specialAchievements.obsessed;
   const lateJustice      = !!specialAchievements.lateJustice;
+  const lateJusticeSolo  = !!specialAchievements.lateJusticeSolo;
   const pc = participationCount || 0;
   const unlocked = [];
   if (pc >= 50)        unlocked.push("join50");
@@ -1015,6 +1017,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (lastMinuteDriver) unlocked.push("lastMinuteDriver");
   if (obsessed)         unlocked.push("obsessed");
   if (lateJustice)      unlocked.push("lateJustice");
+  if (lateJusticeSolo)  unlocked.push("lateJusticeSolo");
   return unlocked;
 }
 
@@ -5005,7 +5008,7 @@ function App() {
           const pKey = sanitizeKey(p.name);
           const sns = await fGet(`sameNumberStreak/${pKey}`);
           if (!sns || (sns.count || 0) < 10) continue;
-          const achKey = winnerNameSet.has(p.name) ? "lateJustice" : "obsessed";
+          const achKey = !winnerNameSet.has(p.name) ? "obsessed" : (result.soloWin ? "lateJusticeSolo" : "lateJustice");
           const existingSA = await fGet(`specialAchievements/${pKey}`);
           if (existingSA?.[achKey]) continue; // 已經拿過這個成就，避免每天重複通知
           await fRef(`specialAchievements/${pKey}/${achKey}`).set(true);
@@ -5508,7 +5511,7 @@ function App() {
       // 一般數字門檻成就（join/solo/streak/lose/luckyDay/birthday/sharedWin/fatedTie）解鎖當下跳 Toast + 寫入通知記錄。
       // 特殊／隱藏成就（stealSteal 等）已在各自觸發點即時通知，這裡排除避免重複；transaction 原子搶佔確保每個成就只通知一次
       const notified = notifiedRaw || {};
-      const alreadyNotifiedElsewhere = ["stealSteal","bloodyLeech","cardKing","firstBlood","cornerCreature","lastMinuteDriver","obsessed","lateJustice"];
+      const alreadyNotifiedElsewhere = ["stealSteal","bloodyLeech","cardKing","firstBlood","cornerCreature","lastMinuteDriver","obsessed","lateJustice","lateJusticeSolo"];
       for (const key of unlocked) {
         if (notified[key] || alreadyNotifiedElsewhere.includes(key)) continue;
         const tx = await fRef(`userNotifiedAchievements/${sKey}/${key}`).transaction(cur => cur ? undefined : true);

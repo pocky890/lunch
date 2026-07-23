@@ -37,7 +37,7 @@ session/                當日設定（numMax 等）
 - `DB_PREFIX` 在 `?testmode` 下仍是 `"lunch"`（正式 DB），用 `db.ref(DB_PREFIX/...)` 就是寫正式資料
 
 ## 成就系統（ACHIEVEMENTS）
-21 個可見成就 + 4 個隱藏成就，key / emoji / name / desc / rarity(1-5)：
+21 個可見成就 + 5 個隱藏成就，key / emoji / name / desc / rarity(1-5)：
 - join50/100/300/1000 — 參與次數
 - solo1/3/10 — 獨贏次數
 - streak3/5/10 — 連勝（從 weekly 歷史重算，不依賴 r.streak 欄位）
@@ -48,6 +48,7 @@ session/                當日設定（numMax 等）
 - fatedTie — 開獎時與他人距離完全相同
 - stealSteal / bloodyLeech / cardKing — 特殊事件（存 specialAchievements/）
 - firstBlood 🩸 — 全遊戲首位獨贏者，唯一解鎖；用 gameFlags/firstBlood transaction 原子搶佔，得主存 specialAchievements/{key}/firstBlood=true
+- obsessed / lateJustice / lateJusticeSolo — 隱藏成就三選一，開獎時依 `sameNumberStreak`（連續押同號碼次數 ≥10）+ 當天輸贏結果判定：沒贏→obsessed(3★)；贏了但非獨贏→lateJustice(4★)；獨贏→lateJusticeSolo(5★)，三者互斥（同一天只會拿到一個）
 
 稱號設定：只能從 Header 名字按鈕 → MyProfileModal 設定。
 有新成就時，Header 名字按鈕發紫光（`.has-news` class）。
