@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-28 15:35";
+  const BUILD_TIME = "2026-07-28 15:39";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5018,7 +5018,7 @@ function App() {
             const cardsObj = await fGet(`userCards/${pKey}`) || {};
             const entry = Object.entries(cardsObj).find(([,c]) => c.type === "streak_protect" && c.expiresAt >= today);
             if (!entry) continue;
-            await fRef(`weekly/${today}`).update({ skipStreak: true });
+            await fRef(`weekly/${today}`).update({ skipStreak: true, streakProtectedBy: p.name });
             await returnCardToPool(p.name, entry[0]);
             logNotification(pKey, "card_used", { cardType: "streak_protect", prevStreak: ps, date: today });
             streakProtected = true;
@@ -6076,6 +6076,16 @@ function App() {
               {!result.soloWin && result.followRestUser && (
                 <div style={{padding:"12px 16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-amber-tx)"}}>
                   🍽️ <strong>{result.followRestUser}</strong> 使用了跟著我吃卡，今天大家統一去 <strong>{result.winner.rest}</strong>
+                </div>
+              )}
+              {pts.filter(p=>p.cardUsed==="reveal_numbers").map((p,i) => (
+                <div key={i} style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
+                  👁️ <strong>{p.name}</strong> 使用了公開卡，截止前所有人的號碼都已公開
+                </div>
+              ))}
+              {weekly[todayStr()]?.streakProtectedBy && (
+                <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
+                  🛡️ <strong>{weekly[todayStr()].streakProtectedBy}</strong> 的連勝保護卡自動生效，連勝不中斷
                 </div>
               )}
               <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
