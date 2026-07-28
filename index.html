@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-28 14:06";
+  const BUILD_TIME = "2026-07-28 15:35";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -6073,6 +6073,11 @@ function App() {
                   🍽️ <strong>{p.name}</strong> 使用了跟著我吃卡，但 <strong>{result.winner.name}</strong> 獨贏，卡牌無效
                 </div>
               ))}
+              {!result.soloWin && result.followRestUser && (
+                <div style={{padding:"12px 16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-amber-tx)"}}>
+                  🍽️ <strong>{result.followRestUser}</strong> 使用了跟著我吃卡，今天大家統一去 <strong>{result.winner.rest}</strong>
+                </div>
+              )}
               <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
