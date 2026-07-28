@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-28 09:51";
+  const BUILD_TIME = "2026-07-28 10:07";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2476,8 +2476,11 @@ function StreakWarning({ pts, weekly }) {
   );
   if (!pts || pts.length < 4) return null;
   const today = todayStr();
-  const warnings = pts
-    .map(p => ({ name: p.name, streak: computeStreak(weekly, p.name, today, pts.length) }))
+  // 不限今天有沒有加入，只要歷史上出現過就一起檢查（跟「最慘未中紀錄」用同一種全公司名單邏輯）
+  const allNames = new Set();
+  Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
+  const warnings = [...allNames]
+    .map(name => ({ name, streak: computeStreak(weekly, name, today, pts.length) }))
     .filter(x => x.streak >= 3)
     .sort((a, b) => b.streak - a.streak);
   if (warnings.length === 0) return null;
