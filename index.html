@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-27 19:16";
+  const BUILD_TIME = "2026-07-28 09:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -937,7 +937,7 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak) continue;
+    if (rec.skipStreak || rec.noParticipants) continue;
     if (rec.absentNames?.includes(winnerName)) {
       if (++consecutiveAbsent > 14) break;
       continue;
