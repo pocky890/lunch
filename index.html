@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-28 10:07";
+  const BUILD_TIME = "2026-07-28 10:30";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2468,19 +2468,19 @@ function SpecialDayBanner() {
   );
 }
 
-function StreakWarning({ pts, weekly }) {
+function StreakWarning({ weekly }) {
   if (DB_PREFIX === "lunch_test") return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
       ⚠️ <strong>Pocky</strong> 再贏一次就 3 連勝，要請客 <strong>30 元</strong>！
     </div>
   );
-  if (!pts || pts.length < 4) return null;
   const today = todayStr();
-  // 不限今天有沒有加入，只要歷史上出現過就一起檢查（跟「最慘未中紀錄」用同一種全公司名單邏輯）
+  // 不限今天有沒有加入、今天總人數有沒有到 4 人，只要歷史上出現過就一起檢查（跟「最慘未中紀錄」用同一種全公司名單邏輯）
+  // computeStreak 不帶第四個參數（todayPtsCount）就會用預設值 99，不會被「今天人數 <4」的內部門檻擋掉
   const allNames = new Set();
   Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
   const warnings = [...allNames]
-    .map(name => ({ name, streak: computeStreak(weekly, name, today, pts.length) }))
+    .map(name => ({ name, streak: computeStreak(weekly, name, today) }))
     .filter(x => x.streak >= 3)
     .sort((a, b) => b.streak - a.streak);
   if (warnings.length === 0) return null;
@@ -5714,7 +5714,7 @@ function App() {
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
-        <StreakWarning pts={pts} weekly={weekly} />
+        <StreakWarning weekly={weekly} />
         <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
         <div className="grid-3">
           <div className="col">
@@ -5904,7 +5904,7 @@ function App() {
           <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
-        <StreakWarning pts={pts} weekly={weekly} />
+        <StreakWarning weekly={weekly} />
           <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
           <div className="grid-3">
             <div className="col">
