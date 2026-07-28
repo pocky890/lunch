@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-28 10:30";
+  const BUILD_TIME = "2026-07-28 14:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -6066,6 +6066,11 @@ function App() {
               {pts.filter(p=>p.birthdayNumbers?.length>0).map((p,i) => (
                 <div key={i} style={{padding:"12px 16px",background:"var(--c-pink-bg)",border:"1px solid var(--c-pink-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-pink-tx)"}}>
                   🎂 <strong>{p.name}</strong> 使用了生日卡，本局選了 {1+(p.birthdayNumbers?.length||0)+(p.number2?1:0)} 個號碼：{[p.number,...(p.birthdayNumbers||[]),...(p.number2?[p.number2]:[])].map(n=>`#${n}`).join("、")}
+                </div>
+              ))}
+              {result.soloWin && pts.filter(p=>p.cardUsed==="follow_restaurant").map((p,i) => (
+                <div key={i} style={{padding:"12px 16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-amber-tx)"}}>
+                  🍽️ <strong>{p.name}</strong> 使用了跟著我吃卡，但 <strong>{result.winner.name}</strong> 獨贏，卡牌無效
                 </div>
               ))}
               <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
