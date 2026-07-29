@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 10, rules: 8, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 10, rules: 9, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-29 10:37";
+  const BUILD_TIME = "2026-07-29 17:41";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -938,7 +938,9 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
     const rec = weekly[date];
     if (!rec) break;
     if (rec.skipStreak || rec.noParticipants) continue;
-    if (rec.absentNames?.includes(winnerName)) {
+    // 標記不參加、或當天根本沒參加（連不參加都沒按），都視為同一種「不在場」，套用同一個 14 天上限保護連勝
+    const wasAbsent = rec.absentNames?.includes(winnerName) || !rec.participantNames?.includes(winnerName);
+    if (wasAbsent) {
       if (++consecutiveAbsent > 14) break;
       continue;
     }
@@ -1285,7 +1287,7 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"6px"}}>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
-              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🙅 標記<strong style={{color:"var(--t2)"}}>今日不參加</strong>時，連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>。但若連續 14 天未參加，連勝才會歸零。</div>
+              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🙅 <strong style={{color:"var(--t2)"}}>今日不參加</strong>（不管是主動標記，還是完全沒動作）時，連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>。但若連續 14 天未參加，連勝才會歸零。</div>
             </div>
           </div>
           <div>
