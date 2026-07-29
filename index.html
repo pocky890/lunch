@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-28 15:39";
+  const BUILD_TIME = "2026-07-29 10:16";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5155,7 +5155,10 @@ function App() {
       const s = await fGet("session");
       if (!s || isDeadlinePassed(s.deadline)) return showToast("已超過截止時間！");
       const existing = snapToArr(await fGet("participants")), myEntry = existing.find(p=>p.name===name);
-      const hasUsedCard = !!myEntry?.cardUsed; // 今天已經用過卡才鎖死；沒用過卡的話回來編輯仍可補選一張
+      const today0 = todayStr();
+      // 用過卡的標記獨立存一份、不隨取消參加被刪掉，避免「用卡→取消→重買一張卡→再加入」無限重複偷/用卡
+      const cardUsedMarker = await fGet(`cardUsedToday/${today0}/${sanitizeKey(name)}`);
+      const hasUsedCard = !!myEntry?.cardUsed || !!cardUsedMarker; // 今天已經用過卡才鎖死；沒用過卡的話回來編輯仍可補選一張
 
       // 驗證 加號卡 的第二個號碼
       let num2 = null;
@@ -5266,6 +5269,7 @@ function App() {
       if (cardConsumed) {
         await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set(activeCard.fromShop ? { type: activeCard.type, fromShop: true } : activeCard.type);
         logNotification(sanitizeKey(name), "card_used", { cardType: activeCard.type, date: todayStr() });
+        await fRef(`cardUsedToday/${todayStr()}/${sanitizeKey(name)}`).set(true);
         setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]);
       }
       // 公開卡：所有人號碼立即公開
@@ -5507,6 +5511,7 @@ function App() {
     await fSet("absent", null);
     await fSet(`drawn/${today}`, null);
     await fRef(`weekly/${today}`).remove();
+    await fRef(`cardUsedToday/${today}`).remove();
     savedRef.current = false; setSess(null); setPts([]); setResult(null); setAbsent([]);
     setForm(f=>({name:f.name||boundName,category:"",rest:"",cust:"",number:"",deadline:"11:45"})); setPhase("setup");
   }
