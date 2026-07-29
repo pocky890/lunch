@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-29 10:22";
+  const BUILD_TIME = "2026-07-29 10:31";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5731,6 +5731,13 @@ function App() {
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
+        {todaySteals.length > 0 && (
+          <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
+            {todaySteals.map((s,i) => (
+              <div key={i}>🎭 <strong>{s.by}</strong> 用盜牌卡偷了 <strong>{s.from}</strong> 的 {CARD_TYPES[s.cardType]?.emoji}{CARD_TYPES[s.cardType]?.name}</div>
+            ))}
+          </div>
+        )}
         <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
         <div className="grid-3">
           <div className="col">
@@ -5921,6 +5928,13 @@ function App() {
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
+        {todaySteals.length > 0 && (
+          <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
+            {todaySteals.map((s,i) => (
+              <div key={i}>🎭 <strong>{s.by}</strong> 用盜牌卡偷了 <strong>{s.from}</strong> 的 {CARD_TYPES[s.cardType]?.emoji}{CARD_TYPES[s.cardType]?.name}</div>
+            ))}
+          </div>
+        )}
           <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
           <div className="grid-3">
             <div className="col">
@@ -5948,6 +5962,13 @@ function App() {
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
         <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
+        {todaySteals.length > 0 && (
+          <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
+            {todaySteals.map((s,i) => (
+              <div key={i}>🎭 <strong>{s.by}</strong> 用盜牌卡偷了 <strong>{s.from}</strong> 的 {CARD_TYPES[s.cardType]?.emoji}{CARD_TYPES[s.cardType]?.name}</div>
+            ))}
+          </div>
+        )}
         <div className="grid-3">
           <div className="col">
             <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
