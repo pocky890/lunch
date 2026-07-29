@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-29 10:31";
+  const BUILD_TIME = "2026-07-29 10:37";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4408,6 +4408,7 @@ function App() {
   const [cardPool, setCardPool] = useState({});
   const [cardConfig, setCardConfig] = useState({});
   const [myCards, setMyCards] = useState([]);
+  const [usedCardToday, setUsedCardToday] = useState(false);
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
@@ -4709,6 +4710,16 @@ function App() {
       const cards = snap.val() || {};
       setMyCards(Object.entries(cards).filter(([,c]) => c.expiresAt >= today).map(([id,c]) => ({id,...c})));
     };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, [form.name]);
+
+  // 今天是否已經用過卡（獨立於 participants，取消參加不會清掉，避免取消/編輯後手牌又能選）
+  useEffect(() => {
+    const name = form.name.trim();
+    if (!name) { setUsedCardToday(false); return; }
+    const ref = fRef(`cardUsedToday/${todayStr()}/${sanitizeKey(name)}`);
+    const handler = snap => setUsedCardToday(!!snap.val());
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, [form.name]);
@@ -5793,7 +5804,7 @@ function App() {
                 </>
               }
               {(() => {
-                const hasUsedCardToday = !!pts.find(p=>p.name===form.name)?.cardUsed;
+                const hasUsedCardToday = !!pts.find(p=>p.name===form.name)?.cardUsed || usedCardToday;
                 if (isEditing && hasUsedCardToday) {
                   return (
                     <div style={{padding:"10px 14px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"var(--r)",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
@@ -5893,7 +5904,7 @@ function App() {
                 })()}
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:"8px",marginBottom:"2px"}}>- 送出後號碼與卡牌無法修改</p>
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:0,marginBottom:"12px"}}>- 點已選號碼可取消選擇</p>
-                {form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); }} />}
+                {!hasUsedCardToday && form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); }} />}
                 </>);
               })()}
               <div className="divider" />
