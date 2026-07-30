@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-29 17:41";
+  const BUILD_TIME = "2026-07-30 13:20";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -6146,6 +6146,17 @@ function App() {
                   🛡️ <strong>{weekly[todayStr()].streakProtectedBy}</strong> 的連勝保護卡自動生效，連勝不中斷
                 </div>
               )}
+              {(result.nukedParticipants?.length > 0 || result.partialNukedParticipants?.length > 0) && (
+                <div style={{padding:"12px 16px",background:isDarkMode?"rgba(239,68,68,0.08)":"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px"}}>
+                  <div style={{fontWeight:"600",marginBottom:"6px",color:"rgba(239,68,68,0.9)"}}>☢️ 被核彈波及</div>
+                  {result.nukedParticipants?.map((p,i) => (
+                    <div key={i} style={{color:"var(--t3)"}}>💥 <strong style={{color:"var(--t2)"}}>{p.name}</strong>（#{p.number}）出局</div>
+                  ))}
+                  {result.partialNukedParticipants?.map((p,i) => (
+                    <div key={i} style={{color:"var(--t3)"}}>💨 <strong style={{color:"var(--t2)"}}>{p.name}</strong> 的 {p.destroyedNumbers.map(n=>`#${n}`).join("、")} 被炸毀，以存活號碼繼續參賽</div>
+                  ))}
+                </div>
+              )}
               <CardPoolDisplay cardPool={cardPool} cardConfig={cardConfig} />
               <div className="card" style={{marginBottom:"24px"}}><p className="section-label" style={{marginBottom:"16px"}}>本次排名</p>
                 {allSorted.map((p,i) => {
@@ -6182,17 +6193,6 @@ function App() {
                   );
                 })}
               </div>
-              {(result.nukedParticipants?.length > 0 || result.partialNukedParticipants?.length > 0) && (
-                <div style={{padding:"12px 16px",background:isDarkMode?"rgba(239,68,68,0.08)":"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px"}}>
-                  <div style={{fontWeight:"600",marginBottom:"6px",color:"rgba(239,68,68,0.9)"}}>☢️ 被核彈波及</div>
-                  {result.nukedParticipants?.map((p,i) => (
-                    <div key={i} style={{color:"var(--t3)"}}>💥 <strong style={{color:"var(--t2)"}}>{p.name}</strong>（#{p.number}）出局</div>
-                  ))}
-                  {result.partialNukedParticipants?.map((p,i) => (
-                    <div key={i} style={{color:"var(--t3)"}}>💨 <strong style={{color:"var(--t2)"}}>{p.name}</strong> 的 {p.destroyedNumbers.map(n=>`#${n}`).join("、")} 被炸毀，以存活號碼繼續參賽</div>
-                  ))}
-                </div>
-              )}
               {isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始遊戲</button>}
             </div>
           </div>
