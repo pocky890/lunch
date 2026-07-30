@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-07-30 13:20";
+  const BUILD_TIME = "2026-07-30 13:28";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -6162,6 +6162,7 @@ function App() {
                 {allSorted.map((p,i) => {
                   const dist = Math.abs(p.number - drawnNumber), isWinner = (result.winners || [winner]).some(w => w.id === p.id), ramp = RAMPS[pts.findIndex(x=>x.id===p.id) % RAMPS.length];
                   const wr = isWinner ? (isDarkMode ? {bg:gc.bg,bd:gc.bd,tx:gc.h} : {bg:ramp.bg,bd:ramp.bd,tx:ramp.tx}) : null;
+                  const destroyedSet = new Set(result.partialNukedParticipants?.find(n=>n.id===p.id)?.destroyedNumbers || []);
                   return (
                     <div key={p.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",background:isWinner?wr.bg:"transparent",border:isWinner?`1px solid ${wr.bd}`:"1px solid transparent",borderRadius:"var(--r)",marginBottom:"6px"}}>
                       <span style={{fontSize:"13px",fontWeight:"500",color:"var(--t3)",width:"24px",flexShrink:0}}>{i+1}</span>
@@ -6179,12 +6180,13 @@ function App() {
                         const hasPetNum = p.hasPet && p.petNumber;
                         const hasMulti = hasBd || hasExtra || hasPetNum;
                         const mainNum = hasMulti ? (p._origMain || p.number) : p.number;
+                        const mainDestroyed = destroyedSet.has(mainNum);
                         return (
                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",marginRight:"16px",flexShrink:0,gap:"2px"}}>
-                            <span style={{fontSize:"16px",fontWeight:"600",color:isWinner?wr.tx:"var(--t2)"}}># {mainNum}</span>
-                            {hasBd && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🎂 {p.birthdayNumbers.map(n=>`#${n}`).join(" ")}</span>}
-                            {hasExtra && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>➕ #{p.number2}</span>}
-                            {hasPetNum && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🐻 #{p.petNumber}</span>}
+                            <span style={{fontSize:"16px",fontWeight:"600",color:mainDestroyed?"var(--t3)":(isWinner?wr.tx:"var(--t2)"),textDecoration:mainDestroyed?"line-through":"none"}}># {mainNum}{mainDestroyed && " 💥"}</span>
+                            {hasBd && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)"}}>🎂 {p.birthdayNumbers.map((n,bi)=>`${bi>0?" ":""}#${n}${destroyedSet.has(n)?" 💥":""}`).join("")}</span>}
+                            {hasExtra && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)",textDecoration:destroyedSet.has(p.number2)?"line-through":"none"}}>➕ #{p.number2}{destroyedSet.has(p.number2)?" 💥":""}</span>}
+                            {hasPetNum && <span style={{fontSize:"11px",color:isWinner?wr.tx:"var(--t3)",textDecoration:destroyedSet.has(p.petNumber)?"line-through":"none"}}>🐻 #{p.petNumber}{destroyedSet.has(p.petNumber)?" 💥":""}</span>}
                           </div>
                         );
                       })()}
