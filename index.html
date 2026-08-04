@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-04 09:50";
+  const BUILD_TIME = "2026-08-04 09:54";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2902,16 +2902,22 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
       </p>
       {list.map((p,i) => {
         const ramp = RAMPS[i%RAMPS.length];
+        const hasTitles = getTitleDisplays(userTitles[sanitizeKey(p.name)], titleShopConfig).length > 0;
+        const hasDice = bonusDayToday && diceRolls[sanitizeKey(p.name)];
         return (
           <div key={p.id||i} className="pt-row" style={{background:ramp.bg,borderColor:ramp.bd}}>
             <div style={{width:"18px",flexShrink:0,fontSize:"12px",color:ramp.tx,opacity:0.6,fontWeight:"600"}}>{i+1}</div>
             <div style={{flex:1,marginLeft:"4px",minWidth:0,display:"flex",flexDirection:"column",gap:"2px",color:ramp.tx,fontWeight:"600",fontSize:"14px"}}>
               <span style={{display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
-                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                <TitleBadges value={userTitles[sanitizeKey(p.name)]} titleShopConfig={titleShopConfig} mode="stack" />
-                {bonusDayToday && diceRolls[sanitizeKey(p.name)] && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px"}}>×{diceRolls[sanitizeKey(p.name)]}</span>}
+                <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
+                <span style={{fontSize:"12px",fontWeight:"500",opacity:0.8,flexShrink:0}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
               </span>
-              <span style={{fontSize:"12px",fontWeight:"500",opacity:0.8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
+              {(hasTitles || hasDice) && (
+                <span style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                  <TitleBadges value={userTitles[sanitizeKey(p.name)]} titleShopConfig={titleShopConfig} mode="stack" />
+                  {hasDice && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px"}}>×{diceRolls[sanitizeKey(p.name)]}</span>}
+                </span>
+              )}
             </div>
             <span className="pt-num" style={{color:ramp.tx,opacity:hideNumbers?0.4:1,flexShrink:0}}>{hideNumbers ? "?" : `#${p.number}`}</span>
           </div>
