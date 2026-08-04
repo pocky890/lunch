@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-04 09:54";
+  const BUILD_TIME = "2026-08-04 09:58";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2910,11 +2910,11 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
             <div style={{flex:1,marginLeft:"4px",minWidth:0,display:"flex",flexDirection:"column",gap:"2px",color:ramp.tx,fontWeight:"600",fontSize:"14px"}}>
               <span style={{display:"flex",alignItems:"center",gap:"6px",overflow:"hidden"}}>
                 <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{p.name}</span>
-                <span style={{fontSize:"12px",fontWeight:"500",opacity:0.8,flexShrink:0}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
+                <span style={{fontSize:"14px",fontWeight:"500",opacity:0.8,flexShrink:0}}>{p.isRandomRest && !weekly[todayStr()] ? "🎲" : p.rest}</span>
               </span>
               {(hasTitles || hasDice) && (
                 <span style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                  <TitleBadges value={userTitles[sanitizeKey(p.name)]} titleShopConfig={titleShopConfig} mode="stack" />
+                  <TitleBadges value={userTitles[sanitizeKey(p.name)]} titleShopConfig={titleShopConfig} mode="inline" />
                   {hasDice && <span style={{flexShrink:0,fontSize:"11px",fontWeight:"800",letterSpacing:"0.03em",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",borderRadius:"5px",padding:"2px 6px"}}>×{diceRolls[sanitizeKey(p.name)]}</span>}
                 </span>
               )}
