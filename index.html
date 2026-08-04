@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 11, rules: 9, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"] };
+  const WHATSNEW_VERSION       = { cards: 12, rules: 9, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -459,7 +459,7 @@
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
     cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客或口渴卡分攤時，自動免除你的份額"      },
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者合請你一杯，上限 100 元。被核彈炸出局則效果取消。" },
-    nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選號碼為核心，九宮格內其他人出局" },
+    nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"另選一個號碼為核心（不影響你的主號碼），九宮格內其他人出局" },
     birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日當月 1 號自動發放，當月底前需使用完畢" },
   };
   const CARD_DEFAULTS = {
@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-04 13:05";
+  const BUILD_TIME = "2026-08-04 15:14";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1327,7 +1327,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"steal_card",        desc:"加入時宣告使用。隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效，盜牌卡保留。生日卡不會被偷。" },
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝，對獨贏無效）或當天有人使用口渴卡時，自動啟動，免除你該次的出資份額。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
-    { type:"nuke_card",         desc:"加入時選一個號碼為核心。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
+    { type:"nuke_card",         desc:"加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
     { type:"birthday_card",     desc:"生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）。當月底前需使用完畢，逾期作廢。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -4423,6 +4423,7 @@ function App() {
   const [numbersRevealed, setNumbersRevealed] = useState(false);
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
+  const [nukeTarget, setNukeTarget] = useState(""); // separately chosen nuke center number
   const [petNumber, setPetNumber] = useState("");    // auto adjacent number when hasPet
   const [bdNumbers, setBdNumbers] = useState(["","","",""]); // birthday extra numbers [n2..n5]
   const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
@@ -5230,6 +5231,13 @@ function App() {
         bdNums = parsed;
       }
 
+      // 驗證核彈卡的核心號碼（獨立於主號碼另選）
+      let nukeCenterNum = null;
+      if (activeCard?.type === "nuke_card" && !hasUsedCard) {
+        nukeCenterNum = parseInt(nukeTarget);
+        if (!nukeCenterNum || nukeCenterNum < 1 || nukeCenterNum > effectiveNumMax) return showToast(`核彈中心請輸入 1 到 ${effectiveNumMax} 之間的整數`);
+      }
+
       const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
 
       // 盜牌卡：先嘗試偷取，決定是否真的算「使用」（撲空則保留卡牌）
@@ -5294,11 +5302,11 @@ function App() {
       // 先原子認領卡牌（transaction 移除手牌），避免同一瞬間被盜牌卡偷走造成卡牌憑空複製
       if (cardConsumed && !TEST_MODE) {
         const tx = await fRef(`userCards/${sanitizeKey(name)}/${activeCard.id}`).transaction(cur => cur === null ? undefined : null);
-        if (!tx?.committed) { setCardToUse(""); setNumber2(""); return showToast("卡牌已不在手上（可能剛被偷走），本次未使用，請重新送出"); }
+        if (!tx?.committed) { setCardToUse(""); setNumber2(""); setNukeTarget(""); return showToast("卡牌已不在手上（可能剛被偷走），本次未使用，請重新送出"); }
       }
-      const nukedNumbers = (cardConsumed && activeCard.type === "nuke_card") ? getNukeZone(num, effectiveNumMax) : null;
+      const nukedNumbers = (cardConsumed && activeCard.type === "nuke_card") ? getNukeZone(nukeCenterNum, effectiveNumMax) : null;
       const cardExtra = cardConsumed
-        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(nukedNumbers ? { nukedNumbers } : {}) }
+        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(nukedNumbers ? { nukedNumbers } : {}), ...(nukeCenterNum ? { nukeCenter: nukeCenterNum } : {}) }
         : {};
       const bdExtra = (cardConsumed && bdNums) ? { birthdayNumbers: bdNums } : {};
       const petExtra = petN ? { hasPet: true, petNumber: petN } : {};
@@ -5318,7 +5326,7 @@ function App() {
         await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set(activeCard.fromShop ? { type: activeCard.type, fromShop: true } : activeCard.type);
         logNotification(sanitizeKey(name), "card_used", { cardType: activeCard.type, date: todayStr() });
         await fRef(`cardUsedToday/${todayStr()}/${sanitizeKey(name)}`).set(true);
-        setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]);
+        setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget("");
       }
       // 公開卡：所有人號碼立即公開
       if (activeCard?.type === "reveal_numbers") {
@@ -5852,12 +5860,13 @@ function App() {
                   const isNukeCard  = myCards.find(c=>c.id===cardToUse)?.type === "nuke_card";
                   const isBirthdayCard = myCards.find(c=>c.id===cardToUse)?.type === "birthday_card";
                   const hasPetBonus = !!userActivePet && !isEditing; // 編輯時號碼已鎖定，寵物加號當初就決定了，這裡不重算
-                  const nukeCenter  = isNukeCard && form.number ? parseInt(form.number) : null;
+                  const nukeCenter  = isNukeCard && nukeTarget ? parseInt(nukeTarget) : null;
                   const nukeZone    = nukeCenter ? getNukeZone(nukeCenter, effectiveNumMax) : [];
                   const slots = [
                     { key:"main",    color:"rgba(0,113,227,0.9)",   outline:"rgba(0,113,227,0.6)",   label:"主號碼",   num: form.number },
                     ...(hasPetBonus ? [{ key:"pet",   color:"rgba(16,185,129,0.85)", outline:"rgba(16,185,129,0.5)",  label:"🐻",       num: petNumber }] : []),
                     ...(isExtraCard ? [{ key:"extra", color:"rgba(234,88,12,0.85)",  outline:"rgba(234,88,12,0.5)",   label:"加號卡",   num: number2 }] : []),
+                    ...(isNukeCard  ? [{ key:"nuke",  color:"rgba(220,38,38,0.85)",  outline:"rgba(220,38,38,0.5)",   label:"☢️ 核彈中心", num: nukeTarget }] : []),
                     ...(isBirthdayCard  ? [
                       { key:"bd0", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日卡", num: bdNumbers[0] },
                       { key:"bd1", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日卡", num: bdNumbers[1] },
@@ -5877,6 +5886,7 @@ function App() {
                       }
                     }
                     if (isExtraCard) setNumber2(get("extra"));
+                    if (isNukeCard) setNukeTarget(get("nuke"));
                     if (isBirthdayCard) setBdNumbers([get("bd0"),get("bd1"),get("bd2"),get("bd3")]);
                   };
                   const doRandom = () => {
@@ -5914,7 +5924,7 @@ function App() {
                           選號碼（1 ~ {effectiveNumMax}）
                           {isBirthdayCard&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>🎂 生日卡+4</span>}
                           {isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>➕ 加號卡+1</span>}
-                          {isNukeCard&&<span style={{fontSize:"11px",color:"rgba(239,68,68,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>☢️ 選核心號碼</span>}
+                          {isNukeCard&&<span style={{fontSize:"11px",color:"rgba(239,68,68,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>☢️ 核彈卡+1（另選核心）</span>}
                           {hasPetBonus&&<span style={{fontSize:"11px",color:"rgba(16,185,129,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>🐻 寵物±1</span>}
                         </label>
                         <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
@@ -5930,7 +5940,7 @@ function App() {
                 })()}
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:"8px",marginBottom:"2px"}}>- 送出後號碼與卡牌無法修改</p>
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:0,marginBottom:"12px"}}>- 點已選號碼可取消選擇</p>
-                {!hasUsedCardToday && form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); }} />}
+                {!hasUsedCardToday && form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); }} />}
                 </>);
               })()}
               <div className="divider" />
@@ -5951,7 +5961,7 @@ function App() {
   );
 
   if (phase==="joined") {
-    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) { setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setIsRandom(myEntry.isRandomRest||false); } setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setIsEditing(true); setPhase("join"); }
+    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) { setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setIsRandom(myEntry.isRandomRest||false); } setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); setIsEditing(true); setPhase("join"); }
     const myJoinedEntry = pts.find(p=>p.name===form.name);
     const usedCardName = myJoinedEntry?.cardUsed ? (CARD_TYPES[myJoinedEntry.cardUsed]?.name || "卡牌") : null;
     function handleCancel() { if (usedCardName) setCancelConfirm(true); else doCancel(); }
