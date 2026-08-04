@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 10, rules: 9, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"] };
+  const WHATSNEW_VERSION       = { cards: 11, rules: 9, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -457,7 +457,7 @@
     streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄" },
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼" },
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
-    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客時自動免除你的份額"      },
+    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客或口渴卡分攤時，自動免除你的份額"      },
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者合請你一杯，上限 100 元。被核彈炸出局則效果取消。" },
     nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"選號碼為核心，九宮格內其他人出局" },
     birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日當月 1 號自動發放，當月底前需使用完畢" },
@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-04 09:58";
+  const BUILD_TIME = "2026-08-04 10:04";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1324,7 +1324,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"streak_protect",    desc:"被動卡，無需手動操作。開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
     { type:"reveal_numbers",    desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
     { type:"steal_card",        desc:"加入時宣告使用。隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效，盜牌卡保留。生日卡不會被偷。" },
-    { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝）時自動啟動，免除你的出資份額。對獨贏無效。" },
+    { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝，對獨贏無效）或當天有人使用口渴卡時，自動啟動，免除你該次的出資份額。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
     { type:"nuke_card",         desc:"加入時選一個號碼為核心。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
     { type:"birthday_card",     desc:"生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）。當月底前需使用完畢，逾期作廢。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
@@ -5030,6 +5030,20 @@ function App() {
         if (!result.soloWin && streak >= 3) {
           for (const p of pts) {
             if (winnerNameSet.has(p.name)) continue;
+            const pKey = sanitizeKey(p.name);
+            const cardsObj = await fGet(`userCards/${pKey}`) || {};
+            const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
+            if (!entry) continue;
+            await fRef(`cheapskateUsers/${today}/${pKey}`).set(p.name);
+            await returnCardToPool(p.name, entry[0]);
+            logNotification(pKey, "card_used", { cardType: "cheapskate_card", date: today });
+          }
+        }
+        const thirstyUsers = pts.filter(p => p.cardUsed==="thirsty_card" && !result.nukedParticipants?.some(n=>n.id===p.id));
+        if (thirstyUsers.length > 0) {
+          const thirstyIds = new Set(thirstyUsers.map(t=>t.id));
+          for (const p of pts) {
+            if (thirstyIds.has(p.id)) continue;
             const pKey = sanitizeKey(p.name);
             const cardsObj = await fGet(`userCards/${pKey}`) || {};
             const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
