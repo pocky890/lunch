@@ -547,7 +547,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-04 10:08";
+  const BUILD_TIME = "2026-08-04 10:10";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -599,6 +599,7 @@ const auth         = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 const TEST_MODE = new URLSearchParams(location.search).has("testmode");
+const SHOW_CHAT_WIDGET = false; // 暫時隱藏聊天室入口；要恢復把這個改回 true 即可
 function fRef(p) {
   const real = db.ref(`${DB_PREFIX}/${p}`);
   if (!TEST_MODE) return real;
@@ -5725,7 +5726,7 @@ function App() {
     }} onLogout={() => { setShowProfile(false); auth.signOut(); }} />}
     {userActivePet && PET_GIFS[userActivePet] && <PetOverlay petKey={userActivePet} />}
     <OthersPets boundName={boundName} />
-    <ChatWidget boundName={boundName} />
+    {SHOW_CHAT_WIDGET && <ChatWidget boundName={boundName} />}
     <NotificationModal open={showNotifHistory} onClose={()=>setShowNotifHistory(false)} boundName={boundName} weekly={weekly} />
     <PointsHistoryModal open={showPointsHistory} onClose={()=>setShowPointsHistory(false)} boundName={boundName} />
     {showWorldCup && <WorldCupModal onClose={()=>setShowWorldCup(false)} boundName={boundName} userPoints={userPoints} setUserPoints={setUserPoints} showToast={showToast} hasSettleNews={wcSettleNews} onBetsTabSeen={()=>{ localStorage.setItem("lastSeenWCSettle", Date.now()); setWcSettleNews(false); }} />}
