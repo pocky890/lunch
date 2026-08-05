@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 12, rules: 9, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"] };
+  const WHATSNEW_VERSION       = { cards: 13, rules: 9, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -472,6 +472,9 @@
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
   };
+  // 使用當下就已經生效（公開號碼／偷牌已發生），取消參加也不退還本人；其餘卡種效果要等開獎才生效，
+  // 若當天最終沒有真的留在參加名單裡（效果從未套用），開獎時直接退還卡牌到本人手牌
+  const IMMEDIATE_EFFECT_CARD_TYPES = ["reveal_numbers", "steal_card"];
   const PET_TYPES = {
     dinotaeng_01: { name: 'Dinotaeng', emoji: '🐨', defaultPrice: 500 },
     ghost_01:     { name: '鬼鬼', emoji: '👻', defaultPrice: 300, flipDefault: true },
@@ -547,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-04 15:14";
+  const BUILD_TIME = "2026-08-05 10:47";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1172,15 +1175,30 @@ async function returnCardToPool(name, cardId) {
 
 // 開獎時統一結算「開獎前已使用、暫記待歸還」的卡牌，避免卡牌池數字在開獎前提早跳動。
 // 一併補掃過去日期的滯留記錄（當天沒人撐到開獎時不會漏）。商店購買的卡（fromShop）不回卡牌池。
+// 效果要等開獎才生效的卡種（非 IMMEDIATE_EFFECT_CARD_TYPES），若本人當天最終沒有留在參加名單裡
+// （效果從未套用），直接把卡牌退還本人手牌，而不是進公共卡牌池。
 async function reconcilePendingCardReturns(today) {
   const all = await fGet("pendingCardReturns");
   if (!all) return;
   for (const [date, entries] of Object.entries(all)) {
     if (date > today) continue;
+    const weeklyRec = await fGet(`weekly/${date}`);
+    const participantNames = weeklyRec?.participantNames || null;
     const returnUpdates = {};
     for (const val of Object.values(entries || {})) {
       const type = typeof val === "string" ? val : val?.type;
+      const name = typeof val === "object" ? val?.name : null;
       const fromShop = typeof val === "object" && val?.fromShop;
+      if (!type) continue;
+      const neverTookEffect = name && participantNames && !IMMEDIATE_EFFECT_CARD_TYPES.includes(type) && !participantNames.includes(name);
+      if (neverTookEffect) {
+        const cardCfg = await fGet(`cardConfig/${type}`);
+        const expMs = (cardCfg?.expireDays ?? CARD_DEFAULTS[type]?.expireDays ?? 30) * 86400000;
+        const exp = new Date(Date.now() + expMs);
+        const expiresAt = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
+        await fRef(`userCards/${sanitizeKey(name)}`).push().set({ type, expiresAt, obtainedAt: today, ...(fromShop ? { fromShop: true } : {}) });
+        continue;
+      }
       if (!fromShop && CARD_DEFAULTS[type]) returnUpdates[type] = (returnUpdates[type] || 0) + 1;
     }
     for (const [type, count] of Object.entries(returnUpdates)) {
@@ -1342,6 +1360,9 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
         <div style={{display:"flex",flexDirection:"column",gap:"16px",fontSize:"14px",color:"var(--t2)",lineHeight:1.7}}>
           <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>
             每天系統會將 <strong style={{color:"var(--t1)"}}>{totalCards} 張卡牌</strong>隨機藏入 99 個號碼中。押中含卡號碼的人，<strong style={{color:"var(--t1)"}}>開獎後</strong>才會得知自己拿到了卡牌。每人每天最多得 1 張，一次只能使用 1 張。
+          </div>
+          <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>
+            使用卡牌後取消參加：公開卡、盜牌卡使用當下就已生效，<strong style={{color:"var(--t1)"}}>不會退還</strong>。其餘卡種要等開獎才生效，若當天最終沒有再參加（效果從未套用），<strong style={{color:"var(--t1)"}}>開獎後會直接退還到你的手牌</strong>；但只要重新加入，就不會退還。
           </div>
           {cards.map(c => {
             const ct = CARD_TYPES[c.type];
@@ -5323,7 +5344,7 @@ function App() {
 
       // 卡牌已從手牌移除，暫不還池（避免開獎前卡牌池數字提早跳動）；記錄待歸還，開獎時統一結算（中途取消參加也不會遺失）。商店購買的卡標記 fromShop，歸還時不回卡牌池
       if (cardConsumed) {
-        await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set(activeCard.fromShop ? { type: activeCard.type, fromShop: true } : activeCard.type);
+        await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set({ type: activeCard.type, name, ...(activeCard.fromShop ? { fromShop: true } : {}) });
         logNotification(sanitizeKey(name), "card_used", { cardType: activeCard.type, date: todayStr() });
         await fRef(`cardUsedToday/${todayStr()}/${sanitizeKey(name)}`).set(true);
         setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget("");
@@ -5964,6 +5985,7 @@ function App() {
     function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) { setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setIsRandom(myEntry.isRandomRest||false); } setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); setIsEditing(true); setPhase("join"); }
     const myJoinedEntry = pts.find(p=>p.name===form.name);
     const usedCardName = myJoinedEntry?.cardUsed ? (CARD_TYPES[myJoinedEntry.cardUsed]?.name || "卡牌") : null;
+    const usedCardIsDeferred = myJoinedEntry?.cardUsed && !IMMEDIATE_EFFECT_CARD_TYPES.includes(myJoinedEntry.cardUsed);
     function handleCancel() { if (usedCardName) setCancelConfirm(true); else doCancel(); }
     return (
       <div>
@@ -5971,7 +5993,7 @@ function App() {
       <SiteHeader title="等待開獎中" sub="時間到準時揭曉" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <ConfirmModal show={cancelConfirm} message={`你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
+          <ConfirmModal show={cancelConfirm} message={usedCardIsDeferred ? `你這次使用了「${usedCardName}」，若之後都沒有再參加，開獎後卡牌會退還給你；但只要又重新加入，卡牌就不會退還，確定取消嗎？` : `你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
           <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
