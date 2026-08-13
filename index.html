@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-05 10:47";
+  const BUILD_TIME = "2026-08-13 10:40";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5583,6 +5583,7 @@ function App() {
 
   async function doReset() {
     const today = todayStr();
+    await fRef(`resetLog/${today}`).push().set({ name: boundName, email: currentUser?.email || "", ts: Date.now() });
     await fSet("session", null);
     await fSet("participants", null);
     await fSet("absent", null);
