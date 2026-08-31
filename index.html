@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 15:17";
+  const BUILD_TIME = "2026-08-31 18:05";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2807,7 +2807,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
     </button>
   );
   const itemRow = (left, right) => (
-    <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",borderRadius:"10px",border:"1px solid var(--b1)",marginBottom:"8px",background:"var(--card)"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",borderRadius:"10px",border:"1px solid var(--b1)",marginBottom:"8px",background:"var(--s2)"}}>
       {left}
       {right}
     </div>
@@ -2879,7 +2879,7 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
             {titleSoldOut.length > 0 && <>
               <div style={{fontSize:"12px",color:"var(--t3)",fontWeight:"600",margin:"12px 0 8px",paddingTop:"12px",borderTop:"1px solid var(--b1)"}}>已售完</div>
               {titleSoldOut.map(([key, cfg]) => (
-                <div key={key} style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",borderRadius:"10px",border:"1px solid var(--b1)",marginBottom:"8px",background:"var(--card)",opacity:0.45}}>
+                <div key={key} style={{display:"flex",alignItems:"center",gap:"12px",padding:"12px 14px",borderRadius:"10px",border:"1px solid var(--b1)",marginBottom:"8px",background:"var(--s2)",opacity:0.45}}>
                   <span style={{fontSize:"22px",filter:"grayscale(1)"}}>{cfg.emoji}</span>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t2)"}}>{cfg.name}</div>
@@ -2920,10 +2920,10 @@ function ShopModal({ open, onClose, shopConfig, titleShopConfig, userPoints, use
         })()}
         <p style={{fontSize:"11px",color:"var(--t3)",textAlign:"center",marginTop:"12px",marginBottom:0}}>每日參加 +10 點 ／ 標記不參加 +5 點</p>
         {pendingBuy && (
-          <div style={{position:"sticky",bottom:0,background:"var(--s3)",borderTop:"2px solid var(--a)",boxShadow:"0 -4px 12px rgba(0,0,0,0.15)",borderRadius:"0 0 12px 12px",padding:"14px 0 4px",marginTop:"16px"}}>
+          <div style={{position:"sticky",bottom:0,background:"var(--s2)",borderTop:"2px solid var(--a)",boxShadow:"0 -4px 12px rgba(0,0,0,0.15)",borderRadius:"0 0 12px 12px",padding:"14px 0 4px",marginTop:"16px"}}>
             <div style={{fontSize:"13px",color:"var(--t1)",marginBottom:"10px",textAlign:"center"}}>確定購買 <b>{pendingBuy.label}</b>？</div>
             <div style={{display:"flex",gap:"8px"}}>
-              <button className="btn-sm" style={{flex:1,marginBottom:0,background:"var(--s3)",color:"var(--t1)",border:"1px solid var(--b2)"}} onClick={()=>setPendingBuy(null)}>取消</button>
+              <button className="btn-sm" style={{flex:1,marginBottom:0,background:"var(--s2)",color:"var(--t1)",border:"1px solid var(--b2)"}} onClick={()=>setPendingBuy(null)}>取消</button>
               <button className="btn-sm" style={{flex:1,marginBottom:0}} onClick={()=>{pendingBuy.action();setPendingBuy(null);}}>確定購買</button>
             </div>
           </div>
