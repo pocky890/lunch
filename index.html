@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 11:20";
+  const BUILD_TIME = "2026-08-31 14:51";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1209,15 +1209,18 @@ async function reconcilePendingCardReturns(today) {
   }
 }
 
+// 邏輯必須跟 computeStreak 完全一致（skipStreak/noParticipants 一律跳過不中斷，完全沒參加視同不在場、套用 14 天上限），
+// 否則會低估連勝而讓連勝保護卡該生效卻沒生效
 function getPreviousStreak(weekly, name, today) {
   const past = Object.keys(weekly||{}).filter(d => d < today).sort().reverse();
   let count = 0;
   let consecutiveAbsent = 0;
   for (const date of past) {
     const rec = weekly[date];
-    if (!rec || rec.noParticipants) break;
-    if (rec.skipStreak) continue;
-    if (rec.absentNames?.includes(name)) {
+    if (!rec) break;
+    if (rec.skipStreak || rec.noParticipants) continue;
+    const wasAbsent = rec.absentNames?.includes(name) || !rec.participantNames?.includes(name);
+    if (wasAbsent) {
       if (++consecutiveAbsent > 14) break;
       continue;
     }
