@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 14:51";
+  const BUILD_TIME = "2026-08-31 15:08";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5038,7 +5038,9 @@ function App() {
         didWrite = true;
         return rec;
       });
-      setWeekly(prev => ({...prev, [today]: rec}));
+      // 用 merge 不用整個覆蓋：本地算出來的 rec 不包含連勝保護卡/免付卡等後續才用 .update() 補寫的欄位，
+      // 整個覆蓋會把即時監聽已經拿到的正確資料蓋掉（每次重新整理都會重演一次，欄位永遠顯示不出來）
+      setWeekly(prev => ({...prev, [today]: {...(prev[today]||{}), ...rec}}));
 
       if (didWrite) {
         await givePointsForDay(pts, absent, today);
