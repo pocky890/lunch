@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 10:22";
+  const BUILD_TIME = "2026-08-31 10:33";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2561,8 +2561,10 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
         const group = grouped[type];
         const nearest = group[0]; // use nearest-expiry card first
         const active = group.some(c => c.id === cardToUse);
-        const daysRaw = Math.ceil((new Date(nearest.expiresAt)-new Date(today))/86400000);
-        const days = daysRaw > 999 ? "∞" : daysRaw;
+        const daysList = group.map(c => {
+          const raw = Math.ceil((new Date(c.expiresAt)-new Date(today))/86400000);
+          return raw > 999 ? "∞" : raw;
+        });
         return (
           <div key={type} className="card-item" onClick={() => onSelectCard(active ? "" : nearest.id)}
             style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:"pointer",marginBottom:"4px",
@@ -2574,7 +2576,7 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
               <div style={{fontSize:"11px",opacity:0.75}}>{ct.desc}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"2px",flexShrink:0}}>
-              <span style={{fontSize:"11px",opacity:0.6}}>剩 {days}d</span>
+              <span style={{fontSize:"11px",opacity:0.6}}>剩 {daysList.join("d、")}d</span>
               {active && <span style={{fontSize:"11px",fontWeight:"700"}}>✓ 使用中</span>}
             </div>
           </div>
