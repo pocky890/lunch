@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 15:08";
+  const BUILD_TIME = "2026-08-31 15:17";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -943,8 +943,9 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
     const rec = weekly[date];
     if (!rec) break;
     if (rec.skipStreak || rec.noParticipants) continue;
-    // 標記不參加、或當天根本沒參加（連不參加都沒按），都視為同一種「不在場」，套用同一個 14 天上限保護連勝
-    const wasAbsent = rec.absentNames?.includes(winnerName) || !rec.participantNames?.includes(winnerName);
+    // 標記不參加、或當天根本沒參加（連不參加都沒按），都視為同一種「不在場」，套用同一個 14 天上限保護連勝。
+    // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
+    const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
     if (wasAbsent) {
       if (++consecutiveAbsent > 14) break;
       continue;
@@ -972,9 +973,18 @@ function computeLoserStreak(weekly, name, today) {
 function computeAchievements(name, weeklyData, participationCount, specialAchievements = {}) {
   const recs = Object.entries(weeklyData || {}).sort(([a],[b]) => a < b ? -1 : 1).map(([,r]) => r).filter(Boolean);
   const soloWins = recs.filter(r => r.soloWin && isWinnerOf(r, name)).length;
-  let maxStreak = 0, curStreak = 0;
+  // 邏輯需跟 computeStreak/getPreviousStreak 一致：skipStreak/noParticipants 一律跳過不中斷，
+  // 完全沒參加（不在 participantNames 裡）視同不在場、套用連續 14 天上限，超過才真的打斷連勝。
+  // participantNames 是後來才加的欄位，早期紀錄完全沒有這個欄位（undefined，不是「沒人在裡面」），
+  // 這種舊資料沒辦法判斷是否缺席，直接看輸贏就好，不能當成缺席，否則會把舊的連勝紀錄洗掉
+  let maxStreak = 0, curStreak = 0, consecutiveAbsent = 0;
   recs.forEach(r => {
-    if (r.noParticipants) return;
+    if (r.noParticipants || r.skipStreak) return;
+    if (r.participantNames && !r.participantNames.includes(name)) {
+      if (++consecutiveAbsent > 14) curStreak = 0;
+      return;
+    }
+    consecutiveAbsent = 0;
     if (isWinnerOf(r, name)) { curStreak++; maxStreak = Math.max(maxStreak, curStreak); }
     else { curStreak = 0; }
   });
@@ -1219,7 +1229,8 @@ function getPreviousStreak(weekly, name, today) {
     const rec = weekly[date];
     if (!rec) break;
     if (rec.skipStreak || rec.noParticipants) continue;
-    const wasAbsent = rec.absentNames?.includes(name) || !rec.participantNames?.includes(name);
+    // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
+    const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
     if (wasAbsent) {
       if (++consecutiveAbsent > 14) break;
       continue;
