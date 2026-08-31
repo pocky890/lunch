@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 10:33";
+  const BUILD_TIME = "2026-08-31 11:20";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2561,10 +2561,12 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
         const group = grouped[type];
         const nearest = group[0]; // use nearest-expiry card first
         const active = group.some(c => c.id === cardToUse);
-        const daysList = group.map(c => {
-          const raw = Math.ceil((new Date(c.expiresAt)-new Date(today))/86400000);
-          return raw > 999 ? "∞" : raw;
-        });
+        const rawDays = group.map(c => Math.ceil((new Date(c.expiresAt)-new Date(today))/86400000));
+        const fmtDay = d => d > 999 ? "∞" : d;
+        // 3 張以下逐一列出；再多就只顯示「最快~最慢」區間，避免文字長度隨張數無上限增長
+        const daysText = rawDays.length <= 3
+          ? rawDays.map(fmtDay).join("d、") + "d"
+          : (() => { const s = [...rawDays].sort((a,b)=>a-b); return `${fmtDay(s[0])}d ~ ${fmtDay(s[s.length-1])}d`; })();
         return (
           <div key={type} className="card-item" onClick={() => onSelectCard(active ? "" : nearest.id)}
             style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:"pointer",marginBottom:"4px",
@@ -2576,7 +2578,7 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
               <div style={{fontSize:"11px",opacity:0.75}}>{ct.desc}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"2px",flexShrink:0}}>
-              <span style={{fontSize:"11px",opacity:0.6}}>剩 {daysList.join("d、")}d</span>
+              <span style={{fontSize:"11px",opacity:0.6}}>剩 {daysText}</span>
               {active && <span style={{fontSize:"11px",fontWeight:"700"}}>✓ 使用中</span>}
             </div>
           </div>
