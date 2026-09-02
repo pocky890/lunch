@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-08-31 18:05";
+  const BUILD_TIME = "2026-09-02 10:23";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -563,9 +563,9 @@
     { key:"streak3",  emoji:"💸", name:"合法搶劫",       desc:"達成 3 連勝",             rarity:4 },
     { key:"streak5",  emoji:"🧛‍♂️", name:"無情吸血鬼",     desc:"達成 5 連勝",             rarity:5 },
     { key:"streak10", emoji:"⭐", name:"超極幸運星",     desc:"達成 10 連勝",            rarity:5 },
-    { key:"lose30",   emoji:"🌩️", name:"好運絕緣體",     desc:"連續 30 次未中獎",        rarity:2 },
-    { key:"lose50",   emoji:"🗿", name:"非洲大酋長",     desc:"連續 50 次未中獎",        rarity:3 },
-    { key:"lose100",  emoji:"☄️", name:"天煞孤星",       desc:"連續 100 次未中獎",       rarity:5 },
+    { key:"lose30",   emoji:"🌩️", name:"好運絕緣體",     desc:"連續 10 次未中獎",        rarity:2 },
+    { key:"lose50",   emoji:"🗿", name:"非洲大酋長",     desc:"連續 30 次未中獎",        rarity:3 },
+    { key:"lose100",  emoji:"☄️", name:"天煞孤星",       desc:"連續 50 次未中獎",       rarity:5 },
     { key:"luckyDay",   emoji:"🎰", name:"賭神附體",     desc:"在 Lucky Day 中獎",         rarity:2 },
     { key:"birthday",   emoji:"🎉", name:"天公疼壽星",   desc:"使用生日卡中獎",             rarity:3 },
     { key:"sharedWin",  emoji:"🤝", name:"有福同享",     desc:"與他人一起獨贏",             rarity:4 },
@@ -1019,9 +1019,9 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   if (maxStreak >= 3)  unlocked.push("streak3");
   if (maxStreak >= 5)  unlocked.push("streak5");
   if (maxStreak >= 10) unlocked.push("streak10");
-  if (maxLose >= 30)   unlocked.push("lose30");
-  if (maxLose >= 50)   unlocked.push("lose50");
-  if (maxLose >= 100)  unlocked.push("lose100");
+  if (maxLose >= 10)   unlocked.push("lose30");
+  if (maxLose >= 30)   unlocked.push("lose50");
+  if (maxLose >= 50)   unlocked.push("lose100");
   if (luckyDay)        unlocked.push("luckyDay");
   if (bdWin)           unlocked.push("birthday");
   if (sharedWin)       unlocked.push("sharedWin");
