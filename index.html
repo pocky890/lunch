@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-03 10:46";
+  const BUILD_TIME = "2026-09-15 14:06";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5220,10 +5220,19 @@ function App() {
     
     setIsLoading(true);
     try {
-      const s = {deadline:form.deadline, date:todayStr(), numMax: 99};
-      await fSet("session", s); await fSet("participants", null); await fSet("absent", null);
+      const today = todayStr();
+      const s = {deadline:form.deadline, date:today, numMax: 99};
+      // 用 transaction 卡住重複建立：今天已經有人建立過（例如舊分頁沒刷新又按了一次）就放棄寫入，
+      // 避免把已經加入的 participants/absent 默默蓋掉
+      if (!TEST_MODE) {
+        const tx = await fRef("session").transaction(current => (current && current.date === today) ? undefined : s);
+        if (!tx?.committed) return showToast("今天已經有人建立過遊戲了，請重新整理頁面");
+      } else {
+        await fSet("session", s);
+      }
+      await fSet("participants", null); await fSet("absent", null);
       await initCardSystem();
-      await ensureDailyCards(todayStr(), effectiveNumMax);
+      await ensureDailyCards(today, effectiveNumMax);
       setSess(s); setPts([]); setResult(null); setAbsent([]); setPhase("join");
     } catch (e) {
       showToast("連線錯誤，請重試");
