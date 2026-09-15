@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-15 14:06";
+  const BUILD_TIME = "2026-09-15 14:11";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4969,6 +4969,35 @@ function App() {
       }
     }).catch(() => setPhase("setup"));
   }, []);
+
+  // 停在「建立遊戲」畫面時即時監聽 session：別人這時建立了遊戲，自動跳到正確的畫面，不用手動重新整理
+  useEffect(() => {
+    if (phase !== "setup") return;
+    const sRef = fRef("session");
+    const handler = async snap => {
+      const s = snap.val();
+      const today = todayStr();
+      if (!s || s.date !== today) return;
+      const [ptsObj, absentObj] = await Promise.all([fGet("participants"), fGet("absent")]);
+      const p = snapToArr(ptsObj);
+      const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
+      setSess(s); setPts(p); setAbsent(absentNames);
+      if (isDeadlinePassed(s.deadline)) {
+        const drawn = await getOrDrawNumber(today, isDoubleDay(today) ? Math.ceil((s.numMax||99)/2) : (s.numMax||99));
+        const res = determineResultWithCards(p, drawn);
+        setResult(res ? {...res, drawnNumber: drawn} : {drawnNumber: drawn, winner: null, soloWin: false, sorted: p});
+        setPhase("results");
+      } else if (boundName && absentNames.includes(boundName)) {
+        setPhase("absent");
+      } else if (boundName && p.some(pt => pt.name === boundName)) {
+        setPhase("joined");
+      } else {
+        setPhase("join");
+      }
+    };
+    sRef.on("value", handler);
+    return () => sRef.off("value", handler);
+  }, [phase, boundName]);
 
   useEffect(() => {
     if (phase!=="join" && phase!=="joined" && phase!=="absent") return;
