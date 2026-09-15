@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-15 14:11";
+  const BUILD_TIME = "2026-09-15 15:15";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4946,6 +4946,17 @@ function App() {
     Promise.all([fGet("session"),fGet("participants"),fGet("absent")]).then(async ([s,ptsObj,absentObj]) => {
       const today = todayStr();
       await initCardSystem(); // 補齊新增的卡種
+      if (!s || s.date !== today) {
+        const weekday = new Date().getDay(); // 1~5 = 週一~週五
+        if (!TEST_MODE && weekday >= 1 && weekday <= 5) {
+          // 平日自動建立今天的遊戲（預設截止 11:45），不用等人手動按「建立遊戲」；
+          // transaction 確保多人同時開頁面也只會真的建立一次
+          const autoSession = {deadline:"11:45", date:today, numMax:99};
+          await fRef("session").transaction(current => (current && current.date === today) ? undefined : autoSession);
+          await ensureDailyCards(today, 99);
+          [s, ptsObj, absentObj] = await Promise.all([fGet("session"), fGet("participants"), fGet("absent")]);
+        }
+      }
       if (!s || s.date !== today) { setPhase("setup"); return; }
       const p = snapToArr(ptsObj);
       const absentNames = Object.values(absentObj || {}).map(v => typeof v === "object" ? v.name : v);
