@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-15 18:04";
+  const BUILD_TIME = "2026-09-16 10:01";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4953,7 +4953,11 @@ function App() {
           // transaction 確保多人同時開頁面也只會真的建立一次
           const autoSession = {deadline:"11:45", date:today, numMax:99};
           const tx = await fRef("session").transaction(current => (current && current.date === today) ? undefined : autoSession);
-          if (tx?.committed) await ensureDailyCards(today, 99); // 只有真的搶到 session 的那個人需要去藏卡
+          if (tx?.committed) {
+            // 只有真的搶到 session 的那個人需要清掉前一天殘留的名單、去藏卡
+            await fSet("participants", null); await fSet("absent", null);
+            await ensureDailyCards(today, 99);
+          }
           [s, ptsObj, absentObj] = await Promise.all([fGet("session"), fGet("participants"), fGet("absent")]);
         }
       }
