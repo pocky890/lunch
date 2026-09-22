@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-16 10:01";
+  const BUILD_TIME = "2026-09-22 10:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2511,7 +2511,7 @@ function SpecialDayBanner() {
 function StreakWarning({ weekly }) {
   if (DB_PREFIX === "lunch_test") return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
-      ⚠️ <strong>Pocky</strong> 再贏一次就 3 連勝，要請客 <strong>30 元</strong>！
+      ⚠️ <strong>Pocky</strong> 再贏一次就 3 連勝，可以得到一人 <strong>30 元</strong>的贊助費。
     </div>
   );
   const today = todayStr();
@@ -2527,7 +2527,7 @@ function StreakWarning({ weekly }) {
   return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
       {warnings.map(w => (
-        <div key={w.name}>⚠️ <strong>{w.name}</strong> 再贏一次就 {w.streak} 連勝，要請客 <strong>{w.streak * 10} 元</strong>！</div>
+        <div key={w.name}>⚠️ <strong>{w.name}</strong> 再贏一次就 {w.streak} 連勝，可以得到一人 <strong>{w.streak * 10} 元</strong>的贊助費。</div>
       ))}
     </div>
   );
