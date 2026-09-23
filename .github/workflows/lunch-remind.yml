@@ -1,0 +1,22 @@
+name: Lunch Reminder
+
+on:
+  schedule:
+    - cron: '30 3 * * 1-5'  # 週一至週五 03:30 UTC = 台灣時間 11:30
+  workflow_dispatch:         # 可在 GitHub 手動觸發（測試用）
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run reminder script
+        run: node .github/scripts/lunch-remind.js
+        env:
+          WEBHOOK_URL: ${{ secrets.LUNCH_WEBHOOK_URL }}
