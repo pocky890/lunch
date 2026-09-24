@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-22 10:09";
+  const BUILD_TIME = "2026-09-24 13:30";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -6166,7 +6166,7 @@ function App() {
     const streak = computeStreak(weekly, winner.name, todayStr(), pts.length);
     const treatAmount = streak >= 3 ? streak * 10 : 0;
     const soloTreatPerPerson = soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
-    const nonWinnerCount = allSorted.length - soloWinners.length;
+    const nonWinnerCount = pts.length - soloWinners.length;
     const maxTotal = nonWinnerCount * soloTreatPerPerson;
     const perWinner = soloWinners.length > 1 ? Math.floor(maxTotal / soloWinners.length) : maxTotal;
     // 深色模式下 winner 卡片 & 排名列替代色
