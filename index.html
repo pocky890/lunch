@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-24 13:30";
+  const BUILD_TIME = "2026-09-30 10:08";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1056,7 +1056,7 @@ function TitleBadges({ value, titleShopConfig, mode = "stack" }) {
     <span style={{display:"flex", flexDirection: mode==="stack" ? "column" : "row", gap: mode==="stack" ? "2px" : "4px", flexShrink:0, alignItems: mode==="stack" ? "flex-start" : "center"}}>
       {displays.map((a,i) => (
         <span key={i} className={"badge badge-title" + (a.rarity===5 ? " badge-title-legendary" : "")}
-          style={{flexShrink:0, maxWidth: mode==="stack" ? "92px" : "120px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{a.emoji} {a.name}</span>
+          style={{flexShrink:0, maxWidth: mode==="stack" ? "130px" : "120px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{a.emoji} {a.name}</span>
       ))}
     </span>
   );
