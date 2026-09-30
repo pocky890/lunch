@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 13, rules: 9, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 13, rules: 10, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-30 10:45";
+  const BUILD_TIME = "2026-09-30 18:22";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -936,7 +936,7 @@ function isWinnerOf(rec, name) {
 
 function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
-  if (todayPtsCount < 4) return 0;
+  if (todayPtsCount < 3) return 0;
   const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
   let streak = 1;
   let consecutiveAbsent = 0;
@@ -1320,7 +1320,7 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🔥 連勝請客{newSections.includes("streak") && <NewDot />}</div>
             <div>非獨贏的情況下，若同一人連續 3 次選中最接近，所有參加者每人補助 <strong style={{color:"var(--t1)"}}>30 元</strong>；連續 4 次補助 40 元，以此類推（N 連勝 × 10 元）。</div>
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"6px"}}>
-              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>⚠️ 當日人數少於 4 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 4 人以上可繼續累積。</div>
+              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>⚠️ 當日人數少於 3 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 3 人以上可繼續累積。</div>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🙅 <strong style={{color:"var(--t2)"}}>今日不參加</strong>（不管是主動標記，還是完全沒動作）時，連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>。但若連續 14 天未參加，連勝才會歸零。</div>
             </div>
@@ -1789,7 +1789,7 @@ function AdminPanel({ open, rests, weekly, pts, absent, sess, onClose, onAddRest
     try {
       const winner = testPeople[Math.min(testWinnerIdx, testPeople.length-1)];
       const streakNum = parseInt(testStreak) || 0;
-      const skipStreak = testPeople.length < 4;
+      const skipStreak = testPeople.length < 3;
       const streak = (soloWin || skipStreak) ? 0 : streakNum;
       const treatAmount = (!soloWin && !skipStreak && streakNum >= 3) ? streakNum * 10 : 0;
       const preservedStreak = (soloWin || skipStreak) ? streakNum : 0;
@@ -2515,8 +2515,8 @@ function StreakWarning({ weekly }) {
     </div>
   );
   const today = todayStr();
-  // 不限今天有沒有加入、今天總人數有沒有到 4 人，只要歷史上出現過就一起檢查（跟「最慘未中紀錄」用同一種全公司名單邏輯）
-  // computeStreak 不帶第四個參數（todayPtsCount）就會用預設值 99，不會被「今天人數 <4」的內部門檻擋掉
+  // 不限今天有沒有加入、今天總人數有沒有到 3 人，只要歷史上出現過就一起檢查（跟「最慘未中紀錄」用同一種全公司名單邏輯）
+  // computeStreak 不帶第四個參數（todayPtsCount）就會用預設值 99，不會被「今天人數 <3」的內部門檻擋掉
   const allNames = new Set();
   Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
   const warnings = [...allNames]
@@ -3818,7 +3818,7 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
     const timeStr = d ? `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` : "";
     if (item._src === "win" || item.type === "win" || item.type === "solo_win") {
       const isSolo = item.type === "solo_win";
-      const streakTxt = item.streak >= 2 ? ` · ${item.streak} 連勝` : item.streak === 0 ? " · 人數不足4人，不計連勝" : "";
+      const streakTxt = item.streak >= 2 ? ` · ${item.streak} 連勝` : item.streak === 0 ? " · 人數不足3人，不計連勝" : "";
       return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",marginBottom:"4px"}}>
           <span style={{fontSize:"16px"}}>{isSolo ? "🏆" : "🎯"}</span>
@@ -5068,7 +5068,7 @@ function App() {
       })();
       return;
     }
-    const skipStreak = pts.length < 4;
+    const skipStreak = pts.length < 3;
     const streak = skipStreak ? 0 : computeStreak(weekly, result.winner.name, today, pts.length);
     // 人數不足時，往前算保留中的連勝數（供通知顯示用）
     let preservedStreak = 0;
