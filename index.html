@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-06 17:49";
+  const BUILD_TIME = "2026-10-06 17:53";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -4966,7 +4966,7 @@ function App() {
           if (tx?.committed) {
             // 只有真的搶到 session 的那個人需要清掉前一天殘留的名單、去藏卡
             await fSet("participants", null); await fSet("absent", null);
-            await ensureDailyCards(today, 99);
+            await ensureDailyCards(today, isDoubleDay(today) ? Math.ceil(autoSession.numMax / 2) : autoSession.numMax);
           }
           [s, ptsObj, absentObj] = await Promise.all([fGet("session"), fGet("participants"), fGet("absent")]);
         }
