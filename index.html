@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 13, rules: 10, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 13, rules: 11, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -550,7 +550,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-09-30 18:22";
+  const BUILD_TIME = "2026-10-06 17:49";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -749,7 +749,18 @@ const TW_EXTRA_HOLIDAYS = new Set([
 ]);
 function isTWHoliday(y, mon, day) {
   const mmdd = `${String(mon).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-  return TW_FIXED_HOLIDAYS.has(mmdd) || TW_EXTRA_HOLIDAYS.has(`${y}-${mmdd}`);
+  if (TW_FIXED_HOLIDAYS.has(mmdd) || TW_EXTRA_HOLIDAYS.has(`${y}-${mmdd}`)) return true;
+  // 固定國定假日遇週六 → 前一天補假；遇週日 → 後一天補假
+  const isFixed = dt => TW_FIXED_HOLIDAYS.has(`${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`);
+  const next = new Date(y, mon - 1, day + 1), prev = new Date(y, mon - 1, day - 1);
+  return (isFixed(next) && next.getDay() === 6) || (isFixed(prev) && prev.getDay() === 0);
+}
+// Lucky Day：月份 = 日期那天；遇週末/國定假日改成同月內往前最近的上班日，往前找不到（如 1 月）才往後找
+function getLuckyDay(y, mon) {
+  const isWork = d => { const w = new Date(y, mon - 1, d).getDay(); return w !== 0 && w !== 6 && !isTWHoliday(y, mon, d); };
+  for (let d = mon; d >= 1; d--) if (isWork(d)) return d;
+  for (let d = mon + 1; d <= 28; d++) if (isWork(d)) return d;
+  return mon;
 }
 function isLastWorkingDayOfMonth() {
   if (TEST_MODE && new URLSearchParams(location.search).has("testsale")) return true;
@@ -763,7 +774,7 @@ function isLastWorkingDayOfMonth() {
   return day === last;
 }
 function isDeadlinePassed(dl) { const now = new Date(), [h,m] = dl.split(":").map(Number); return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m); }
-function isDoubleDay(dateStr) { if (!dateStr && TEST_MODE && new URLSearchParams(location.search).has("specialday")) return true; const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return (d.getMonth()+1) === d.getDate(); }
+function isDoubleDay(dateStr) { if (!dateStr && TEST_MODE && new URLSearchParams(location.search).has("specialday")) return true; const d = dateStr ? new Date(dateStr + "T00:00:00") : new Date(); return d.getDate() === getLuckyDay(d.getFullYear(), d.getMonth() + 1); }
 function getWeeklyBonusDay() {
   const d = new Date();
   const thu = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + 4 - (d.getDay() || 7)));
@@ -1333,8 +1344,9 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
           {/* ── 特殊日子 ── */}
           <div style={{fontWeight:"700",fontSize:"12px",color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.08em",borderBottom:"1px solid var(--b1)",paddingBottom:"6px",marginTop:"4px"}}>特殊日子</div>
           <div>
-            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎰 Lucky Day</div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎰 Lucky Day{newSections.includes("luckyday") && <NewDot />}</div>
             <div>月份 = 日期當天（1/1、2/2 … 12/12），號碼池自動<strong style={{color:"var(--t1)"}}>減半</strong>，中獎機率加倍！當天開獎結果不計入歷史號碼分佈統計。</div>
+            <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>📅 若當天遇到週末或國定假日，會改到<strong style={{color:"var(--t2)"}}>同月內往前最近的上班日</strong>，確保每個月都玩得到；往前找不到（例如 1 月）才往後找該月第一個上班日。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🛒 發薪日優惠{newSections.includes("payday") && <NewDot />}</div>
@@ -2503,7 +2515,7 @@ function SpecialDayBanner() {
   const m = d.getMonth() + 1, day = d.getDate();
   return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"#5B21B6"}}>
-      🎰 <strong>特殊日 {m}/{day}</strong>｜今日號碼池減半，中獎機率加倍！
+      🎰 <strong>特殊日 {m}/{day}</strong>{day !== m && `（${m}/${m} 遇假日調整）`}｜今日號碼池減半，中獎機率加倍！
     </div>
   );
 }
