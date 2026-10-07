@@ -125,7 +125,7 @@ function isDeadlinePassed(deadline) {
 
 function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
-  if (todayPtsCount < 4) return 0; // 人數不足，今日不計入連勝
+  if (todayPtsCount < 3) return 0; // 人數不足，今日不計入連勝
   const pastDates = Object.keys(weekly || {}).filter(d => d < today).sort().reverse();
   let streak = 1;
   for (const date of pastDates) {
@@ -222,7 +222,7 @@ async function main() {
 
   // 7. 計算連勝並寫入 weekly
   const weeklyAll = await fbGet("weekly");
-  const skipStreak = pts.length < 4;
+  const skipStreak = pts.length < 3;
   const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weeklyAll, result.winner.name, today, pts.length);
   // 人數不足或獨贏時，往前算保留中的連勝數（供通知顯示用）
   let preservedStreak = 0;
