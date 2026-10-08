@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 16:18";
+  const BUILD_TIME = "2026-10-08 16:21";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2555,6 +2555,9 @@ function AuctionPanel({ boundName, userPoints }) {
     const r = fRef(`auction/bids/${curId}`); const h = s => setBids(s.val() || {}); r.on("value", h); return () => r.off("value", h);
   }, [curId]);
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
+  // 出價欄預設填好「最高價 + 加價幅度」，被超標時自動跳到新的最低出價
+  const needNow = cur ? (cur.top ? cur.top.amount + cur.step : cur.minBid) : 0;
+  useEffect(() => { if (needNow) setAmount(prev => (!prev || parseInt(prev) < needNow) ? String(needNow) : prev); }, [needNow]);
 
   if (!cur) return null;
   const now = Date.now() + offset;
@@ -2592,7 +2595,6 @@ function AuctionPanel({ boundName, userPoints }) {
       if (TEST_MODE) return flash("測試模式不會真的出價");
       if (!tx?.committed || !accepted) return flash("出價失敗：已有更高出價或已截標，請看最新狀態");
       await fRef(`auction/bids/${cur.id}/${myKey}`).set({ name: boundName, amount: amt, ts: Date.now() + offset });
-      setAmount("");
       flash(`出價成功：${amt} 點`);
     } catch (e) {
       flash("連線錯誤，請重試");
@@ -2635,7 +2637,7 @@ function AuctionPanel({ boundName, userPoints }) {
       )}
       {open && boundName && (
         <div style={{display:"flex",gap:"8px",alignItems:"center",marginTop:"10px"}}>
-          <input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} placeholder={`至少 ${minNeeded}`} style={{marginBottom:0,flex:1,minWidth:0}} />
+          <input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} min={minNeeded} step={cur.step} placeholder={`至少 ${minNeeded}`} style={{marginBottom:0,width:"110px",flex:"0 0 auto"}} />
           <button onClick={placeBid} disabled={busy || iAmTop} style={{width:"auto",padding:"0 18px",marginBottom:0,flexShrink:0}}>{iAmTop ? "你是最高標" : busy ? "送出中…" : "出價"}</button>
         </div>
       )}
