@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 16:34";
+  const BUILD_TIME = "2026-10-08 18:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2561,6 +2561,9 @@ function AuctionPanel({ boundName, userPoints }) {
 
   if (!cur) return null;
   const now = Date.now() + offset;
+  // 只在開拍當天（00:00 起）才顯示，其他日子整個面板隱藏
+  const openDayStart = new Date(cur.openAt); openDayStart.setHours(0, 0, 0, 0);
+  if (now < openDayStart.getTime()) return null;
   const upcoming = now < cur.openAt, open = now >= cur.openAt && now < cur.closeAt;
   const myKey = boundName ? sanitizeKey(boundName) : null;
   const list = Object.values(bids).sort((a, b) => b.amount - a.amount || a.ts - b.ts);
