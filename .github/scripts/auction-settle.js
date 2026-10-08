@@ -92,39 +92,54 @@ async function main() {
     cur = fresh;
   }
 
-  const { value: claimed, etag } = await fbGetWithEtag(`auction/settled/${cur.id}`);
-  if (claimed !== null) { console.log(`Auction ${cur.id} already settled/processing (${claimed.status}), skip`); return; }
-  if (!(await fbSetIfMatch(`auction/settled/${cur.id}`, { status: "processing", ts: Date.now() }, etag))) { console.log("Lost race to settle, skip"); return; }
-
-  // 出價名單（每人最後一筆）；top 為準，避免出價者在寫入 bids 前就斷線造成金額落後
-  const bids = (await fbGet(`auction/bids/${cur.id}`)) || {};
-  const byName = new Map();
-  for (const b of Object.values(bids)) if (b && b.name && b.amount >= cur.minBid) byName.set(b.name, b);
-  if (cur.top && (!byName.has(cur.top.name) || byName.get(cur.top.name).amount < cur.top.amount)) byName.set(cur.top.name, { name: cur.top.name, amount: cur.top.amount, ts: cur.top.ts });
-  const list = [...byName.values()].sort((a, b) => b.amount - a.amount || a.ts - b.ts);
-
-  let winner = null;
-  const unpaid = [];
-  for (const b of list) {
-    if (await deductPoints(sanitizeKey(b.name), b.amount)) { winner = b; break; }
-    unpaid.push(b);
+  // 搶占結算權；若上一次結算中途失敗（processing 超過 3 分鐘沒動靜）就接手續做，每個步驟都有進度標記避免重複扣點/發卡
+  const claimPath = `auction/settled/${cur.id}`;
+  const { value: claimed, etag } = await fbGetWithEtag(claimPath);
+  let state = { status: "processing", ts: Date.now() };
+  if (claimed !== null) {
+    if (claimed.status === "done" || Date.now() - claimed.ts < 3 * 60000) { console.log(`Auction ${cur.id} already settled/processing (${claimed.status}), skip`); return; }
+    console.log("Resuming stale settlement:", claimed);
+    state = { ...claimed, ts: Date.now() };
   }
+  if (!(await fbSetIfMatch(claimPath, state, etag))) { console.log("Lost race to settle, skip"); return; }
+  const save = async patch => { state = { ...state, ...patch, ts: Date.now() }; await fbSet(claimPath, state); };
 
   const today = todayStr();
-  const now = Date.now();
-  if (winner) {
-    const key = sanitizeKey(winner.name);
-    await fbPost(`userCards/${key}`, { type: cur.cardType, expiresAt: cur.cardExpiresAt, obtainedAt: today, fromShop: true, fromAuction: true });
-    await fbPost(`pointsLog/${key}`, { type: "auction", delta: -winner.amount, note: `地雷卡拍賣 ${cur.id}`, ts: now });
-    await fbPost(`userNotifications/${key}`, { type: "auction_won", price: winner.amount, expiresAt: cur.cardExpiresAt, date: today, ts: now });
+  if (!state.paid) {
+    // 出價名單（每人最後一筆）；top 為準，避免出價者在寫入 bids 前就斷線造成金額落後
+    const bids = (await fbGet(`auction/bids/${cur.id}`)) || {};
+    const byName = new Map();
+    for (const b of Object.values(bids)) if (b && b.name && b.amount >= cur.minBid) byName.set(b.name, b);
+    if (cur.top && (!byName.has(cur.top.name) || byName.get(cur.top.name).amount < cur.top.amount)) byName.set(cur.top.name, { name: cur.top.name, amount: cur.top.amount, ts: cur.top.ts });
+    const list = [...byName.values()].sort((a, b) => b.amount - a.amount || a.ts - b.ts);
+    let winner = null;
+    const unpaid = [];
+    for (const b of list) {
+      if (await deductPoints(sanitizeKey(b.name), b.amount)) { winner = b; break; }
+      unpaid.push({ name: b.name, amount: b.amount });
+    }
+    await save({ paid: true, winner: winner ? winner.name : null, price: winner ? winner.amount : null, unpaid, bidders: list.length });
   }
-  for (const u of unpaid) await fbPost(`userNotifications/${sanitizeKey(u.name)}`, { type: "auction_unpaid", price: u.amount, date: today, ts: now });
 
-  const result = { id: cur.id, winner: winner ? winner.name : null, price: winner ? winner.amount : null, bidders: list.length, ts: now };
+  const now = Date.now();
+  if (state.winner && !state.minted) {
+    const key = sanitizeKey(state.winner);
+    await fbPost(`userCards/${key}`, { type: cur.cardType, expiresAt: cur.cardExpiresAt, obtainedAt: today, fromShop: true, fromAuction: true });
+    await fbPost(`pointsLog/${key}`, { type: "auction", delta: -state.price, note: `地雷卡拍賣 ${cur.id}`, ts: now });
+    await fbPost(`userNotifications/${key}`, { type: "auction_won", price: state.price, expiresAt: cur.cardExpiresAt, date: today, ts: now });
+    await save({ minted: true });
+  }
+  if (!state.notified) {
+    for (const u of state.unpaid || []) await fbPost(`userNotifications/${sanitizeKey(u.name)}`, { type: "auction_unpaid", price: u.amount, date: today, ts: now });
+    await save({ notified: true });
+  }
+
+  const result = { id: cur.id, winner: state.winner || null, price: state.price || null, bidders: state.bidders || 0, ts: now };
   await fbSet("auction/lastResult", result);
+  const latest = await fbGet("auction/current");
   const next = buildAuction(cur.closeAt);
-  await fbSet("auction/current", next);
-  await fbSet(`auction/settled/${cur.id}`, { status: "done", ...result });
+  if (latest && latest.id === cur.id) await fbSet("auction/current", next);
+  await save({ status: "done" });
   console.log("Settled:", result, "Next:", next.id, new Date(next.openAt).toISOString());
 
   if (WEBHOOK_URL) {

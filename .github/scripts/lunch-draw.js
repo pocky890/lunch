@@ -246,10 +246,10 @@ async function main() {
     }
   }
   const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) * (isBirthdaySoloWin ? 2 : 1) : 50;
-  // 地雷卡結算（與前端 resolveMines 一致）：踩中 = 持有該號碼（主號碼、加號卡第二號、生日卡號碼），放雷者免疫
+  // 地雷卡結算（與前端 resolveMines 一致）：踩中 = 主號碼等於地雷號碼，放雷者免疫
   const mines = pts.filter(p => p.cardUsed === "mine_card" && p.mineNumber).map(p => ({
     by: p.name, number: p.mineNumber,
-    hit: pts.filter(q => q.name !== p.name && [q.number, ...(q.birthdayNumbers || []), ...(q.cardUsed === "extra_number" && q.number2 ? [q.number2] : [])].includes(p.mineNumber)).map(q => q.name),
+    hit: pts.filter(q => q.name !== p.name && q.number === p.mineNumber).map(q => q.name),
   }));
   const absentEarly = Object.values(await fbGet("absent") || {}).map(v => typeof v === "object" ? v.name : v);
   const rec = {

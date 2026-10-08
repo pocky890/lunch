@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 15:27";
+  const BUILD_TIME = "2026-10-08 15:32";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1257,13 +1257,13 @@ function getPreviousStreak(weekly, name, today) {
   return count;
 }
 
-// 地雷卡結算：踩中 = 持有該號碼（主號碼、加號卡第二號、生日卡號碼；寵物自動號碼不算），放雷者本人免疫。被核彈炸出局的人仍算踩中
+// 地雷卡結算：踩中 = 主號碼等於地雷號碼（加號卡第二號、生日卡額外號碼、寵物自動號碼都不算），放雷者本人免疫。被核彈炸出局的人仍算踩中
 const MINE_TREAT_CAP = 50;
 function resolveMines(pts) {
   return (pts || []).filter(p => p.cardUsed === "mine_card" && p.mineNumber).map(p => ({
     by: p.name,
     number: p.mineNumber,
-    hit: pts.filter(q => q.name !== p.name && [q.number, ...(q.birthdayNumbers || []), ...(q.cardUsed === "extra_number" && q.number2 ? [q.number2] : [])].includes(p.mineNumber)).map(q => q.name),
+    hit: pts.filter(q => q.name !== p.name && q.number === p.mineNumber).map(q => q.name),
   }));
 }
 
@@ -1388,7 +1388,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝，對獨贏無效）或當天有人使用口渴卡時，自動啟動，免除你該次的出資份額。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
     { type:"nuke_card",         desc:"加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
-    { type:"mine_card",         desc:"加入時另外選一個號碼埋地雷（獨立於你的主號碼，你自己踩到不算）。開獎時，所有選中該號碼的人（主號碼、加號卡、生日卡號碼都算，寵物自動號碼不算）每人請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯；被核彈炸出局的人一樣要請。沒有人踩中，卡片原樣退還給你（期限不變），踩中則卡片用完。地雷只顯示「今天埋了幾顆」，位置到開獎才揭曉。公開卡公開號碼後，地雷不能放在已被選走的號碼上。全遊戲只有 2 張：1 張在每日抽卡池（有效 7 天），另 1 張用點數在首頁拍賣（每週五 09:00～12:00 競標，得標者可用到下次拍賣日）。" },
+    { type:"mine_card",         desc:"加入時另外選一個號碼埋地雷（獨立於你的主號碼，你自己踩到不算）。開獎時，所有「主號碼」選中該號碼的人（加號卡、生日卡的額外號碼和寵物自動號碼都不算）每人請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯；被核彈炸出局的人一樣要請。沒有人踩中，卡片原樣退還給你（期限不變），踩中則卡片用完。地雷只顯示「今天埋了幾顆」，位置到開獎才揭曉。公開卡公開號碼後，地雷不能放在已被選走的號碼上。全遊戲只有 2 張：1 張在每日抽卡池（有效 7 天），另 1 張用點數在首頁拍賣（每週五 09:00～12:00 競標，得標者可用到下次拍賣日）。" },
     { type:"birthday_card",     desc:"生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）。當月底前需使用完畢，逾期作廢。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -5515,7 +5515,7 @@ function App() {
         mineNum = parseInt(mineTarget);
         if (!mineNum || mineNum < 1 || mineNum > effectiveNumMax) return showToast(`地雷號碼請輸入 1 到 ${effectiveNumMax} 之間的整數`);
         // 號碼已被公開卡公開時，地雷不能放在已有人選的號碼上（否則等於指定受害者）
-        if (numbersRevealed && takenNums.some(t => t.num === mineNum && t.name !== name)) return showToast("號碼已公開，地雷不能放在已有人選的號碼上");
+        if (numbersRevealed && pts.some(q => q.number === mineNum && q.name !== name)) return showToast("號碼已公開，地雷不能放在已有人選的號碼上");
       }
 
       const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
