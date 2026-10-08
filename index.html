@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 18:13";
+  const BUILD_TIME = "2026-10-08 18:14";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2565,6 +2565,12 @@ function AuctionPanel({ boundName, userPoints }) {
   const openDayStart = new Date(cur.openAt); openDayStart.setHours(0, 0, 0, 0);
   if (now < openDayStart.getTime()) {
     if (!last) return null;
+    // 上一場結果只留到結算當天，隔天 00:00 起隱藏
+    if (last.ts) {
+      const hideAt = new Date(last.ts); hideAt.setHours(0, 0, 0, 0);
+      hideAt.setDate(hideAt.getDate() + 1);
+      if (now >= hideAt.getTime()) return null;
+    }
     return (
       <div style={{padding:"8px 14px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",fontSize:"13px",color:"var(--t2)"}}>
         💣 <strong style={{color:"var(--t1)"}}>地雷卡拍賣</strong>　上一場：{last.winner ? <><strong style={{color:"var(--t1)"}}>{last.winner}</strong> 以 {last.price} 點得標</> : "流標（沒有人出價或點數不足）"}　・　下一場 {fmtAuctionTime(cur.openAt)} 開標
