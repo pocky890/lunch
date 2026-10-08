@@ -457,7 +457,7 @@
     streak_protect:    { name:"連勝保護卡", emoji:"🛡️", desc:"連勝中斷時，強制保留連勝紀錄" },
     reveal_numbers:    { name:"公開卡",     emoji:"👁️", desc:"使用後立即公開所有人已選的號碼" },
     steal_card:        { name:"盜牌卡",     emoji:"🎭", desc:"隨機偷取一名參加者的卡牌"       },
-    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客或口渴卡分攤時，自動免除你的份額"      },
+    cheapskate_card:   { name:"免付卡",     emoji:"🤑", desc:"連勝請客、口渴卡分攤或踩到地雷時，自動免除你的份額"      },
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者合請你一杯，上限 100 元。被核彈炸出局則效果取消。" },
     nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"另選一個號碼為核心（不影響你的主號碼），九宮格內其他人出局" },
     birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日當月 1 號自動發放，當月底前需使用完畢" },
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 15:59";
+  const BUILD_TIME = "2026-10-08 16:18";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1385,10 +1385,10 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"streak_protect",    desc:"被動卡，無需手動操作。開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡，將今天標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持。" },
     { type:"reveal_numbers",    desc:"加入時宣告使用。使用後立即公開所有人已選的號碼，截止前所有人都能看見，可據此調整策略。" },
     { type:"steal_card",        desc:"加入時宣告使用。隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌。若無人持有卡牌則無效，盜牌卡保留。生日卡不會被偷。" },
-    { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝，對獨贏無效）或當天有人使用口渴卡時，自動啟動，免除你該次的出資份額。" },
+    { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝，對獨贏無效）、當天有人使用口渴卡，或你踩到別人的地雷時，自動啟動，免除你該次的出資份額（擋地雷時一張卡擋一顆，同一天只會用掉 1 張）。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
     { type:"nuke_card",         desc:"加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
-    { type:"mine_card",         desc:"加入時另外選一個號碼埋地雷（獨立於你的主號碼，你自己踩到不算）。開獎時，「主號碼」等於地雷號碼的人（加號卡、生日卡的額外號碼和寵物自動號碼都不算）要各請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯；被核彈炸出局的人一樣要請。沒有人踩中，卡片原樣退還給你（效期不變），踩中則卡片用完。地雷位置到開獎才揭曉，畫面只顯示今天埋了幾顆。公開卡公開號碼後，新放的地雷不能放在已被選走的號碼上。全遊戲只有 2 張：1 張在每日抽卡池（效期 7 日），另 1 張在首頁拍賣（每週五 09:00～12:00 競標，底價 100 點；得標者可用到下一場拍賣日，約 7 日）。" },
+    { type:"mine_card",         desc:"加入時另外選一個號碼埋地雷（獨立於你的主號碼，你自己踩到不算）。開獎時，「主號碼」等於地雷號碼的人（加號卡、生日卡的額外號碼和寵物自動號碼都不算）要各請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯；被核彈炸出局的人一樣要請；踩中的人若有免付卡會自動擋下，全部被擋視同沒人踩中。沒有人踩中，卡片原樣退還給你（效期不變），踩中則卡片用完。地雷位置到開獎才揭曉，畫面只顯示今天埋了幾顆。公開卡公開號碼後，新放的地雷不能放在已被選走的號碼上。全遊戲只有 2 張：1 張在每日抽卡池（效期 7 日），另 1 張在首頁拍賣（每週五 09:00～12:00 競標，底價 100 點；得標者可用到下一場拍賣日，約 7 日）。" },
     { type:"birthday_card",     desc:"生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）。當月底前需使用完畢，逾期作廢。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -4043,7 +4043,9 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
     if (item.type === "mine_planter" || item.type === "mine_stepped" || item.type === "auction_won" || item.type === "auction_unpaid") {
       const hit = item.type === "mine_planter" && item.victims?.length > 0;
       const text = item.type === "mine_planter"
-        ? (hit ? `你的地雷（#${item.number}）被 ${item.victims.join("、")} 踩中，每人請你一杯（上限 ${MINE_TREAT_CAP} 元）` : `你的地雷（#${item.number}）沒有人踩中，地雷卡已退還`)
+        ? (hit ? `你的地雷（#${item.number}）被 ${item.victims.join("、")} 踩中，每人請你一杯（上限 ${MINE_TREAT_CAP} 元）${item.shielded?.length ? `（另有 ${item.shielded.join("、")} 以免付卡擋下）` : ""}`
+          : item.shielded?.length ? `你的地雷（#${item.number}）被 ${item.shielded.join("、")} 踩中，但對方免付卡生效，地雷卡已退還`
+          : `你的地雷（#${item.number}）沒有人踩中，地雷卡已退還`)
         : item.type === "mine_stepped" ? `你踩到 ${item.by} 的地雷（#${item.number}），請 ${item.by} 喝一杯（上限 ${MINE_TREAT_CAP} 元）`
         : item.type === "auction_won" ? `你以 ${item.price} 點標下地雷卡，有效期限到 ${item.expiresAt}`
         : `你的出價 ${item.price} 點得標，但點數不足，名額已順延`;
@@ -5282,8 +5284,31 @@ function App() {
             }
           }
         }
-        for (const m of mines) {
-          logNotification(sanitizeKey(m.by), "mine_planter", { number: m.number, victims: m.hit, date: today });
+        // 地雷踩中者若持有免付卡就自動發動擋掉（一張卡擋一顆、同一人同一天只擋一次）；被擋掉的人從 hit 移到 shielded，
+        // 全部被擋視同沒人踩中（reconcilePendingCardReturns 會把地雷卡退還放雷者），所以要在它之前把結果寫回 weekly
+        const shieldedKeys = new Set();
+        let finalMines = mines;
+        if (mines.some(m => m.hit.length > 0)) {
+          finalMines = [];
+          for (const m of mines) {
+            const hit = [], shielded = [];
+            for (const v of m.hit) {
+              const vKey = sanitizeKey(v);
+              const cardsObj = shieldedKeys.has(vKey) ? {} : (await fGet(`userCards/${vKey}`) || {});
+              const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
+              if (!entry) { hit.push(v); continue; }
+              shieldedKeys.add(vKey);
+              shielded.push(v);
+              await fRef(`cheapskateUsers/${today}/${vKey}`).set({ name: v, reason: "mine", from: m.by });
+              await returnCardToPool(v, entry[0]);
+              logNotification(vKey, "card_used", { cardType: "cheapskate_card", date: today });
+            }
+            finalMines.push({ ...m, hit, ...(shielded.length > 0 && { shielded }) });
+          }
+          if (shieldedKeys.size > 0) await fRef(`weekly/${today}/mines`).set(finalMines);
+        }
+        for (const m of finalMines) {
+          logNotification(sanitizeKey(m.by), "mine_planter", { number: m.number, victims: m.hit, ...(m.shielded ? { shielded: m.shielded } : {}), date: today });
           for (const v of m.hit) logNotification(sanitizeKey(v), "mine_stepped", { by: m.by, number: m.number, date: today });
         }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
@@ -5296,6 +5321,7 @@ function App() {
           for (const p of pts) {
             if (winnerNameSet.has(p.name)) continue;
             const pKey = sanitizeKey(p.name);
+            if (shieldedKeys.has(pKey)) continue;
             const cardsObj = await fGet(`userCards/${pKey}`) || {};
             const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
             if (!entry) continue;
@@ -5311,6 +5337,7 @@ function App() {
           for (const p of pts) {
             if (thirstyIds.has(p.id)) continue;
             const pKey = sanitizeKey(p.name);
+            if (shieldedKeys.has(pKey)) continue;
             const cardsObj = await fGet(`userCards/${pKey}`) || {};
             const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
             if (!entry) continue;
@@ -5428,7 +5455,10 @@ function App() {
             followRestUser:  result.followRestUser || "",
             cardsUsed:       pts.filter(p=>p.cardUsed).map(p=>`${p.name} ${CARD_TYPES[p.cardUsed]?.emoji}${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
             cardsAwarded:    won.length > 0 ? `今日共發出 ${won.length} 張卡牌` : "",
-            mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），${m.hit.join("、")} ${m.hit.length > 1 ? "各" : ""}要請 ${m.by} 一杯飲料（上限 ${MINE_TREAT_CAP} 元）`).join("\n"),
+            mineInfo:        finalMines.flatMap(m => [
+              ...(m.hit.length > 0 ? [`💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），${m.hit.join("、")} ${m.hit.length > 1 ? "各" : ""}要請 ${m.by} 一杯飲料（上限 ${MINE_TREAT_CAP} 元）`] : []),
+              ...(m.shielded?.length > 0 ? [`🤑 ${m.shielded.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），但免付卡生效，免請`] : []),
+            ]).join("\n"),
           })
         }).catch(() => {});
       }
@@ -6431,6 +6461,8 @@ function App() {
                     const name = typeof c === "string" ? c : c.name;
                     const detail = (typeof c === "object" && c.reason === "thirsty_card")
                       ? `免除幫 ${c.from} 分攤的口渴卡費用`
+                      : (typeof c === "object" && c.reason === "mine")
+                      ? `擋下 ${c.from} 的地雷`
                       : "免除本次連勝請客費";
                     return <div key={i}>🤑 <strong>{name}</strong> 使用了免付卡，{detail}</div>;
                   })}
@@ -6473,9 +6505,10 @@ function App() {
                   👁️ <strong>{p.name}</strong> 使用了公開卡，截止前所有人的號碼都已公開
                 </div>
               ))}
-              {resolveMines(pts).map((m,i) => m.hit.length > 0 ? (
+              {(weekly[todayStr()]?.mines || resolveMines(pts)).map(m => ({...m, hit: m.hit || [], shielded: m.shielded || []})).map((m,i) => m.hit.length > 0 || m.shielded.length > 0 ? (
                 <div key={i} style={{padding:"12px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
-                  💣 <strong>{m.hit.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），<strong>{m.hit.join("、")}</strong> {m.hit.length > 1 ? "各" : ""}要請 <strong>{m.by}</strong> 一杯飲料（上限 {MINE_TREAT_CAP} 元）{m.hit.length > 1 ? `，共 ${m.hit.length} 杯` : ""}
+                  {m.shielded.length > 0 && <div>🤑 <strong>{m.shielded.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），但免付卡生效，免請{m.hit.length === 0 ? "，地雷卡已退還" : ""}</div>}
+                  {m.hit.length > 0 && <div>💣 <strong>{m.hit.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），<strong>{m.hit.join("、")}</strong> {m.hit.length > 1 ? "各" : ""}要請 <strong>{m.by}</strong> 一杯飲料（上限 {MINE_TREAT_CAP} 元）{m.hit.length > 1 ? `，共 ${m.hit.length} 杯` : ""}</div>}
                 </div>
               ) : (
                 <div key={i} style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
