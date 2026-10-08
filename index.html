@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 15:32";
+  const BUILD_TIME = "2026-10-08 15:49";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5426,7 +5426,7 @@ function App() {
             followRestUser:  result.followRestUser || "",
             cardsUsed:       pts.filter(p=>p.cardUsed).map(p=>`${p.name} ${CARD_TYPES[p.cardUsed]?.emoji}${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
             cardsAwarded:    won.length > 0 ? `今日共發出 ${won.length} 張卡牌` : "",
-            mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），每人請 ${m.by} 一杯（上限 ${MINE_TREAT_CAP} 元）`).join("\n"),
+            mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），${m.hit.join("、")}${m.hit.length > 1 ? "各" : ""}要請${m.by} 一杯飲料（上限 ${MINE_TREAT_CAP} 元）`).join("\n"),
           })
         }).catch(() => {});
       }
@@ -6473,7 +6473,7 @@ function App() {
               ))}
               {resolveMines(pts).map((m,i) => m.hit.length > 0 ? (
                 <div key={i} style={{padding:"12px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
-                  💣 <strong>{m.hit.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），每人請 {m.by} 一杯飲料（上限 {MINE_TREAT_CAP} 元）{m.hit.length > 1 ? `，共 ${m.hit.length} 杯` : ""}
+                  💣 <strong>{m.hit.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），<strong>{m.hit.join("、")}</strong>{m.hit.length > 1 ? "各" : ""}要請 <strong>{m.by}</strong> 一杯飲料（上限 {MINE_TREAT_CAP} 元）{m.hit.length > 1 ? `，共 ${m.hit.length} 杯` : ""}
                 </div>
               ) : (
                 <div key={i} style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
