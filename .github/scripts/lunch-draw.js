@@ -246,9 +246,18 @@ async function main() {
     }
   }
   const soloTreatPerPerson = result.soloWin ? Math.max(50, preservedStreak >= 3 ? preservedStreak * 10 : 0) * (isBirthdaySoloWin ? 2 : 1) : 50;
+  // 地雷卡結算（與前端 resolveMines 一致）：踩中 = 持有該號碼（主號碼、加號卡第二號、生日卡號碼），放雷者免疫
+  const mines = pts.filter(p => p.cardUsed === "mine_card" && p.mineNumber).map(p => ({
+    by: p.name, number: p.mineNumber,
+    hit: pts.filter(q => q.name !== p.name && [q.number, ...(q.birthdayNumbers || []), ...(q.cardUsed === "extra_number" && q.number2 ? [q.number2] : [])].includes(p.mineNumber)).map(q => q.name),
+  }));
+  const absentEarly = Object.values(await fbGet("absent") || {}).map(v => typeof v === "object" ? v.name : v);
   const rec = {
     winner: result.winner.name, rest: result.winner.rest,
     soloWin: result.soloWin, drawnNumber, streak,
+    participantNames: pts.map(p => p.name),
+    ...(absentEarly.length > 0 && { absentNames: absentEarly }),
+    ...(mines.length > 0 && { mines }),
     ...(skipStreak && { skipStreak: true }),
     ...(result.followRestUser && { followRestUser: result.followRestUser }),
     ...(isDoubleDay(today) && { specialDay: true }),
@@ -296,6 +305,7 @@ async function main() {
       cardsUsed:       pts.filter(p => p.cardUsed).map(p => `${p.name} ${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
       thirstyUsers:    pts.filter(p=>p.cardUsed==="thirsty_card").map(p=>p.name).join(", "),
       cardsAwarded:    awardedCards.map(w => `${w.name} ${CARD_TYPES[w.type]?.name}`).join(", "),
+      mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），每人請 ${m.by} 一杯（上限 50 元）`).join("\n"),
     }),
   });
   console.log(`Webhook sent: ${res.status}`);

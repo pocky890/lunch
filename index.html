@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 13, rules: 11, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"] };
+  const WHATSNEW_VERSION       = { cards: 14, rules: 11, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -461,6 +461,7 @@
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者合請你一杯，上限 100 元。被核彈炸出局則效果取消。" },
     nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"另選一個號碼為核心（不影響你的主號碼），九宮格內其他人出局" },
     birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日當月 1 號自動發放，當月底前需使用完畢" },
+    mine_card:         { name:"地雷卡",   emoji:"💣", desc:"另選一個號碼埋地雷，開獎時選中該號碼的人每人請你一杯飲料（上限 50 元）。沒人踩中則卡片退還" },
   };
   const CARD_DEFAULTS = {
     follow_restaurant: { total:3, expireDays:30 },
@@ -471,6 +472,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
+    mine_card:         { total:1, expireDays:7 },
   };
   // 使用當下就已經生效（公開號碼／偷牌已發生），取消參加也不退還本人；其餘卡種效果要等開獎才生效，
   // 若當天最終沒有真的留在參加名單裡（效果從未套用），開獎時直接退還卡牌到本人手牌
@@ -550,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-06 17:53";
+  const BUILD_TIME = "2026-10-08 15:27";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1214,12 +1216,14 @@ async function reconcilePendingCardReturns(today) {
       const fromShop = typeof val === "object" && val?.fromShop;
       if (!type) continue;
       const neverTookEffect = name && participantNames && !IMMEDIATE_EFFECT_CARD_TYPES.includes(type) && !participantNames.includes(name);
-      if (neverTookEffect) {
+      // 地雷卡：沒有任何人踩中就退還給放雷者（保留原本的到期日，避免退還後無限延期）
+      const mineUnhit = type === "mine_card" && name && !(weeklyRec?.mines || []).some(m => m.by === name && m.hit?.length > 0);
+      if (neverTookEffect || mineUnhit) {
         const cardCfg = await fGet(`cardConfig/${type}`);
         const expMs = (cardCfg?.expireDays ?? CARD_DEFAULTS[type]?.expireDays ?? 30) * 86400000;
         const exp = new Date(Date.now() + expMs);
-        const expiresAt = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
-        await fRef(`userCards/${sanitizeKey(name)}`).push().set({ type, expiresAt, obtainedAt: today, ...(fromShop ? { fromShop: true } : {}) });
+        const expiresAt = (type === "mine_card" && val?.expiresAt) || `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
+        await fRef(`userCards/${sanitizeKey(name)}`).push().set({ type, expiresAt, obtainedAt: today, ...(fromShop ? { fromShop: true } : {}), ...(val?.fromAuction ? { fromAuction: true } : {}) });
         continue;
       }
       if (!fromShop && CARD_DEFAULTS[type]) returnUpdates[type] = (returnUpdates[type] || 0) + 1;
@@ -1251,6 +1255,16 @@ function getPreviousStreak(weekly, name, today) {
     if (isWinnerOf(rec, name)) { count++; } else { break; }
   }
   return count;
+}
+
+// 地雷卡結算：踩中 = 持有該號碼（主號碼、加號卡第二號、生日卡號碼；寵物自動號碼不算），放雷者本人免疫。被核彈炸出局的人仍算踩中
+const MINE_TREAT_CAP = 50;
+function resolveMines(pts) {
+  return (pts || []).filter(p => p.cardUsed === "mine_card" && p.mineNumber).map(p => ({
+    by: p.name,
+    number: p.mineNumber,
+    hit: pts.filter(q => q.name !== p.name && [q.number, ...(q.birthdayNumbers || []), ...(q.cardUsed === "extra_number" && q.number2 ? [q.number2] : [])].includes(p.mineNumber)).map(q => q.name),
+  }));
 }
 
 function determineResultWithCards(pts, drawnNumber) {
@@ -1374,6 +1388,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"cheapskate_card",   desc:"被動卡，無需手動操作。連勝請客（≥3連勝，對獨贏無效）或當天有人使用口渴卡時，自動啟動，免除你該次的出資份額。" },
     { type:"thirsty_card",      desc:"加入時宣告使用。開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選。若被核彈卡炸出局，效果取消。" },
     { type:"nuke_card",         desc:"加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）。開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）。持有多個號碼的人，只要有一個號碼存活即繼續參賽。核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死。" },
+    { type:"mine_card",         desc:"加入時另外選一個號碼埋地雷（獨立於你的主號碼，你自己踩到不算）。開獎時，所有選中該號碼的人（主號碼、加號卡、生日卡號碼都算，寵物自動號碼不算）每人請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯；被核彈炸出局的人一樣要請。沒有人踩中，卡片原樣退還給你（期限不變），踩中則卡片用完。地雷只顯示「今天埋了幾顆」，位置到開獎才揭曉。公開卡公開號碼後，地雷不能放在已被選走的號碼上。全遊戲只有 2 張：1 張在每日抽卡池（有效 7 天），另 1 張用點數在首頁拍賣（每週五 09:00～12:00 競標，得標者可用到下次拍賣日）。" },
     { type:"birthday_card",     desc:"生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）。當月底前需使用完畢，逾期作廢。加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼。不會被盜牌卡偷走。" },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -2505,6 +2520,130 @@ function TestModeBanner() {
   return (
     <div style={{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",zIndex:9999,background:"#1E293B",color:"#F8FAFC",padding:"8px 20px",borderRadius:"999px",fontSize:"13px",fontWeight:"600",boxShadow:"0 4px 16px rgba(0,0,0,0.3)",pointerEvents:"none",display:"flex",alignItems:"center",gap:"8px"}}>
       🧪 測試模式｜資料不會寫入 DB
+    </div>
+  );
+}
+
+function fmtCountdown(ms) {
+  if (ms <= 0) return "00:00:00";
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const hms = [h, m, sec].map(n => String(n).padStart(2, "0")).join(":");
+  return d > 0 ? `${d} 天 ${hms}` : hms;
+}
+function fmtAuctionTime(ms) {
+  const d = new Date(ms), w = "日一二三四五六"[d.getDay()];
+  return `${d.getMonth()+1}/${d.getDate()}（${w}）${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+// 地雷卡拍賣：一打開就看得到，出價即時同步。結標後由 GitHub Actions（n8n 準時觸發）結算並發卡
+function AuctionPanel({ boundName, userPoints }) {
+  const [notice, setNotice] = useState("");
+  const flash = m => { setNotice(m); setTimeout(() => setNotice(""), 4000); };
+  const [cur, setCur] = useState(undefined);
+  const [bids, setBids] = useState({});
+  const [last, setLast] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [, setTick] = useState(0);
+  const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { const r = db.ref(".info/serverTimeOffset"); const h = s => setOffset(s.val() || 0); r.on("value", h); return () => r.off("value", h); }, []);
+  useEffect(() => { const r = fRef("auction/current"); const h = s => setCur(s.val()); r.on("value", h); return () => r.off("value", h); }, []);
+  useEffect(() => { const r = fRef("auction/lastResult"); const h = s => setLast(s.val()); r.on("value", h); return () => r.off("value", h); }, []);
+  const curId = cur?.id;
+  useEffect(() => {
+    if (!curId) { setBids({}); return; }
+    const r = fRef(`auction/bids/${curId}`); const h = s => setBids(s.val() || {}); r.on("value", h); return () => r.off("value", h);
+  }, [curId]);
+  useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
+
+  if (!cur) return null;
+  const now = Date.now() + offset;
+  const upcoming = now < cur.openAt, open = now >= cur.openAt && now < cur.closeAt;
+  const myKey = boundName ? sanitizeKey(boundName) : null;
+  const list = Object.values(bids).sort((a, b) => b.amount - a.amount || a.ts - b.ts);
+  if (cur.top && !list.some(b => b.name === cur.top.name)) list.unshift({ name: cur.top.name, amount: cur.top.amount, ts: cur.top.ts });
+  const minNeeded = cur.top ? cur.top.amount + cur.step : cur.minBid;
+  const iAmTop = !!cur.top && cur.top.name === boundName;
+  const myBid = list.find(b => b.name === boundName);
+
+  async function placeBid() {
+    const amt = parseInt(amount);
+    if (!boundName) return;
+    if (!amt) return flash("請輸入出價點數");
+    if (amt < minNeeded) return flash(`出價至少 ${minNeeded} 點`);
+    if (iAmTop) return flash("你已經是最高出價者了");
+    if ((userPoints || 0) < amt) return flash("你的點數不足");
+    setBusy(true);
+    try {
+      let accepted = false;
+      const tx = await fRef("auction/current").transaction(c => {
+        accepted = false;
+        if (!c || c.id !== cur.id) return;
+        const t = Date.now() + offset;
+        if (t < c.openAt || t >= c.closeAt) return;
+        if (amt < (c.top ? c.top.amount + c.step : c.minBid)) return;
+        accepted = true;
+        const next = { ...c, top: { name: boundName, key: myKey, amount: amt, ts: t } };
+        if (c.closeAt - t < 60000 && c.closeAt < c.hardCloseAt) next.closeAt = Math.min(t + 60000, c.hardCloseAt);
+        return next;
+      });
+      if (TEST_MODE) return flash("測試模式不會真的出價");
+      if (!tx?.committed || !accepted) return flash("出價失敗：已有更高出價或已截標，請看最新狀態");
+      await fRef(`auction/bids/${cur.id}/${myKey}`).set({ name: boundName, amount: amt, ts: Date.now() + offset });
+      setAmount("");
+      flash(`出價成功：${amt} 點`);
+    } catch (e) {
+      flash("連線錯誤，請重試");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const status = upcoming ? "即將開標" : open ? "競標中" : "已截標・結算中";
+  const statusColor = open ? "var(--c-green-tx)" : "var(--t3)";
+  return (
+    <div style={{padding:"12px 14px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+        <strong style={{color:"var(--t1)"}}>💣 地雷卡拍賣</strong>
+        <span style={{fontSize:"12px",fontWeight:"600",color:statusColor}}>{status}</span>
+        <span style={{marginLeft:"auto",fontVariantNumeric:"tabular-nums",fontWeight:"600",color:"var(--t1)"}}>
+          {upcoming ? `${fmtCountdown(cur.openAt - now)} 後開標` : open ? `剩 ${fmtCountdown(cur.closeAt - now)}` : ""}
+        </span>
+      </div>
+      <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"4px",lineHeight:1.6}}>
+        {upcoming ? `${fmtAuctionTime(cur.openAt)} 開標，` : ""}{fmtAuctionTime(cur.closeAt)} 截標・底價 {cur.minBid} 點・每次加價至少 {cur.step} 點・截標前 1 分鐘內出價會延長 1 分鐘。得標者可用到 {cur.cardExpiresAt}：放一顆地雷，踩中的人每人請你一杯（上限 {MINE_TREAT_CAP} 元），沒人踩中卡片退還。
+      </div>
+      {!upcoming && (
+        <div style={{marginTop:"8px"}}>
+          <div style={{fontWeight:"600",color:"var(--t1)"}}>
+            {cur.top ? <>目前最高：{cur.top.name} <span style={{color:"var(--a)"}}>{cur.top.amount} 點</span></> : `尚無人出價（底價 ${cur.minBid} 點）`}
+          </div>
+          {list.length > 0 && (
+            <div style={{marginTop:"6px",display:"flex",flexDirection:"column",gap:"2px",fontSize:"13px"}}>
+              {list.slice(0, 5).map((b, i) => (
+                <div key={b.name} style={{display:"flex",gap:"8px",color:b.name === boundName ? "var(--t1)" : "var(--t3)",fontWeight:b.name === boundName ? "600" : "400"}}>
+                  <span style={{width:"16px"}}>{i + 1}</span><span style={{flex:1}}>{b.name}{b.name === boundName ? "（你）" : ""}</span><span>{b.amount} 點</span>
+                </div>
+              ))}
+              {myBid && !list.slice(0, 5).includes(myBid) && <div style={{color:"var(--t1)",fontWeight:"600"}}>你的出價：{myBid.amount} 點（第 {list.indexOf(myBid) + 1} 名）</div>}
+              {list.length > 5 && <div style={{color:"var(--t3)"}}>共 {list.length} 人出價</div>}
+            </div>
+          )}
+        </div>
+      )}
+      {open && boundName && (
+        <div style={{display:"flex",gap:"8px",alignItems:"center",marginTop:"10px"}}>
+          <input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} placeholder={`至少 ${minNeeded}`} style={{marginBottom:0,flex:1,minWidth:0}} />
+          <button onClick={placeBid} disabled={busy || iAmTop} style={{width:"auto",padding:"0 18px",marginBottom:0,flexShrink:0}}>{iAmTop ? "你是最高標" : busy ? "送出中…" : "出價"}</button>
+        </div>
+      )}
+      {open && boundName && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"6px"}}>你的點數：{userPoints ?? "…"}　出價後不能撤回，結標才會扣點</div>}
+      {notice && <div style={{fontSize:"13px",fontWeight:"600",color:"var(--c-orange-tx)",marginTop:"6px"}}>{notice}</div>}
+      {last && (
+        <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"8px"}}>
+          上一場：{last.winner ? `${last.winner} 以 ${last.price} 點得標` : "流標（沒有人出價或點數不足）"}
+        </div>
+      )}
     </div>
   );
 }
@@ -3899,6 +4038,24 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         </div>
       );
     }
+    if (item.type === "mine_planter" || item.type === "mine_stepped" || item.type === "auction_won" || item.type === "auction_unpaid") {
+      const hit = item.type === "mine_planter" && item.victims?.length > 0;
+      const text = item.type === "mine_planter"
+        ? (hit ? `你的地雷（#${item.number}）被 ${item.victims.join("、")} 踩中，每人請你一杯（上限 ${MINE_TREAT_CAP} 元）` : `你的地雷（#${item.number}）沒有人踩中，地雷卡已退還`)
+        : item.type === "mine_stepped" ? `你踩到 ${item.by} 的地雷（#${item.number}），請 ${item.by} 喝一杯（上限 ${MINE_TREAT_CAP} 元）`
+        : item.type === "auction_won" ? `你以 ${item.price} 點標下地雷卡，有效期限到 ${item.expiresAt}`
+        : `你的出價 ${item.price} 點得標，但點數不足，名額已順延`;
+      return (
+        <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",marginBottom:"4px"}}>
+          <span style={{fontSize:"16px"}}>{item.type.startsWith("auction") ? "🔨" : "💣"}</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"13px",fontWeight:"500",color:"var(--c-orange-tx)"}}>{text}</div>
+            {item.date && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"1px"}}>{item.date}</div>}
+          </div>
+          {timeStr && <span style={{fontSize:"11px",color:"var(--t3)"}}>{timeStr}</span>}
+        </div>
+      );
+    }
     if (item.type === "streak_broken") {
       return (
         <div key={i} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",marginBottom:"4px"}}>
@@ -4046,6 +4203,7 @@ function PointsHistoryModal({ open, onClose, boundName }) {
     wc_bet:   { emoji:"🏆", label:"世界盃押注" },
     wc_win:   { emoji:"🏆", label:"世界盃獲彩" },
     wc_lose:  { emoji:"🏆", label:"世界盃落空" },
+    auction:  { emoji:"🔨", label:"拍賣得標" },
   };
   const grouped = {};
   for (const log of logs) {
@@ -4475,6 +4633,7 @@ function App() {
   const [cardToUse, setCardToUse] = useState("");   // card ID selected for this join
   const [number2, setNumber2] = useState("");        // second number for 加號卡
   const [nukeTarget, setNukeTarget] = useState(""); // separately chosen nuke center number
+  const [mineTarget, setMineTarget] = useState(""); // separately chosen mine number
   const [petNumber, setPetNumber] = useState("");    // auto adjacent number when hasPet
   const [bdNumbers, setBdNumbers] = useState(["","","",""]); // birthday extra numbers [n2..n5]
   const [isEditing, setIsEditing] = useState(false); // true when modifying existing entry
@@ -5096,7 +5255,8 @@ function App() {
     const soloWinners = result.winners || [result.winner];
     const birthdayCardWinnerEntry = soloWinners.find(w => w.cardUsed === "birthday_card");
     const soloTreatPerPerson = result.soloWin ? Math.max(50, streak >= 3 ? streak * 10 : 0) : 50;
-    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, participantNames:pts.map(p=>p.name), ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(absent.length > 0 && {absentNames: absent}), ...(birthdayCardWinnerEntry && {birthdayCardWinner: birthdayCardWinnerEntry.name})};
+    const mines = resolveMines(pts);
+    const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, participantNames:pts.map(p=>p.name), ...(mines.length > 0 && {mines}), ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(absent.length > 0 && {absentNames: absent}), ...(birthdayCardWinnerEntry && {birthdayCardWinner: birthdayCardWinnerEntry.name})};
     (async () => {
       let didWrite = false;
       await fRef(`weekly/${today}`).transaction(current => {
@@ -5119,6 +5279,10 @@ function App() {
               logNotification(sanitizeKey(p.name), "thirsty_cancelled", { by: nukerName, date: today });
             }
           }
+        }
+        for (const m of mines) {
+          logNotification(sanitizeKey(m.by), "mine_planter", { number: m.number, victims: m.hit, date: today });
+          for (const v of m.hit) logNotification(sanitizeKey(v), "mine_stepped", { by: m.by, number: m.number, date: today });
         }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
         await ensureDailyCards(today, effectiveNumMax);
@@ -5262,6 +5426,7 @@ function App() {
             followRestUser:  result.followRestUser || "",
             cardsUsed:       pts.filter(p=>p.cardUsed).map(p=>`${p.name} ${CARD_TYPES[p.cardUsed]?.emoji}${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
             cardsAwarded:    won.length > 0 ? `今日共發出 ${won.length} 張卡牌` : "",
+            mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），每人請 ${m.by} 一杯（上限 ${MINE_TREAT_CAP} 元）`).join("\n"),
           })
         }).catch(() => {});
       }
@@ -5344,6 +5509,15 @@ function App() {
         if (!nukeCenterNum || nukeCenterNum < 1 || nukeCenterNum > effectiveNumMax) return showToast(`核彈中心請輸入 1 到 ${effectiveNumMax} 之間的整數`);
       }
 
+      // 驗證地雷卡的地雷號碼（獨立於主號碼另選）
+      let mineNum = null;
+      if (activeCard?.type === "mine_card" && !hasUsedCard) {
+        mineNum = parseInt(mineTarget);
+        if (!mineNum || mineNum < 1 || mineNum > effectiveNumMax) return showToast(`地雷號碼請輸入 1 到 ${effectiveNumMax} 之間的整數`);
+        // 號碼已被公開卡公開時，地雷不能放在已有人選的號碼上（否則等於指定受害者）
+        if (numbersRevealed && takenNums.some(t => t.num === mineNum && t.name !== name)) return showToast("號碼已公開，地雷不能放在已有人選的號碼上");
+      }
+
       const PASSIVE_TYPES = ["streak_protect", "cheapskate_card"];
 
       // 盜牌卡：先嘗試偷取，決定是否真的算「使用」（撲空則保留卡牌）
@@ -5408,11 +5582,11 @@ function App() {
       // 先原子認領卡牌（transaction 移除手牌），避免同一瞬間被盜牌卡偷走造成卡牌憑空複製
       if (cardConsumed && !TEST_MODE) {
         const tx = await fRef(`userCards/${sanitizeKey(name)}/${activeCard.id}`).transaction(cur => cur === null ? undefined : null);
-        if (!tx?.committed) { setCardToUse(""); setNumber2(""); setNukeTarget(""); return showToast("卡牌已不在手上（可能剛被偷走），本次未使用，請重新送出"); }
+        if (!tx?.committed) { setCardToUse(""); setNumber2(""); setNukeTarget(""); setMineTarget(""); return showToast("卡牌已不在手上（可能剛被偷走），本次未使用，請重新送出"); }
       }
       const nukedNumbers = (cardConsumed && activeCard.type === "nuke_card") ? getNukeZone(nukeCenterNum, effectiveNumMax) : null;
       const cardExtra = cardConsumed
-        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(nukedNumbers ? { nukedNumbers } : {}), ...(nukeCenterNum ? { nukeCenter: nukeCenterNum } : {}) }
+        ? { cardUsed: activeCard.type, ...(num2 ? { number2: num2 } : {}), ...(nukedNumbers ? { nukedNumbers } : {}), ...(nukeCenterNum ? { nukeCenter: nukeCenterNum } : {}), ...(mineNum ? { mineNumber: mineNum } : {}) }
         : {};
       const bdExtra = (cardConsumed && bdNums) ? { birthdayNumbers: bdNums } : {};
       const petExtra = petN ? { hasPet: true, petNumber: petN } : {};
@@ -5429,10 +5603,10 @@ function App() {
 
       // 卡牌已從手牌移除，暫不還池（避免開獎前卡牌池數字提早跳動）；記錄待歸還，開獎時統一結算（中途取消參加也不會遺失）。商店購買的卡標記 fromShop，歸還時不回卡牌池
       if (cardConsumed) {
-        await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set({ type: activeCard.type, name, ...(activeCard.fromShop ? { fromShop: true } : {}) });
+        await fRef(`pendingCardReturns/${todayStr()}/${activeCard.id}`).set({ type: activeCard.type, name, ...(activeCard.fromShop ? { fromShop: true } : {}), ...(activeCard.fromAuction ? { fromAuction: true } : {}), ...(activeCard.type === "mine_card" ? { expiresAt: activeCard.expiresAt } : {}) });
         logNotification(sanitizeKey(name), "card_used", { cardType: activeCard.type, date: todayStr() });
         await fRef(`cardUsedToday/${todayStr()}/${sanitizeKey(name)}`).set(true);
-        setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget("");
+        setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); setMineTarget("");
       }
       // 公開卡：所有人號碼立即公開
       if (activeCard?.type === "reveal_numbers") {
@@ -5806,6 +5980,12 @@ function App() {
       }} />
     : null;
 
+  const mineCountToday = pts.filter(p => p.cardUsed === "mine_card" && p.mineNumber).length;
+  const AUCTION = <>
+    {mineCountToday > 0 && phase !== "results" && <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>💣 今天已經埋下 <strong>{mineCountToday}</strong> 顆地雷，號碼不公開，小心別踩到！</div>}
+    <AuctionPanel boundName={boundName} userPoints={userPoints} />
+  </>;
+
   const AP = <>
     {sugarRush && <SugarRush onDone={() => { setSugarRush(false); document.body.classList.remove("sugar-rush-active"); }} />}
     {showHelp && <HelpModal numMax={numMax} onClose={()=>setShowHelp(false)} newSections={helpNewSections} />}
@@ -5856,7 +6036,7 @@ function App() {
       <SiteHeader onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+        <HolidayBanner /><SpecialDayBanner />{AUCTION}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
           <div className="card">
@@ -5881,7 +6061,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
-        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+        <HolidayBanner /><SpecialDayBanner />{AUCTION}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
         {todaySteals.length > 0 && (
           <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
@@ -5966,6 +6146,7 @@ function App() {
                   const isExtraCard = myCards.find(c=>c.id===cardToUse)?.type === "extra_number";
                   const isNukeCard  = myCards.find(c=>c.id===cardToUse)?.type === "nuke_card";
                   const isBirthdayCard = myCards.find(c=>c.id===cardToUse)?.type === "birthday_card";
+                  const isMineCard  = myCards.find(c=>c.id===cardToUse)?.type === "mine_card";
                   const hasPetBonus = !!userActivePet && !isEditing; // 編輯時號碼已鎖定，寵物加號當初就決定了，這裡不重算
                   const nukeCenter  = isNukeCard && nukeTarget ? parseInt(nukeTarget) : null;
                   const nukeZone    = nukeCenter ? getNukeZone(nukeCenter, effectiveNumMax) : [];
@@ -5974,6 +6155,7 @@ function App() {
                     ...(hasPetBonus ? [{ key:"pet",   color:"rgba(16,185,129,0.85)", outline:"rgba(16,185,129,0.5)",  label:"🐻",       num: petNumber }] : []),
                     ...(isExtraCard ? [{ key:"extra", color:"rgba(234,88,12,0.85)",  outline:"rgba(234,88,12,0.5)",   label:"加號卡",   num: number2 }] : []),
                     ...(isNukeCard  ? [{ key:"nuke",  color:"rgba(220,38,38,0.85)",  outline:"rgba(220,38,38,0.5)",   label:"☢️ 核彈中心", num: nukeTarget }] : []),
+                    ...(isMineCard  ? [{ key:"mine",  color:"rgba(120,53,15,0.9)",   outline:"rgba(120,53,15,0.55)",  label:"💣 地雷", num: mineTarget }] : []),
                     ...(isBirthdayCard  ? [
                       { key:"bd0", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日卡", num: bdNumbers[0] },
                       { key:"bd1", color:"rgba(219,39,119,0.8)", outline:"rgba(219,39,119,0.5)", label:"生日卡", num: bdNumbers[1] },
@@ -5994,6 +6176,7 @@ function App() {
                     }
                     if (isExtraCard) setNumber2(get("extra"));
                     if (isNukeCard) setNukeTarget(get("nuke"));
+                    if (isMineCard) setMineTarget(get("mine"));
                     if (isBirthdayCard) setBdNumbers([get("bd0"),get("bd1"),get("bd2"),get("bd3")]);
                   };
                   const doRandom = () => {
@@ -6032,6 +6215,7 @@ function App() {
                           {isBirthdayCard&&<span style={{fontSize:"11px",color:"var(--c-pink-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>🎂 生日卡+4</span>}
                           {isExtraCard&&<span style={{fontSize:"11px",color:"rgba(234,88,12,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>➕ 加號卡+1</span>}
                           {isNukeCard&&<span style={{fontSize:"11px",color:"rgba(239,68,68,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>☢️ 核彈卡+1（另選核心）</span>}
+                          {isMineCard&&<span style={{fontSize:"11px",color:"var(--c-orange-tx)",marginLeft:"4px",whiteSpace:"nowrap"}}>💣 地雷卡（另選一個地雷號碼）</span>}
                           {hasPetBonus&&<span style={{fontSize:"11px",color:"rgba(16,185,129,0.9)",marginLeft:"4px",whiteSpace:"nowrap"}}>🐻 寵物±1</span>}
                         </label>
                         <button className="ghost btn-sm" onClick={doRandom} style={{flexShrink:0,marginBottom:0}}>🎲 隨機</button>
@@ -6047,7 +6231,7 @@ function App() {
                 })()}
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:"8px",marginBottom:"2px"}}>- 送出後號碼與卡牌無法修改</p>
                 <p style={{fontSize:"12px",color:"var(--red)",marginTop:0,marginBottom:"12px"}}>- 點已選號碼可取消選擇</p>
-                {!hasUsedCardToday && form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); }} />}
+                {!hasUsedCardToday && form.name.trim() && <MyCardsBadge cards={myCards} cardToUse={cardToUse} onSelectCard={id => { setCardToUse(id); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); setMineTarget(""); }} />}
                 </>);
               })()}
               <div className="divider" />
@@ -6068,7 +6252,7 @@ function App() {
   );
 
   if (phase==="joined") {
-    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) { setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setIsRandom(myEntry.isRandomRest||false); } setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); setIsEditing(true); setPhase("join"); }
+    function editMyEntry() { const myEntry = pts.find(p=>p.name===form.name); if (myEntry) { setForm(f=>({...f, category:myEntry.category, rest:myEntry.rest, number:String(myEntry.number), cust:""})); setIsRandom(myEntry.isRandomRest||false); } setCardToUse(""); setNumber2(""); setBdNumbers(["","","",""]); setNukeTarget(""); setMineTarget(""); setIsEditing(true); setPhase("join"); }
     const myJoinedEntry = pts.find(p=>p.name===form.name);
     const usedCardName = myJoinedEntry?.cardUsed ? (CARD_TYPES[myJoinedEntry.cardUsed]?.name || "卡牌") : null;
     const usedCardIsDeferred = myJoinedEntry?.cardUsed && !IMMEDIATE_EFFECT_CARD_TYPES.includes(myJoinedEntry.cardUsed);
@@ -6081,7 +6265,7 @@ function App() {
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={usedCardIsDeferred ? `你這次使用了「${usedCardName}」，若之後都沒有再參加，開獎後卡牌會退還給你；但只要又重新加入，卡牌就不會退還，確定取消嗎？` : `你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
-          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+          <HolidayBanner /><SpecialDayBanner />{AUCTION}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
         {todaySteals.length > 0 && (
           <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
@@ -6115,7 +6299,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
-        <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+        <HolidayBanner /><SpecialDayBanner />{AUCTION}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
         {todaySteals.length > 0 && (
           <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
@@ -6165,7 +6349,7 @@ function App() {
         <SiteHeader title="開獎結果" onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+          <HolidayBanner /><SpecialDayBanner />{AUCTION}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
           <div className="layout-2"><div className="layout-side"><DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} /><div style={{marginTop:"24px"}}><WeeklyRecord weekly={weekly} setWeekly={setWeekly} showStats={showStats} setShowStats={setShowStats} isDark={isDarkMode} onHistory={()=>setShowHistory(true)} isAdmin={isAdmin} userTitles={userTitles} boundName={boundName} onTitleChange={handleTitleChange} mySpecialAchievements={mySpecialAchievements} titleShopConfig={titleShopConfig} /></div></div><div className="layout-main"><h1 style={{marginBottom:"12px"}}>時間到！</h1><p style={{marginBottom:"32px"}}>今天只有 {pts.length} 人參加，無法開獎</p>{isAdmin && <button className="ghost" onClick={()=>{setConfirmModal(true);}} style={{width:"auto",padding:"12px 24px"}}>重新開始</button>}</div></div>
         </div>
         <Footer />
@@ -6205,7 +6389,7 @@ function App() {
         <SiteHeader title={soloWin?(streak>=3?`🎯🔥 命中 + ${streak}連勝！`:"完全命中！"):streak>=3?`🔥 ${streak} 連勝！`:"開獎結果"} onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
         <div className="page fade-up">
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-          <HolidayBanner /><SpecialDayBanner /><BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+          <HolidayBanner /><SpecialDayBanner />{AUCTION}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
           <div className="layout-2">
             <div className="layout-side">
               <DrawnNumberChart weekly={weekly} isDark={isDarkMode} numMax={numMax} />
@@ -6285,6 +6469,15 @@ function App() {
               {pts.filter(p=>p.cardUsed==="reveal_numbers").map((p,i) => (
                 <div key={i} style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
                   👁️ <strong>{p.name}</strong> 使用了公開卡，截止前所有人的號碼都已公開
+                </div>
+              ))}
+              {resolveMines(pts).map((m,i) => m.hit.length > 0 ? (
+                <div key={i} style={{padding:"12px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
+                  💣 <strong>{m.hit.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），每人請 {m.by} 一杯飲料（上限 {MINE_TREAT_CAP} 元）{m.hit.length > 1 ? `，共 ${m.hit.length} 杯` : ""}
+                </div>
+              ) : (
+                <div key={i} style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
+                  💣 <strong>{m.by}</strong> 的地雷（#{m.number}）沒有人踩中，地雷卡已退還
                 </div>
               ))}
               {weekly[todayStr()]?.streakProtectedBy && (

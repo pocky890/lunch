@@ -1,0 +1,21 @@
+name: Auction Settle
+
+on:
+  workflow_dispatch:   # 由 n8n 準時觸發（GitHub 自己的 cron 排程會延遲數小時，不使用）
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run settle script
+        run: node .github/scripts/auction-settle.js
+        env:
+          AUCTION_WEBHOOK_URL: ${{ secrets.AUCTION_WEBHOOK_URL }}
