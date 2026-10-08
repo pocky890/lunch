@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 15:50";
+  const BUILD_TIME = "2026-10-08 15:54";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2564,6 +2564,8 @@ function AuctionPanel({ boundName, userPoints }) {
   if (cur.top && !list.some(b => b.name === cur.top.name)) list.unshift({ name: cur.top.name, amount: cur.top.amount, ts: cur.top.ts });
   const minNeeded = cur.top ? cur.top.amount + cur.step : cur.minBid;
   const iAmTop = !!cur.top && cur.top.name === boundName;
+  const closeDay = new Date(cur.closeAt); closeDay.setHours(0, 0, 0, 0);
+  const expDays = Math.round((new Date(`${cur.cardExpiresAt}T00:00:00`) - closeDay) / 86400000);
   const myBid = list.find(b => b.name === boundName);
 
   async function placeBid() {
@@ -2611,7 +2613,7 @@ function AuctionPanel({ boundName, userPoints }) {
         </span>
       </div>
       <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"4px",lineHeight:1.6}}>
-        {upcoming ? `${fmtAuctionTime(cur.openAt)} 開標，` : ""}{fmtAuctionTime(cur.closeAt)} 截標・底價 {cur.minBid} 點・每次加價至少 {cur.step} 點・截標前 1 分鐘內出價會延長 1 分鐘。得標者可用到 {cur.cardExpiresAt}：放一顆地雷，踩中的人每人請你一杯（上限 {MINE_TREAT_CAP} 元），沒人踩中卡片退還。
+        {upcoming ? `${fmtAuctionTime(cur.openAt)} 開標，` : ""}{fmtAuctionTime(cur.closeAt)} 截標・底價 {cur.minBid} 點・每次加價至少 {cur.step} 點・截標前 1 分鐘內出價會延長 1 分鐘。卡片效期 {expDays} 日，得標者可用到 {cur.cardExpiresAt}：放一顆地雷，踩中的人每人請你一杯（上限 {MINE_TREAT_CAP} 元），沒人踩中卡片退還。
       </div>
       {!upcoming && (
         <div style={{marginTop:"8px"}}>
