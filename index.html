@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 16:21";
+  const BUILD_TIME = "2026-10-08 16:27";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2637,7 +2637,7 @@ function AuctionPanel({ boundName, userPoints }) {
       )}
       {open && boundName && (
         <div style={{display:"flex",gap:"8px",alignItems:"center",marginTop:"10px"}}>
-          <input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} min={minNeeded} step={cur.step} placeholder={`至少 ${minNeeded}`} style={{marginBottom:0,width:"110px",flex:"0 0 auto"}} />
+          <input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} min={minNeeded} max={typeof userPoints === "number" ? userPoints : undefined} step={cur.step} placeholder={`至少 ${minNeeded}`} style={{marginBottom:0,width:"110px",flex:"0 0 auto"}} />
           <button onClick={placeBid} disabled={busy || iAmTop} style={{width:"auto",padding:"0 18px",marginBottom:0,flexShrink:0}}>{iAmTop ? "你是最高標" : busy ? "送出中…" : "出價"}</button>
         </div>
       )}
