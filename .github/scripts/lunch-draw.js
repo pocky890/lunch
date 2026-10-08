@@ -305,7 +305,7 @@ async function main() {
       cardsUsed:       pts.filter(p => p.cardUsed).map(p => `${p.name} ${CARD_TYPES[p.cardUsed]?.name}`).join(", "),
       thirstyUsers:    pts.filter(p=>p.cardUsed==="thirsty_card").map(p=>p.name).join(", "),
       cardsAwarded:    awardedCards.map(w => `${w.name} ${CARD_TYPES[w.type]?.name}`).join(", "),
-      mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），${m.hit.join("、")}${m.hit.length > 1 ? "各" : ""}要請${m.by} 一杯飲料（上限 50 元）`).join("\n"),
+      mineInfo:        mines.filter(m => m.hit.length > 0).map(m => `💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），${m.hit.join("、")} ${m.hit.length > 1 ? "各" : ""}要請 ${m.by} 一杯飲料（上限 50 元）`).join("\n"),
     }),
   });
   console.log(`Webhook sent: ${res.status}`);
