@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 18:14";
+  const BUILD_TIME = "2026-10-08 19:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -6456,7 +6456,7 @@ function App() {
                   ))}
                   <div style={{fontSize:"15px",fontWeight:"500",color:oc.sub,marginBottom:"20px",marginTop:"4px"}}>{winner.rest}{soloWinners.length > 1 && <span style={{fontSize:"12px",color:oc.p,marginLeft:"8px"}}>（抽籤決定）</span>}</div>
                   <div style={{height:"1px",background:oc.div,margin:"0 0 16px"}} />
-                  {streak>=3 ? (
+                  {soloTreatPerPerson > 50 ? (
                     <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · <span className="badge badge-gold" style={{marginRight:"6px"}}>🔥 {streak} 連勝加成</span>每人 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，合計 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
                   ) : (
                     <p style={{marginTop:0,fontSize:"14px",color:oc.p}}>請客方案 · 每人最多 <strong style={{color:oc.str}}>{soloTreatPerPerson} 元</strong> · 共 {nonWinnerCount} 人，上限 {maxTotal} 元{soloWinners.length > 1 ? `，每位贏家得 ${perWinner} 元` : ""}</p>
