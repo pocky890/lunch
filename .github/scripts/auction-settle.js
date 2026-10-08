@@ -41,6 +41,10 @@ async function fbSetIfMatch(path, value, etag) {
 
 function taipeiMs(y, m, d, hh, mm) { return Date.UTC(y, m - 1, d, hh - 8, mm); }
 function dayStr(day) { return `${day.y}-${pad(day.m)}-${pad(day.d)}`; }
+function fmtTaipei(ms) {
+  const d = new Date(ms + TZ_MS);
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${"日一二三四五六"[d.getUTCDay()]}）${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
 function todayStr() { const tw = new Date(Date.now() + TZ_MS); return dayStr({ y: tw.getUTCFullYear(), m: tw.getUTCMonth() + 1, d: tw.getUTCDate() }); }
 
 // 下一場拍賣：afterMs 之後第一個「開標時間晚於 afterMs」的週五；週五遇假日就往前找最近的上班日
@@ -152,6 +156,7 @@ async function main() {
         auctionBidders: result.bidders,
         auctionExpires: cur.cardExpiresAt,
         auctionNext: next.id,
+        auctionNextText: `${fmtTaipei(next.openAt)} 開標、${fmtTaipei(next.closeAt).slice(-5)} 截標`,
       }),
     });
     console.log(`Webhook sent: ${res.status}`);
