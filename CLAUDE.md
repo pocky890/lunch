@@ -17,6 +17,7 @@ userBirthdays/{uid}     MM-DD 格式生日
 userTitles/{sanitizedName}  使用者選擇的成就稱號 key
 participationCount/{sanitizedName}  累計參與次數
 session/                當日設定（numMax 等）
+restaurantClosedDays/{店名}  店休日陣列（0=週日…6=週六）；選店家下拉選單對當天店休的店 disabled 並標「（店休）」，🎲 隨機與「跟著吃」快捷鍵會略過（`isRestClosedToday`）
 ```
 
 ### 關鍵函式

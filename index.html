@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-08 19:24";
+  const BUILD_TIME = "2026-10-12 10:09";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1073,6 +1073,11 @@ function TitleBadges({ value, titleShopConfig, mode = "stack" }) {
       ))}
     </span>
   );
+}
+
+// 店休：closedDays 格式 { 店名: [休息的星期幾（0=週日…6=週六）] }
+function isRestClosedToday(closedDays, name, day = new Date().getDay()) {
+  return Object.values((closedDays || {})[name] || {}).includes(day);
 }
 
 function managedToRests(managed) {
@@ -4495,6 +4500,7 @@ function App() {
   const [sess, setSess] = useState(null);
   const [pts, setPts] = useState([]);
   const [rests, setRests] = useState(mergeRests(null));
+  const [closedDays, setClosedDays] = useState({});
   const [weekly, setWeekly] = useState({});
 
   const [form, setForm] = useState(() => {
@@ -5032,6 +5038,14 @@ function App() {
         await fSet("restaurants_managed", seed);
       } else { setRests(managedToRests(snap.val())); }
     };
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  // 店休日即時監聽（餐廳 → 休息的星期幾）
+  useEffect(() => {
+    const ref = fRef("restaurantClosedDays");
+    const handler = snap => setClosedDays(snap.val() || {});
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
@@ -6140,7 +6154,7 @@ function App() {
                 const chips = pts
                   .filter(p => p.rest && !p.isRandomRest && p.name !== form.name)
                   .map(p => ({ name: p.name, rest: p.rest, cat: CATEGORIES.find(c => (rests[c]||[]).includes(p.rest)) }))
-                  .filter(x => x.cat);
+                  .filter(x => x.cat && !isRestClosedToday(closedDays, x.rest));
                 if (!chips.length) return null;
                 return (
                   <div style={{marginBottom:"16px"}}>
@@ -6166,10 +6180,10 @@ function App() {
                   </div>
                 : <><div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
                     <select value={form.category} style={{flex:1,marginBottom:0}} onChange={e=>{setIsRandom(false);setForm({...form,category:e.target.value,rest:"",cust:""}); }}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
-                    <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const cats=CATEGORIES.filter(c=>(rests[c]||[]).length>0);if(!cats.length)return showToast("沒有可用的餐廳");const cat=cats[Math.floor(Math.random()*cats.length)];const opts=rests[cat]||[];const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,category:cat,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
+                    <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const openOf=c=>(rests[c]||[]).filter(r=>!isRestClosedToday(closedDays,r));const cats=CATEGORIES.filter(c=>openOf(c).length>0);if(!cats.length)return showToast("沒有可用的餐廳");const cat=cats[Math.floor(Math.random()*cats.length)];const opts=openOf(cat);const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,category:cat,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
                   </div>
                   {form.category && (<><label>想吃的店家</label>
-                    <select value={form.rest} style={{marginBottom:form.rest==="cust"?"8px":"16px"}} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r=><option key={r} value={r}>{r}</option>)}<option value="cust">其他（自行輸入）</option></select>
+                    <select value={form.rest} style={{marginBottom:form.rest==="cust"?"8px":"16px"}} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r => { const closed = isRestClosedToday(closedDays, r); return <option key={r} value={r} disabled={closed}>{r}{closed ? "（店休）" : ""}</option>; })}<option value="cust">其他（自行輸入）</option></select>
                     {form.rest==="cust" && <input value={form.cust} onChange={e=>setForm({...form,cust:e.target.value})} placeholder="輸入店家名稱" style={{marginBottom:"16px"}} />}
                   </>)}
                 </>
