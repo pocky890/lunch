@@ -18,7 +18,7 @@ userTitles/{sanitizedName}  使用者選擇的成就稱號 key
 participationCount/{sanitizedName}  累計參與次數
 session/                當日設定（numMax 等）
 restaurantClosedDays/{店名}  店休日陣列（0=週日…6=週六）；選店家下拉選單對當天店休的店 disabled 並標「（店休）」，🎲 隨機與「跟著吃」快捷鍵會略過（`isRestClosedToday`）
-restaurantPromos/{店名}  固定日優惠 `{day(每月幾號), title, desc}`；當天在所有 phase 的 `{PROMOS}`（`RestPromoBanner`）顯示琥珀色橫幅，只比對當天日期，遇週末不順延
+restaurantPromos/{店名}  固定日優惠 `{day(每月幾號) 或 weekday(每週星期幾，0=週日), title, desc}`；當天在所有 phase 的 `{PROMOS}`（`RestPromoBanner`）顯示琥珀色橫幅，只比對當天，遇週末不順延
 ```
 
 ### 關鍵函式
