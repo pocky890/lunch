@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-12 10:34";
+  const BUILD_TIME = "2026-10-12 10:36";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2678,7 +2678,7 @@ function RestPromoBanner({ promos, day = new Date().getDate(), weekday = new Dat
   const todays = Object.entries(promos || {}).filter(([, p]) => p && (p.day === day || p.weekday === weekday));
   return todays.map(([rest, p]) => (
     <div key={rest} style={{textAlign:"center",padding:"10px 16px",background:"var(--c-amber-bg)",border:"1px solid var(--c-amber-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-amber-tx)"}}>
-      🎁 今天是 <strong>{rest}</strong> {p.title}（{p.weekday !== undefined ? `每週${"日一二三四五六"[p.weekday]}` : `每月 ${p.day} 日`}）｜{p.desc}
+      🎁 今天是 <strong>{rest}</strong> {p.title}{p.weekday === undefined && `（每月 ${p.day} 日）`}｜{p.desc}
     </div>
   ));
 }
