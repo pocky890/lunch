@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-13 13:06";
+  const BUILD_TIME = "2026-10-15 12:47";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -5368,6 +5368,7 @@ function App() {
         await reconcilePendingCardReturns(today);
         // 集中結算被動卡與隱藏成就：由天選客戶端統一掃描所有參賽者，確保離線者也生效
         const winnerNameSet = new Set(soloWinners.map(w => w.name));
+        const streakExempt = [];
         if (!result.soloWin && streak >= 3) {
           for (const p of pts) {
             if (winnerNameSet.has(p.name)) continue;
@@ -5376,6 +5377,7 @@ function App() {
             const cardsObj = await fGet(`userCards/${pKey}`) || {};
             const entry = Object.entries(cardsObj).find(([,c]) => c.type === "cheapskate_card" && c.expiresAt >= today);
             if (!entry) continue;
+            streakExempt.push(p.name);
             await fRef(`cheapskateUsers/${today}/${pKey}`).set({ name: p.name, reason: "streak_treat" });
             await returnCardToPool(p.name, entry[0]);
             logNotification(pKey, "card_used", { cardType: "cheapskate_card", date: today });
@@ -5499,6 +5501,9 @@ function App() {
             absent:          absent.join(", "),
             streak,
             treatAmount:        streak >= 3 ? streak * 10 : 0,
+            streakPayers:       (!result.soloWin && streak >= 3) ? pts.length - 1 - streakExempt.length : 0,
+            streakTreatTotal:   (!result.soloWin && streak >= 3) ? streak * 10 * (pts.length - 1 - streakExempt.length) : 0,
+            streakExempt:       streakExempt.join(", "),
             skipStreak:         skipStreak ? 1 : 0,
             preservedStreak,
             soloTreatPerPerson: result.soloWin ? soloTreatPerPerson : 50,
