@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 15, rules: 11, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"] };
+  const WHATSNEW_VERSION       = { cards: 16, rules: 11, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-15 12:47";
+  const BUILD_TIME = "2026-10-16 10:03";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1220,7 +1220,7 @@ async function reconcilePendingCardReturns(today) {
       const name = typeof val === "object" ? val?.name : null;
       const fromShop = typeof val === "object" && val?.fromShop;
       if (!type) continue;
-      const neverTookEffect = name && participantNames && !IMMEDIATE_EFFECT_CARD_TYPES.includes(type) && !participantNames.includes(name);
+      const neverTookEffect = name && ((participantNames && !IMMEDIATE_EFFECT_CARD_TYPES.includes(type) && !participantNames.includes(name)) || (weeklyRec?.noParticipants && type !== "steal_card"));
       // 地雷卡：沒有任何人踩中就退還給放雷者（保留原本的到期日，避免退還後無限延期）
       const mineUnhit = type === "mine_card" && name && !(weeklyRec?.mines || []).some(m => m.by === name && m.hit?.length > 0);
       if (neverTookEffect || mineUnhit) {
@@ -1411,6 +1411,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
           </div>
           <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>
             使用卡牌後取消參加：公開卡、盜牌卡使用當下就已生效，<strong style={{color:"var(--t1)"}}>不會退還</strong>。其餘卡種要等開獎才生效，若當天最終沒有再參加（效果從未套用），<strong style={{color:"var(--t1)"}}>開獎後會直接退還到你的手牌</strong>；但只要重新加入，就不會退還。
+            另外，當天參加人數不足 2 人、沒有開獎時，除了盜牌卡以外，所有使用過的卡牌開獎時間一到都會退還到你的手牌。
           </div>
           {cards.map(c => {
             const ct = CARD_TYPES[c.type];
