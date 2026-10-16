@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-16 10:05";
+  const BUILD_TIME = "2026-10-16 13:13";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3412,10 +3412,8 @@ function HistoryModal({ weekly, onClose, userTitles = {}, titleShopConfig = {} }
                       <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",lineHeight:1.4,display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
                         <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?(rec.winners||[rec.winner]).join(" / "):rec.rest}</span>
                         {rec.soloWin&&<span className="badge badge-gold" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0}}>{rec.winners?.length>1?"共贏":"獨贏"}</span>}
-                        {!rec.soloWin&&rec.streak>=3&&<span className="badge badge-gold" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0}}>🔥{rec.streak}連</span>}
-                        {rec.skipStreak&&<span className="badge" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0,background:"var(--s2)",color:"var(--t3)",border:"1px solid var(--b2)"}} title="這天的輸贏不列入連勝／連敗的連續次數計算，但已有的連勝紀錄會繼續保留">{(rec.participantNames?.length||0)<4?"人數不足・不中斷連勝":"🛡️ 連勝保護・不中斷連勝"}</span>}
                       </div>
-                      <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</div>
+                      <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</span>{!rec.soloWin&&rec.streak>=3&&<span className="badge badge-gold" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0}}>🔥{rec.streak}連</span>}{rec.skipStreak&&<span className="badge" style={{fontSize:"10px",padding:"1px 6px",flexShrink:0,background:"var(--s2)",color:"var(--t3)",border:"1px solid var(--b2)"}} title="這天的輸贏不列入連勝／連敗的連續次數計算，但已有的連勝紀錄會繼續保留">{(rec.participantNames?.length||0)<4?"人數不足・不中斷連勝":"🛡️ 連勝保護・不中斷連勝"}</span>}</div>
                     </div>
                     <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",marginLeft:"12px",flexShrink:0}}>#{rec.drawnNumber}</div>
                   </>):(<div style={{flex:1,fontSize:"13px",color:"var(--t3)"}}>—</div>)}
@@ -3474,9 +3472,8 @@ function WeeklyRecord({weekly, setWeekly, showStats, setShowStats, isDark, onHis
                   <div style={{fontSize:"14px",fontWeight:"600",color:"var(--t1)",lineHeight:1.4,display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
                     <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?(rec.winners||[rec.winner]).join(" / "):rec.rest}</span>
                     {rec.soloWin && <span className="badge badge-gold" style={{flexShrink:0}}>{rec.winners?.length>1?"共贏":"獨贏"}</span>}
-                    {!rec.soloWin && rec.streak >= 3 && <span className="badge badge-gold" style={{flexShrink:0}}>🔥{rec.streak}連</span>}
                   </div>
-                  <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</div>
+                  <div style={{fontSize:"12px",color:"var(--t2)",marginTop:"2px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rec.soloWin?rec.rest:rec.winner}</span>{!rec.soloWin && rec.streak >= 3 && <span className="badge badge-gold" style={{flexShrink:0}}>🔥{rec.streak}連</span>}</div>
                 </div>
                 <div style={{fontSize:"16px",fontWeight:"700",color:"var(--t1)",fontVariantNumeric:"tabular-nums",marginLeft:"12px",minWidth:"40px",textAlign:"right",flexShrink:0}}>#{rec.drawnNumber}</div>
                 
