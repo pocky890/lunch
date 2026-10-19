@@ -19,6 +19,7 @@ participationCount/{sanitizedName}  累計參與次數
 session/                當日設定（numMax 等）
 restaurantClosedDays/{店名}  店休日陣列（0=週日…6=週六）；選店家下拉選單對當天店休的店 disabled 並標「（店休）」，🎲 隨機與「跟著吃」快捷鍵會略過（`isRestClosedToday`）
 restaurantPromos/{店名}  固定日優惠 `{day(每月幾號) 或 weekday(每週星期幾，0=週日), title, desc}`；當天在 setup/join/joined/absent phase 的 `{PROMOS}`（`RestPromoBanner`）顯示琥珀色橫幅（開獎結果畫面不顯示），只比對當天，遇週末不順延
+youbikeDay/{date}  YouBike Day 判定結果 `{on, temp, pop}`（僅週五）。當天第一個抓到天氣（溫度 12/13 時平均、降雨機率 12 時起 6 小時）的 client 用 transaction 寫入並鎖定（`on = 22<=temp<=29 && pop<30`），之後全員共用；抓不到天氣就不寫（視為非 YouBike Day）。`on` 為 true 時首頁顯示橫幅，餐廳類型選單（含 🎲 隨機、跟著吃）只剩 `YOUBIKE_CAT`（YouBike 類別，平常不顯示，店家由管理員面板新增）；`?testmode&youbike` 可強制模擬
 ```
 
 ### 關鍵函式

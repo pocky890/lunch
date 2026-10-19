@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 17, rules: 11, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 17, rules: 12, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-16 13:13";
+  const BUILD_TIME = "2026-10-19 11:18";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -619,8 +619,9 @@ const fGet = p => db.ref(`${DB_PREFIX}/${p}`).once("value").then(s => s.val());
 const fSet = (p, v) => fRef(p).set(v);
 
 // 餐廳分類
-const CATEGORIES  = ["台式麵飯","日式","輕食早午餐","異國料理","火鍋","速食","素食","外帶區","其它"];
-const CAT_EMOJI   = {"台式麵飯":"🍜","日式":"🍣","輕食早午餐":"🥪","異國料理":"🌏","火鍋":"🍲","速食":"🍔","素食":"🥗","外帶區":"🥡","其它":"🍽️"};
+const CATEGORIES  = ["台式麵飯","日式","輕食早午餐","異國料理","火鍋","速食","素食","外帶區","其它","YouBike"];
+const YOUBIKE_CAT = "YouBike";
+const CAT_EMOJI   = {"台式麵飯":"🍜","日式":"🍣","輕食早午餐":"🥪","異國料理":"🌏","火鍋":"🍲","速食":"🍔","素食":"🥗","外帶區":"🥡","其它":"🍽️","YouBike":"🚲"};
 const DEFAULT_RESTS = {
   "台式麵飯": ["正群川味牛肉麵館","南北福州干拌麵","麵家紅葉軒","牛燒味","阿土小羊肉","黃海鮮","三商巧福","鬍鬚張","雞肉飯","好友鵝肉","新悅鵝肉","上美軒自助餐"],
   "日式":     ["一幸拉麵","爭鮮迴轉壽司","鮮五丼"],
@@ -630,7 +631,8 @@ const DEFAULT_RESTS = {
   "速食":     ["麥當勞","摩斯"],
   "素食":     [],
   "外帶區":   [],
-  "其它":     ["大豐路走走"]
+  "其它":     ["大豐路走走"],
+  "YouBike":  []
 };
 
 const RAMPS = [
@@ -1366,6 +1368,10 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🎰 Lucky Day{newSections.includes("luckyday") && <NewDot />}</div>
             <div>月份 = 日期當天（1/1、2/2 … 12/12），號碼池自動<strong style={{color:"var(--t1)"}}>減半</strong>，中獎機率加倍！當天開獎結果不計入歷史號碼分佈統計。</div>
             <div style={{marginTop:"8px",padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>📅 若當天遇到週末或國定假日，會改到<strong style={{color:"var(--t2)"}}>同月內往前最近的上班日</strong>，確保每個月都玩得到；往前找不到（例如 1 月）才往後找該月第一個上班日。</div>
+          </div>
+          <div>
+            <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🚲 YouBike Day{newSections.includes("youbike") && <NewDot />}</div>
+            <div>每週五，如果<strong style={{color:"var(--t1)"}}>中午氣溫在 22～29 度之間，且降雨機率小於 30%</strong>，首頁會出現 YouBike Day 橫幅，當天餐廳類型只能選「🚲 YouBike」。天氣由當天第一位打開頁面的人判定，之後全員共用同一個結果；抓不到天氣資料就當作不是 YouBike Day。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🛒 發薪日優惠{newSections.includes("payday") && <NewDot />}</div>
@@ -4510,6 +4516,7 @@ function App() {
   const [rests, setRests] = useState(mergeRests(null));
   const [closedDays, setClosedDays] = useState({});
   const [restPromos, setRestPromos] = useState({});
+  const [youbikeDay, setYoubikeDay] = useState(null);
   const [weekly, setWeekly] = useState({});
 
   const [form, setForm] = useState(() => {
@@ -4713,6 +4720,10 @@ function App() {
           }
         }
         setWeather({ loading: false, error: false, temp, pop });
+        if (new Date(today + "T00:00:00").getDay() === 5 && temp !== null && pop !== null) {
+          const on = temp >= 22 && temp <= 29 && pop < 30;
+          await fRef(`youbikeDay/${today}`).transaction(cur => { if (cur !== null) return; return { on, temp, pop }; });
+        }
       } catch(e) {
         setWeather({ loading: false, error: true, temp: null, pop: null });
       }
@@ -5066,6 +5077,20 @@ function App() {
     ref.on("value", handler);
     return () => ref.off("value", handler);
   }, []);
+
+  // YouBike Day：每週五由第一個載入天氣的人判定並鎖定，之後全員共用同一個結果
+  useEffect(() => {
+    const ref = fRef(`youbikeDay/${todayStr()}`);
+    const handler = snap => setYoubikeDay(snap.val());
+    ref.on("value", handler);
+    return () => ref.off("value", handler);
+  }, []);
+
+  const isYoubikeDay = youbikeDay?.on === true || (TEST_MODE && new URLSearchParams(location.search).has("youbike"));
+  const visibleCats = isYoubikeDay ? [YOUBIKE_CAT] : CATEGORIES.filter(c => c !== YOUBIKE_CAT);
+  useEffect(() => {
+    if (isYoubikeDay && form.category && form.category !== YOUBIKE_CAT) { setIsRandom(false); setForm(f => ({...f, category:"", rest:"", cust:""})); }
+  }, [isYoubikeDay, form.category]);
 
   // 週紀錄即時監聽（所有人自動同步）
   useEffect(() => {
@@ -6073,6 +6098,11 @@ function App() {
   </>;
 
   const PROMOS = <RestPromoBanner promos={restPromos} />;
+  const YOUBIKE = isYoubikeDay ? (
+    <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-green-tx)"}}>
+      🚲 <strong>YouBike Day</strong>｜{youbikeDay?.temp != null ? `中午 ${youbikeDay.temp}°C、降雨機率 ${youbikeDay.pop}%，` : ""}天氣超適合騎車！今天只能選 YouBike 類別的餐廳
+    </div>
+  ) : null;
 
   const AP = <>
     {sugarRush && <SugarRush onDone={() => { setSugarRush(false); document.body.classList.remove("sugar-rush-active"); }} />}
@@ -6124,7 +6154,7 @@ function App() {
       <SiteHeader onTheme={openThemeModal} themeHasNews={Object.entries(themeShopConfig).some(([id,cfg])=>cfg.enabled!==false&&!ownedThemes.has(id)&&!seenThemeIds.has(id))} activeTheme={activeTheme} onAdmin={openAdmin} onHelp={openHelp} onCardHelp={openCardHelp} weather={weather} userName={boundName} isAdmin={isAdmin} cardNews={cardNews} rulesNews={rulesNews} shopNews={shopNews} onProfile={()=>setShowProfile(true)} achievementNews={hasNewAchievement} onLogoClick={handleLogoClick} userPoints={userPoints} onShop={openShop} onPointsHistory={()=>setShowPointsHistory(true)} onNotif={openNotifHistory} notifHasNew={notifHasNew} onWorldCup={()=>setShowWorldCup(true)} wcNews={wcSettleNews} />
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
-        <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+        <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}{YOUBIKE}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <div style={{maxWidth:"440px",margin:"0 auto",paddingTop:"40px"}}>
           <div style={{marginBottom:"40px",textAlign:"center"}}><h1 style={{marginBottom:"12px"}}>今天的午餐</h1><p>設定截止時間，到時系統將自動開獎</p></div>
           <div className="card">
@@ -6149,7 +6179,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
-        <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+        <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}{YOUBIKE}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
         {todaySteals.length > 0 && (
           <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
@@ -6178,7 +6208,7 @@ function App() {
                 const chips = pts
                   .filter(p => p.rest && !p.isRandomRest && p.name !== form.name)
                   .map(p => ({ name: p.name, rest: p.rest, cat: CATEGORIES.find(c => (rests[c]||[]).includes(p.rest)) }))
-                  .filter(x => x.cat && !isRestClosedToday(closedDays, x.rest));
+                  .filter(x => x.cat && visibleCats.includes(x.cat) && !isRestClosedToday(closedDays, x.rest));
                 if (!chips.length) return null;
                 return (
                   <div style={{marginBottom:"16px"}}>
@@ -6203,8 +6233,8 @@ function App() {
                     <button type="button" className="btn-sm ghost" style={{marginBottom:0,fontSize:"12px",padding:"3px 10px"}} onClick={()=>{setIsRandom(false);setForm(f=>({...f,category:"",rest:"",cust:""}));}}>✕ 取消</button>
                   </div>
                 : <><div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
-                    <select value={form.category} style={{flex:1,marginBottom:0}} onChange={e=>{setIsRandom(false);setForm({...form,category:e.target.value,rest:"",cust:""}); }}><option value="">請選擇類型</option>{CATEGORIES.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
-                    <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const openOf=c=>(rests[c]||[]).filter(r=>!isRestClosedToday(closedDays,r));const cats=CATEGORIES.filter(c=>openOf(c).length>0);if(!cats.length)return showToast("沒有可用的餐廳");const cat=cats[Math.floor(Math.random()*cats.length)];const opts=openOf(cat);const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,category:cat,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
+                    <select value={form.category} style={{flex:1,marginBottom:0}} onChange={e=>{setIsRandom(false);setForm({...form,category:e.target.value,rest:"",cust:""}); }}><option value="">請選擇類型</option>{visibleCats.map(c=><option key={c} value={c}>{CAT_EMOJI[c]} {c}</option>)}</select>
+                    <button type="button" className="btn-sm ghost" style={{marginBottom:0,flexShrink:0}} onClick={()=>{const openOf=c=>(rests[c]||[]).filter(r=>!isRestClosedToday(closedDays,r));const cats=visibleCats.filter(c=>openOf(c).length>0);if(!cats.length)return showToast("沒有可用的餐廳");const cat=cats[Math.floor(Math.random()*cats.length)];const opts=openOf(cat);const pick=opts[Math.floor(Math.random()*opts.length)];setForm(f=>({...f,category:cat,rest:pick,cust:""}));setIsRandom(true);}}>🎲 隨機</button>
                   </div>
                   {form.category && (<><label>想吃的店家</label>
                     <select value={form.rest} style={{marginBottom:form.rest==="cust"?"8px":"16px"}} onChange={e=>setForm({...form,rest:e.target.value,cust:""})}><option value="">請選擇店家</option>{(rests[form.category]||[]).map(r => { const closed = isRestClosedToday(closedDays, r); return <option key={r} value={r} disabled={closed}>{r}{closed ? "（店休）" : ""}</option>; })}<option value="cust">其他（自行輸入）</option></select>
@@ -6353,7 +6383,7 @@ function App() {
           <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
           <ConfirmModal show={cancelConfirm} message={usedCardIsDeferred ? `你這次使用了「${usedCardName}」，若之後都沒有再參加，開獎後卡牌會退還給你；但只要又重新加入，卡牌就不會退還，確定取消嗎？` : `你這次使用了「${usedCardName}」，取消參加不會退還卡牌，確定取消嗎？`} onConfirm={()=>{ setCancelConfirm(false); doCancel(); }} onCancel={()=>setCancelConfirm(false)} />
           <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
-          <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+          <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}{YOUBIKE}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
         {todaySteals.length > 0 && (
           <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
@@ -6387,7 +6417,7 @@ function App() {
       <div className="page fade-up">
         <ConfirmModal show={confirmModal} message="確定要重設今日遊戲？此操作無法復原。" onConfirm={confirmReset} onCancel={()=>setConfirmModal(false)} />
         <StatCards deadline={sess?.deadline} ptsCount={pts.length} cardPool={cardPool} />
-        <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
+        <HolidayBanner /><SpecialDayBanner />{AUCTION}{PROMOS}{YOUBIKE}<BirthdayBanner todayBirthdays={todayBirthdays.map(b=>b.name)} /><BirthdayCardBanner show={myCards.some(c=>c.type==="birthday_card")} />{bonusDayToday && <BonusDayBanner myDiceRoll={myDiceRoll} />}
         <StreakWarning weekly={weekly} />
         {todaySteals.length > 0 && (
           <div style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
