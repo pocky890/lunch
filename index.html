@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 17, rules: 12, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"] };
+  const WHATSNEW_VERSION       = { cards: 18, rules: 12, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -461,7 +461,7 @@
     thirsty_card:      { name:"口渴卡",   emoji:"🥤", desc:"加入時宣告使用。開獎後所有參加者合請你一杯，上限 100 元。被核彈炸出局則效果取消。" },
     nuke_card:         { name:"核彈卡",   emoji:"☢️", desc:"另選一個號碼為核心（不影響你的主號碼），九宮格內其他人出局" },
     birthday_card:     { name:"生日卡",   emoji:"🎂", desc:"多選 4 個號碼，取最接近者。生日當月 1 號自動發放，當月底前需使用完畢" },
-    mine_card:         { name:"地雷卡",   emoji:"💣", desc:"另選一個號碼埋地雷，開獎時主號碼是該號碼的人要各請你一杯飲料（每人上限 50 元）。沒人踩中則卡片退還" },
+    mine_card:         { name:"地雷卡",   emoji:"💣", desc:"另選一個號碼埋地雷，開獎時主號碼是該號碼的人要各請你一杯飲料（每人上限 50 元）。有人踩中，卡片交給踩中者（多人則隨機一位）；沒人踩中則退還給你" },
   };
   const CARD_DEFAULTS = {
     follow_restaurant: { total:3, expireDays:30 },
@@ -472,7 +472,7 @@
     cheapskate_card:   { total:1, expireDays:60 },
     thirsty_card:      { total:1, expireDays:10 },
     nuke_card:         { total:1, expireDays:30 },
-    mine_card:         { total:1, expireDays:7 },
+    mine_card:         { total:2, expireDays:7 },
   };
   // 使用當下就已經生效（公開號碼／偷牌已發生），取消參加也不退還本人；其餘卡種效果要等開獎才生效，
   // 若當天最終沒有真的留在參加名單裡（效果從未套用），開獎時直接退還卡牌到本人手牌
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-19 11:18";
+  const BUILD_TIME = "2026-10-19 12:33";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1155,6 +1155,21 @@ async function ensureDailyCards(today, maxNum = 99) {
   return positions;
 }
 
+// 地雷卡到期自動回到卡池（商店購買／拍賣舊卡不回池）；用 transaction 移除確保多個 client 同時掃描時只還池一次
+async function reclaimExpiredMineCards(today) {
+  const all = await fGet("userCards");
+  let reclaimed = 0;
+  for (const [key, cards] of Object.entries(all || {})) {
+    for (const [id, c] of Object.entries(cards || {})) {
+      if (c.type !== "mine_card" || c.fromShop || c.fromAuction || !(c.expiresAt < today)) continue;
+      let removed = false;
+      await fRef(`userCards/${key}/${id}`).transaction(cur => { if (cur === null) return null; removed = true; return null; });
+      if (removed) reclaimed++;
+    }
+  }
+  if (reclaimed > 0) await creditCardPool("mine_card", reclaimed);
+}
+
 async function checkAndAwardCard(name, number, today) {
   const entry = await fGet(`dailyCards/${today}/${number}`);
   if (!entry || entry.pickedBy != null) return null;
@@ -1210,8 +1225,9 @@ async function returnCardToPool(name, cardId) {
 // 效果要等開獎才生效的卡種（非 IMMEDIATE_EFFECT_CARD_TYPES），若本人當天最終沒有留在參加名單裡
 // （效果從未套用），直接把卡牌退還本人手牌，而不是進公共卡牌池。
 async function reconcilePendingCardReturns(today) {
+  const mineReceivers = {};
   const all = await fGet("pendingCardReturns");
-  if (!all) return;
+  if (!all) return mineReceivers;
   for (const [date, entries] of Object.entries(all)) {
     if (date > today) continue;
     const weeklyRec = await fGet(`weekly/${date}`);
@@ -1223,14 +1239,27 @@ async function reconcilePendingCardReturns(today) {
       const fromShop = typeof val === "object" && val?.fromShop;
       if (!type) continue;
       const neverTookEffect = name && ((participantNames && !IMMEDIATE_EFFECT_CARD_TYPES.includes(type) && !participantNames.includes(name)) || (weeklyRec?.noParticipants && type !== "steal_card"));
-      // 地雷卡：沒有任何人踩中就退還給放雷者（保留原本的到期日，避免退還後無限延期）
-      const mineUnhit = type === "mine_card" && name && !(weeklyRec?.mines || []).some(m => m.by === name && m.hit?.length > 0);
+      // 地雷卡：踩中者（含被免付卡擋下的）隨機一人接手卡片；沒有任何人踩中就退還給放雷者（保留原本的到期日，避免退還後無限延期）
+      const mine = type === "mine_card" && name ? (weeklyRec?.mines || []).find(m => m.by === name) : null;
+      const mineVictims = mine ? [...(mine.hit || []), ...(mine.shielded || [])] : [];
+      const mineUnhit = type === "mine_card" && name && mineVictims.length === 0;
       if (neverTookEffect || mineUnhit) {
         const cardCfg = await fGet(`cardConfig/${type}`);
         const expMs = (cardCfg?.expireDays ?? CARD_DEFAULTS[type]?.expireDays ?? 30) * 86400000;
         const exp = new Date(Date.now() + expMs);
         const expiresAt = val?.expiresAt || `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
         await fRef(`userCards/${sanitizeKey(name)}`).push().set({ type, expiresAt, obtainedAt: today, ...(fromShop ? { fromShop: true } : {}), ...(val?.fromAuction ? { fromAuction: true } : {}) });
+        continue;
+      }
+      if (mine && mineVictims.length > 0) {
+        const receiver = mineVictims.includes(mine.receiver) ? mine.receiver : mineVictims[Math.floor(Math.random() * mineVictims.length)];
+        const cardCfg = await fGet(`cardConfig/mine_card`);
+        const exp = new Date(Date.now() + (cardCfg?.expireDays ?? CARD_DEFAULTS.mine_card.expireDays) * 86400000);
+        const expiresAt = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,"0")}-${String(exp.getDate()).padStart(2,"0")}`;
+        await fRef(`userCards/${sanitizeKey(receiver)}`).push().set({ type: "mine_card", expiresAt, obtainedAt: today });
+        await fRef(`weekly/${date}/mines/${weeklyRec.mines.indexOf(mine)}/receiver`).set(receiver);
+        logNotification(sanitizeKey(receiver), "mine_received", { by: name, number: mine.number, expiresAt, date });
+        if (date === today) mineReceivers[name] = receiver;
         continue;
       }
       if (!fromShop && CARD_DEFAULTS[type]) returnUpdates[type] = (returnUpdates[type] || 0) + 1;
@@ -1240,6 +1269,7 @@ async function reconcilePendingCardReturns(today) {
     }
     await fRef(`pendingCardReturns/${date}`).remove();
   }
+  return mineReceivers;
 }
 
 // 邏輯必須跟 computeStreak 完全一致（skipStreak/noParticipants 一律跳過不中斷，完全沒參加視同不在場、套用 14 天上限），
@@ -1395,11 +1425,11 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"extra_number",      desc:["加入時宣告使用，需同時選兩個號碼","開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼"] },
     { type:"streak_protect",    desc:["被動卡，無需手動操作","開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡","今天會標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持"] },
     { type:"reveal_numbers",    desc:["加入時宣告使用","使用後立即公開所有人已選的號碼，截止前所有人都能看見","可據此調整策略"] },
-    { type:"steal_card",        desc:["加入時宣告使用","隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌","若無人持有卡牌則無效，盜牌卡保留","生日卡和拍賣得標的地雷卡不會被偷"] },
+    { type:"steal_card",        desc:["加入時宣告使用","隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌","若無人持有卡牌則無效，盜牌卡保留","生日卡不會被偷"] },
     { type:"cheapskate_card",   desc:["被動卡，無需手動操作","以下情況自動啟動，免除你該次的出資份額：連勝請客（≥3 連勝，對獨贏無效）、當天有人使用口渴卡、你踩到別人的地雷","擋地雷時一張卡擋一顆，同一天只會用掉 1 張"] },
     { type:"thirsty_card",      desc:["加入時宣告使用","開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選","若被核彈卡炸出局，效果取消"] },
     { type:"nuke_card",         desc:["加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）","開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）","持有多個號碼的人，只要有一個號碼存活即繼續參賽","核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死"] },
-    { type:"mine_card",         desc:["加入時另外選一個「地雷號碼」（獨立於你的主號碼，你自己踩到不算）","開獎時，主號碼等於地雷號碼的人要各請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯","只有主號碼算踩中：加號卡、生日卡的額外號碼和寵物自動號碼都不算；被核彈炸出局的人一樣要請","踩中的人若有免付卡會自動擋下（一張擋一顆），全部被擋視同沒人踩中","沒人踩中，卡片原樣退還給你（效期不變）；踩中則卡片用完","地雷位置到開獎才揭曉，畫面只顯示今天埋了幾顆","公開卡公開號碼後，新放的地雷不能放在已被選走的號碼上","全遊戲只有 2 張：1 張在每日抽卡池（效期 7 日）、1 張在首頁拍賣（每週五 09:00～12:00，底價 100 點；得標者可用到下一場拍賣日，約 7 日）"] },
+    { type:"mine_card",         desc:["加入時另外選一個「地雷號碼」（獨立於你的主號碼，你自己踩到不算）","開獎時，主號碼等於地雷號碼的人要各請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯","只有主號碼算踩中：加號卡、生日卡的額外號碼和寵物自動號碼都不算；被核彈炸出局的人一樣要請","踩中的人若有免付卡會自動擋下飲料（一張擋一顆），但仍算踩中","沒人踩中，卡片原樣退還給你（效期不變）；有人踩中，卡片交給踩中的人（多人踩中則隨機一位），效期重新計 7 日，到期後自動回到卡池重新發放","地雷位置到開獎才揭曉，畫面只顯示今天埋了幾顆","公開卡公開號碼後，新放的地雷不能放在已被選走的號碼上","全遊戲共 2 張，都在每日抽卡池（效期 7 日）"] },
     { type:"birthday_card",     desc:["生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）","當月底前需使用完畢，逾期作廢","加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼","不會被盜牌卡偷走"] },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -1427,7 +1457,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
               <div style={{display:"flex",alignItems:"baseline",gap:"8px",fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>
                 <span style={{fontSize:"18px"}}>{ct.emoji}</span>
                 <span>{ct.name}{newCardTypes.includes(c.type) && <NewDot />}</span>
-                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{c.type==="birthday_card" ? "生日禮 · 當月底到期" : c.type==="mine_card" ? "共 2 張（抽卡池 1・拍賣 1）· 效期 7 日" : `${cfg.total ?? "?"} 張 · ${cfg.expireDays ?? "?"} 天`}</span>
+                <span style={{fontSize:"12px",fontWeight:"400",color:"var(--t3)"}}>{c.type==="birthday_card" ? "生日禮 · 當月底到期" : `${cfg.total ?? "?"} 張 · ${cfg.expireDays ?? "?"} 天`}</span>
               </div>
               {Array.isArray(c.desc) ? <ul style={{margin:0,paddingLeft:"20px"}}>{c.desc.map((t,i) => <li key={i}>{t}</li>)}</ul> : <div>{c.desc}</div>}
             </div>
@@ -2532,150 +2562,6 @@ function TestModeBanner() {
   return (
     <div style={{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",zIndex:9999,background:"#1E293B",color:"#F8FAFC",padding:"8px 20px",borderRadius:"999px",fontSize:"13px",fontWeight:"600",boxShadow:"0 4px 16px rgba(0,0,0,0.3)",pointerEvents:"none",display:"flex",alignItems:"center",gap:"8px"}}>
       🧪 測試模式｜資料不會寫入 DB
-    </div>
-  );
-}
-
-function fmtCountdown(ms) {
-  if (ms <= 0) return "00:00:00";
-  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  const hms = [h, m, sec].map(n => String(n).padStart(2, "0")).join(":");
-  return d > 0 ? `${d} 天 ${hms}` : hms;
-}
-function fmtAuctionTime(ms) {
-  const d = new Date(ms), w = "日一二三四五六"[d.getDay()];
-  return `${d.getMonth()+1}/${d.getDate()}（${w}）${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-}
-
-// 地雷卡拍賣：一打開就看得到，出價即時同步。結標後由 GitHub Actions（n8n 準時觸發）結算並發卡
-function AuctionPanel({ boundName, userPoints }) {
-  const [notice, setNotice] = useState("");
-  const flash = m => { setNotice(m); setTimeout(() => setNotice(""), 4000); };
-  const [cur, setCur] = useState(undefined);
-  const [bids, setBids] = useState({});
-  const [last, setLast] = useState(null);
-  const [offset, setOffset] = useState(0);
-  const [, setTick] = useState(0);
-  const [amount, setAmount] = useState("");
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { const r = db.ref(".info/serverTimeOffset"); const h = s => setOffset(s.val() || 0); r.on("value", h); return () => r.off("value", h); }, []);
-  useEffect(() => { const r = fRef("auction/current"); const h = s => setCur(s.val()); r.on("value", h); return () => r.off("value", h); }, []);
-  useEffect(() => { const r = fRef("auction/lastResult"); const h = s => setLast(s.val()); r.on("value", h); return () => r.off("value", h); }, []);
-  const curId = cur?.id;
-  useEffect(() => {
-    if (!curId) { setBids({}); return; }
-    const r = fRef(`auction/bids/${curId}`); const h = s => setBids(s.val() || {}); r.on("value", h); return () => r.off("value", h);
-  }, [curId]);
-  useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
-  // 出價欄預設填好「最高價 + 加價幅度」，被超標時自動跳到新的最低出價
-  const needNow = cur ? (cur.top ? cur.top.amount + cur.step : cur.minBid) : 0;
-  useEffect(() => { if (needNow) setAmount(prev => (!prev || parseInt(prev) < needNow) ? String(needNow) : prev); }, [needNow]);
-
-  if (!cur) return null;
-  const now = Date.now() + offset;
-  // 只在開拍當天（00:00 起）才顯示，其他日子整個面板隱藏
-  const openDayStart = new Date(cur.openAt); openDayStart.setHours(0, 0, 0, 0);
-  if (now < openDayStart.getTime()) {
-    if (!last) return null;
-    // 上一場結果只留到結算當天，隔天 00:00 起隱藏
-    if (last.ts) {
-      const hideAt = new Date(last.ts); hideAt.setHours(0, 0, 0, 0);
-      hideAt.setDate(hideAt.getDate() + 1);
-      if (now >= hideAt.getTime()) return null;
-    }
-    return (
-      <div style={{padding:"8px 14px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",fontSize:"13px",color:"var(--t2)"}}>
-        💣 <strong style={{color:"var(--t1)"}}>地雷卡拍賣</strong>　上一場：{last.winner ? <><strong style={{color:"var(--t1)"}}>{last.winner}</strong> 以 {last.price} 點得標</> : "流標（沒有人出價或點數不足）"}　・　下一場 {fmtAuctionTime(cur.openAt)} 開標
-      </div>
-    );
-  }
-  const upcoming = now < cur.openAt, open = now >= cur.openAt && now < cur.closeAt;
-  const myKey = boundName ? sanitizeKey(boundName) : null;
-  const list = Object.values(bids).sort((a, b) => b.amount - a.amount || a.ts - b.ts);
-  if (cur.top && !list.some(b => b.name === cur.top.name)) list.unshift({ name: cur.top.name, amount: cur.top.amount, ts: cur.top.ts });
-  const minNeeded = cur.top ? cur.top.amount + cur.step : cur.minBid;
-  const iAmTop = !!cur.top && cur.top.name === boundName;
-  const closeDay = new Date(cur.closeAt); closeDay.setHours(0, 0, 0, 0);
-  const expDays = Math.round((new Date(`${cur.cardExpiresAt}T00:00:00`) - closeDay) / 86400000);
-  const myBid = list.find(b => b.name === boundName);
-
-  async function placeBid() {
-    const amt = parseInt(amount);
-    if (!boundName) return;
-    if (!amt) return flash("請輸入出價點數");
-    if (amt < minNeeded) return flash(`出價至少 ${minNeeded} 點`);
-    if (iAmTop) return flash("你已經是最高出價者了");
-    if ((userPoints || 0) < amt) return flash("你的點數不足");
-    setBusy(true);
-    try {
-      let accepted = false;
-      const tx = await fRef("auction/current").transaction(c => {
-        accepted = false;
-        if (!c || c.id !== cur.id) return;
-        const t = Date.now() + offset;
-        if (t < c.openAt || t >= c.closeAt) return;
-        if (amt < (c.top ? c.top.amount + c.step : c.minBid)) return;
-        accepted = true;
-        const next = { ...c, top: { name: boundName, key: myKey, amount: amt, ts: t } };
-        if (c.closeAt - t < 60000 && c.closeAt < c.hardCloseAt) next.closeAt = Math.min(t + 60000, c.hardCloseAt);
-        return next;
-      });
-      if (TEST_MODE) return flash("測試模式不會真的出價");
-      if (!tx?.committed || !accepted) return flash("出價失敗：已有更高出價或已截標，請看最新狀態");
-      await fRef(`auction/bids/${cur.id}/${myKey}`).set({ name: boundName, amount: amt, ts: Date.now() + offset });
-      flash(`出價成功：${amt} 點`);
-    } catch (e) {
-      flash("連線錯誤，請重試");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const status = upcoming ? "即將開標" : open ? "競標中" : "已截標・結算中";
-  const statusColor = open ? "var(--c-green-tx)" : "var(--t3)";
-  return (
-    <div style={{padding:"12px 14px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--t2)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
-        <strong style={{color:"var(--t1)"}}>💣 地雷卡拍賣</strong>
-        <span style={{fontSize:"12px",fontWeight:"600",color:statusColor}}>{status}</span>
-        <span style={{marginLeft:"auto",fontVariantNumeric:"tabular-nums",fontWeight:"600",color:"var(--t1)"}}>
-          {upcoming ? `${fmtCountdown(cur.openAt - now)} 後開標` : open ? `剩 ${fmtCountdown(cur.closeAt - now)}` : ""}
-        </span>
-      </div>
-      <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"4px",lineHeight:1.6}}>
-        {upcoming ? `${fmtAuctionTime(cur.openAt)} 開標，` : ""}{fmtAuctionTime(cur.closeAt)} 截標・底價 {cur.minBid} 點・每次加價至少 {cur.step} 點・截標前 1 分鐘內出價會延長 1 分鐘。卡片效期 {expDays} 日，得標者可用到 {cur.cardExpiresAt}：放一顆地雷，主號碼踩中的人各請你一杯飲料（每人上限 {MINE_TREAT_CAP} 元），沒人踩中卡片退還。
-      </div>
-      {!upcoming && (
-        <div style={{marginTop:"8px"}}>
-          <div style={{fontWeight:"600",color:"var(--t1)"}}>
-            {cur.top ? <>目前最高：{cur.top.name} <span style={{color:"var(--a)"}}>{cur.top.amount} 點</span></> : `尚無人出價（底價 ${cur.minBid} 點）`}
-          </div>
-          {list.length > 0 && (
-            <div style={{marginTop:"6px",display:"flex",flexDirection:"column",gap:"2px",fontSize:"13px"}}>
-              {list.slice(0, 5).map((b, i) => (
-                <div key={b.name} style={{display:"flex",gap:"8px",color:b.name === boundName ? "var(--t1)" : "var(--t3)",fontWeight:b.name === boundName ? "600" : "400"}}>
-                  <span style={{width:"16px"}}>{i + 1}</span><span style={{flex:1}}>{b.name}{b.name === boundName ? "（你）" : ""}</span><span>{b.amount} 點</span>
-                </div>
-              ))}
-              {myBid && !list.slice(0, 5).includes(myBid) && <div style={{color:"var(--t1)",fontWeight:"600"}}>你的出價：{myBid.amount} 點（第 {list.indexOf(myBid) + 1} 名）</div>}
-              {list.length > 5 && <div style={{color:"var(--t3)"}}>共 {list.length} 人出價</div>}
-            </div>
-          )}
-        </div>
-      )}
-      {open && boundName && (
-        <div style={{display:"flex",gap:"8px",alignItems:"center",marginTop:"10px"}}>
-          <input type="number" inputMode="numeric" value={amount} onChange={e => setAmount(e.target.value)} min={minNeeded} max={typeof userPoints === "number" ? userPoints : undefined} step={cur.step} placeholder={`至少 ${minNeeded}`} style={{marginBottom:0,width:"110px",flex:"0 0 auto"}} />
-          <button onClick={placeBid} disabled={busy || iAmTop} style={{width:"auto",padding:"0 18px",marginBottom:0,flexShrink:0}}>{iAmTop ? "你是最高標" : busy ? "送出中…" : "出價"}</button>
-        </div>
-      )}
-      {open && boundName && <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"6px"}}>你的點數：{userPoints ?? "…"}　出價後不能撤回，結標才會扣點</div>}
-      {notice && <div style={{fontSize:"13px",fontWeight:"600",color:"var(--c-orange-tx)",marginTop:"6px"}}>{notice}</div>}
-      {last && (
-        <div style={{fontSize:"12px",color:"var(--t3)",marginTop:"8px"}}>
-          上一場：{last.winner ? `${last.winner} 以 ${last.price} 點得標` : "流標（沒有人出價或點數不足）"}
-        </div>
-      )}
     </div>
   );
 }
@@ -4077,12 +3963,13 @@ function NotificationModal({ open, onClose, boundName, weekly }) {
         </div>
       );
     }
-    if (item.type === "mine_planter" || item.type === "mine_stepped" || item.type === "auction_won" || item.type === "auction_unpaid") {
+    if (item.type === "mine_planter" || item.type === "mine_stepped" || item.type === "mine_received" || item.type === "auction_won" || item.type === "auction_unpaid") {
       const hit = item.type === "mine_planter" && item.victims?.length > 0;
       const text = item.type === "mine_planter"
         ? (hit ? `你的地雷（#${item.number}）被 ${item.victims.join("、")} 踩中，每人請你一杯（上限 ${MINE_TREAT_CAP} 元）${item.shielded?.length ? `（另有 ${item.shielded.join("、")} 以免付卡擋下）` : ""}`
-          : item.shielded?.length ? `你的地雷（#${item.number}）被 ${item.shielded.join("、")} 踩中，但對方免付卡生效，地雷卡已退還`
+          : item.shielded?.length ? `你的地雷（#${item.number}）被 ${item.shielded.join("、")} 踩中，但對方免付卡生效，免請飲料，地雷卡交給對方`
           : `你的地雷（#${item.number}）沒有人踩中，地雷卡已退還`)
+        : item.type === "mine_received" ? `你接手了 ${item.by} 的地雷卡（#${item.number}），有效期限到 ${item.expiresAt}，到期後回到卡池`
         : item.type === "mine_stepped" ? `你踩到 ${item.by} 的地雷（#${item.number}），請 ${item.by} 喝一杯（上限 ${MINE_TREAT_CAP} 元）`
         : item.type === "auction_won" ? `你以 ${item.price} 點標下地雷卡，有效期限到 ${item.expiresAt}`
         : `你的出價 ${item.price} 點得標，但點數不足，名額已順延`;
@@ -5359,7 +5246,7 @@ function App() {
           }
         }
         // 地雷踩中者若持有免付卡就自動發動擋掉（一張卡擋一顆、同一人同一天只擋一次）；被擋掉的人從 hit 移到 shielded，
-        // 全部被擋視同沒人踩中（reconcilePendingCardReturns 會把地雷卡退還放雷者），所以要在它之前把結果寫回 weekly
+        // 被擋的人仍算踩中、可接手地雷卡（reconcilePendingCardReturns 依 weekly 的 hit/shielded 決定），所以要在它之前把結果寫回 weekly
         const shieldedKeys = new Set();
         let finalMines = mines;
         if (mines.some(m => m.hit.length > 0)) {
@@ -5386,9 +5273,10 @@ function App() {
           for (const v of m.hit) logNotification(sanitizeKey(v), "mine_stepped", { by: m.by, number: m.number, date: today });
         }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
+        await reclaimExpiredMineCards(today);
         await ensureDailyCards(today, effectiveNumMax);
         // 結算今日已使用卡牌的歸還（開獎前使用時只從手牌移除，避免卡牌池提早跳動；即使中途取消參加也會歸還，因為記錄跟參加者名單脫鉤）
-        await reconcilePendingCardReturns(today);
+        const mineReceivers = await reconcilePendingCardReturns(today);
         // 集中結算被動卡與隱藏成就：由天選客戶端統一掃描所有參賽者，確保離線者也生效
         const winnerNameSet = new Set(soloWinners.map(w => w.name));
         const streakExempt = [];
@@ -5537,6 +5425,7 @@ function App() {
             mineInfo:        finalMines.flatMap(m => [
               ...(m.hit.length > 0 ? [`💣 ${m.hit.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），${m.hit.join("、")} ${m.hit.length > 1 ? "各" : ""}要請 ${m.by} 一杯飲料（上限 ${MINE_TREAT_CAP} 元）`] : []),
               ...(m.shielded?.length > 0 ? [`🤑 ${m.shielded.join("、")} 踩到 ${m.by} 的地雷（#${m.number}），但免付卡生效，免請`] : []),
+              ...(mineReceivers[m.by] ? [`🎁 ${mineReceivers[m.by]} 接手了 ${m.by} 的地雷卡（效期 7 日）`] : []),
             ]).join("\n"),
           })
         }).catch(() => {});
@@ -6094,7 +5983,6 @@ function App() {
   const mineCountToday = pts.filter(p => p.cardUsed === "mine_card" && p.mineNumber).length;
   const AUCTION = <>
     {mineCountToday > 0 && phase !== "results" && <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>💣 今天已經埋下 <strong>{mineCountToday}</strong> 顆地雷，號碼不公開，小心別踩到！</div>}
-    <AuctionPanel boundName={boundName} userPoints={userPoints} />
   </>;
 
   const PROMOS = <RestPromoBanner promos={restPromos} />;
@@ -6593,8 +6481,9 @@ function App() {
               ))}
               {(weekly[todayStr()]?.mines || resolveMines(pts)).map(m => ({...m, hit: m.hit || [], shielded: m.shielded || []})).map((m,i) => m.hit.length > 0 || m.shielded.length > 0 ? (
                 <div key={i} style={{padding:"12px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
-                  {m.shielded.length > 0 && <div>🤑 <strong>{m.shielded.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），但免付卡生效，免請{m.hit.length === 0 ? "，地雷卡已退還" : ""}</div>}
+                  {m.shielded.length > 0 && <div>🤑 <strong>{m.shielded.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），但免付卡生效，免請</div>}
                   {m.hit.length > 0 && <div>💣 <strong>{m.hit.join("、")}</strong> 踩到 <strong>{m.by}</strong> 的地雷（#{m.number}），<strong>{m.hit.join("、")}</strong> {m.hit.length > 1 ? "各" : ""}要請 <strong>{m.by}</strong> 一杯飲料（上限 {MINE_TREAT_CAP} 元）{m.hit.length > 1 ? `，共 ${m.hit.length} 杯` : ""}</div>}
+                  {m.receiver && <div>🎁 <strong>{m.receiver}</strong> 接手了 <strong>{m.by}</strong> 的地雷卡（效期 7 日，到期回卡池）</div>}
                 </div>
               ) : (
                 <div key={i} style={{padding:"12px 16px",background:"var(--s2)",border:"1px solid var(--b1)",borderRadius:"10px",marginBottom:"16px",fontSize:"14px",color:"var(--t2)"}}>
