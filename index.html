@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 18, rules: 12, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"] };
+  const WHATSNEW_VERSION       = { cards: 19, rules: 12, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-19 12:33";
+  const BUILD_TIME = "2026-10-19 12:53";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1155,13 +1155,13 @@ async function ensureDailyCards(today, maxNum = 99) {
   return positions;
 }
 
-// 地雷卡到期自動回到卡池（商店購買／拍賣舊卡不回池）；用 transaction 移除確保多個 client 同時掃描時只還池一次
+// 地雷卡到期自動回到卡池：最後有效日（expiresAt <= 今天）開獎後就回池，隔天一早藏卡才發得到（商店購買／拍賣舊卡不回池）；用 transaction 移除確保多個 client 同時掃描時只還池一次
 async function reclaimExpiredMineCards(today) {
   const all = await fGet("userCards");
   let reclaimed = 0;
   for (const [key, cards] of Object.entries(all || {})) {
     for (const [id, c] of Object.entries(cards || {})) {
-      if (c.type !== "mine_card" || c.fromShop || c.fromAuction || !(c.expiresAt < today)) continue;
+      if (c.type !== "mine_card" || c.fromShop || c.fromAuction || !(c.expiresAt <= today)) continue;
       let removed = false;
       await fRef(`userCards/${key}/${id}`).transaction(cur => { if (cur === null) return null; removed = true; return null; });
       if (removed) reclaimed++;
@@ -1429,7 +1429,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"cheapskate_card",   desc:["被動卡，無需手動操作","以下情況自動啟動，免除你該次的出資份額：連勝請客（≥3 連勝，對獨贏無效）、當天有人使用口渴卡、你踩到別人的地雷","擋地雷時一張卡擋一顆，同一天只會用掉 1 張"] },
     { type:"thirsty_card",      desc:["加入時宣告使用","開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選","若被核彈卡炸出局，效果取消"] },
     { type:"nuke_card",         desc:["加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）","開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）","持有多個號碼的人，只要有一個號碼存活即繼續參賽","核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死"] },
-    { type:"mine_card",         desc:["加入時另外選一個「地雷號碼」（獨立於你的主號碼，你自己踩到不算）","開獎時，主號碼等於地雷號碼的人要各請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯","只有主號碼算踩中：加號卡、生日卡的額外號碼和寵物自動號碼都不算；被核彈炸出局的人一樣要請","踩中的人若有免付卡會自動擋下飲料（一張擋一顆），但仍算踩中","沒人踩中，卡片原樣退還給你（效期不變）；有人踩中，卡片交給踩中的人（多人踩中則隨機一位），效期重新計 7 日，到期後自動回到卡池重新發放","地雷位置到開獎才揭曉，畫面只顯示今天埋了幾顆","公開卡公開號碼後，新放的地雷不能放在已被選走的號碼上","全遊戲共 2 張，都在每日抽卡池（效期 7 日）"] },
+    { type:"mine_card",         desc:["加入時另外選一個「地雷號碼」（獨立於你的主號碼，你自己踩到不算）","開獎時，主號碼等於地雷號碼的人要各請你一杯飲料，每人上限 50 元，兩人踩中就是 2 杯","只有主號碼算踩中：加號卡、生日卡的額外號碼和寵物自動號碼都不算；被核彈炸出局的人一樣要請","踩中的人若有免付卡會自動擋下飲料（一張擋一顆），但仍算踩中","沒人踩中，卡片原樣退還給你（效期不變）；有人踩中，卡片交給踩中的人（多人踩中則隨機一位），效期重新計 7 日，到期當天開獎後自動回到卡池，隔天重新發放","地雷位置到開獎才揭曉，畫面只顯示今天埋了幾顆","公開卡公開號碼後，新放的地雷不能放在已被選走的號碼上","全遊戲共 2 張，都在每日抽卡池（效期 7 日）"] },
     { type:"birthday_card",     desc:["生日當月 1 號自動發放到你的手牌，無需抽取（若 1 號當天無人上線，當月內首位上線者會自動補發）","當月底前需使用完畢，逾期作廢","加入時宣告使用，需同時選 4 個額外號碼（連同原本的號碼共 5 個），開獎時取最接近幸運號碼的作為你的有效號碼","不會被盜牌卡偷走"] },
   ];
   const totalCards = Object.values(cardConfig).reduce((s, c) => s + (c?.total || 0), 0) ||
@@ -5273,10 +5273,10 @@ function App() {
           for (const v of m.hit) logNotification(sanitizeKey(v), "mine_stepped", { by: m.by, number: m.number, date: today });
         }
         // 由天選客戶端負責發卡，確保 Webhook 通知與實際發卡結果一致
-        await reclaimExpiredMineCards(today);
         await ensureDailyCards(today, effectiveNumMax);
         // 結算今日已使用卡牌的歸還（開獎前使用時只從手牌移除，避免卡牌池提早跳動；即使中途取消參加也會歸還，因為記錄跟參加者名單脫鉤）
         const mineReceivers = await reconcilePendingCardReturns(today);
+        await reclaimExpiredMineCards(today);
         // 集中結算被動卡與隱藏成就：由天選客戶端統一掃描所有參賽者，確保離線者也生效
         const winnerNameSet = new Set(soloWinners.map(w => w.name));
         const streakExempt = [];
