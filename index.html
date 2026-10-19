@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-19 12:56";
+  const BUILD_TIME = "2026-10-19 12:59";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1155,11 +1155,13 @@ async function ensureDailyCards(today, maxNum = 99) {
   return positions;
 }
 
-// 卡牌到期自動回到卡池：最後有效日（expiresAt <= 今天）開獎後就回池，隔天一早藏卡才發得到。
+// 卡牌到期自動回到卡池：最後有效日（expiresAt 落在「上次回收日之後～今天」）開獎後就回池，隔天一早藏卡才發得到。
+// 區間而非只看今天，是為了涵蓋週末／假日沒有開獎的日子；第一次執行時只處理今天到期的，不動更早過期的卡。
 // 只處理有在卡池流通的卡（不含生日卡、商店購買／拍賣舊卡）；用 transaction 移除確保多個 client 同時掃描時只還池一次。
-// 還池數量以「卡池 + 仍有效的在外張數」補到總量為上限，避免歷史累積的過期卡一次灌爆卡池
+// 還池數量以「卡池 + 仍有效的在外張數」補到總量為上限
 async function reclaimExpiredCards(today) {
-  const [all, pool, cfg] = await Promise.all([fGet("userCards"), fGet("cardPool"), fGet("cardConfig")]);
+  const [all, pool, cfg, throughRaw] = await Promise.all([fGet("userCards"), fGet("cardPool"), fGet("cardConfig"), fGet("cardReclaimedThrough")]);
+  const through = throughRaw || (d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`)(new Date(new Date(today + "T00:00:00").getTime() - 86400000));
   const poolCard = c => CARD_DEFAULTS[c.type] && !c.fromShop && !c.fromAuction;
   const held = {}, reclaimed = {};
   for (const cards of Object.values(all || {})) {
@@ -1169,7 +1171,7 @@ async function reclaimExpiredCards(today) {
   }
   for (const [key, cards] of Object.entries(all || {})) {
     for (const [id, c] of Object.entries(cards || {})) {
-      if (!poolCard(c) || !(c.expiresAt <= today)) continue;
+      if (!poolCard(c) || !(c.expiresAt > through && c.expiresAt <= today)) continue;
       let removed = false;
       await fRef(`userCards/${key}/${id}`).transaction(cur => { if (cur === null) return null; removed = true; return null; });
       if (removed) reclaimed[c.type] = (reclaimed[c.type] || 0) + 1;
@@ -1180,6 +1182,7 @@ async function reclaimExpiredCards(today) {
     const room = Math.max(0, total - ((pool || {})[type] || 0) - (held[type] || 0));
     if (Math.min(n, room) > 0) await creditCardPool(type, Math.min(n, room));
   }
+  await fSet("cardReclaimedThrough", today);
 }
 
 async function checkAndAwardCard(name, number, today) {
