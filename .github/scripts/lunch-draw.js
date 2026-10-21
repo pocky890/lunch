@@ -123,17 +123,31 @@ function isDeadlinePassed(deadline) {
   return tw.getUTCHours() > h || (tw.getUTCHours() === h && tw.getUTCMinutes() >= m);
 }
 
+function isWinnerOf(rec, name) {
+  if (!rec || !name) return false;
+  if (rec.winners) return rec.winners.includes(name);
+  return rec.winner === name;
+}
+
+// 與 index.html 的 computeStreak 保持一致：skipStreak/noParticipants 跳過不中斷，缺席視同不在場，連續缺席達上限才歸零
+const STREAK_MAX_ABSENT = 10;
 function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
   if (todayPtsCount < 3) return 0; // 人數不足，今日不計入連勝
   const pastDates = Object.keys(weekly || {}).filter(d => d < today).sort().reverse();
   let streak = 1;
+  let consecutiveAbsent = 0;
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak) continue; // 人數不足的日子跳過，不累計也不中斷
-    if (rec.winner === winnerName && rec.soloWin) continue; // 同一人獨贏，跳過但不中斷連勝
-    if (rec.winner === winnerName && !rec.soloWin) { streak++; } else { break; }
+    if (rec.skipStreak || rec.noParticipants) continue;
+    const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
+    if (wasAbsent) {
+      if (++consecutiveAbsent >= STREAK_MAX_ABSENT) break;
+      continue;
+    }
+    consecutiveAbsent = 0;
+    if (isWinnerOf(rec, winnerName)) { streak++; } else { break; }
   }
   return streak;
 }
@@ -231,8 +245,8 @@ async function main() {
     for (const date of pastDates) {
       const rec = weeklyAll[date];
       if (!rec) break;
-      if (rec.skipStreak || (rec.winner === result.winner.name && rec.soloWin)) continue;
-      if (rec.winner === result.winner.name && !rec.soloWin) { preservedStreak++; } else { break; }
+      if (rec.skipStreak) continue;
+      if (isWinnerOf(rec, result.winner.name)) { preservedStreak++; } else { break; }
     }
   }
   let isBirthdaySoloWin = false;
