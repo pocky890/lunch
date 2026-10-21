@@ -140,10 +140,7 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) {
-      if (rec.skipStreak && rec.participantNames?.includes(winnerName)) consecutiveAbsent = 0; // 不計輸贏的日子，只要本人有參加就算出席
-      continue;
-    }
+    if (rec.skipStreak || rec.noParticipants) continue;
     const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
     if (wasAbsent) {
       if (++consecutiveAbsent >= STREAK_MAX_ABSENT) break;

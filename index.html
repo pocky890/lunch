@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-21 10:38";
+  const BUILD_TIME = "2026-10-21 10:52";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -959,10 +959,7 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) {
-      if (rec.skipStreak && rec.participantNames?.includes(winnerName)) consecutiveAbsent = 0; // 不計輸贏的日子，只要本人有參加就算出席
-      continue;
-    }
+    if (rec.skipStreak || rec.noParticipants) continue;
     // 標記不參加、或當天根本沒參加（連不參加都沒按），都視為同一種「不在場」，套用同一個連續缺席上限（STREAK_MAX_ABSENT）保護連勝。
     // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
     const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
@@ -999,10 +996,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   // 這種舊資料沒辦法判斷是否缺席，直接看輸贏就好，不能當成缺席，否則會把舊的連勝紀錄洗掉
   let maxStreak = 0, curStreak = 0, consecutiveAbsent = 0;
   recs.forEach(r => {
-    if (r.noParticipants || r.skipStreak) {
-      if (r.skipStreak && r.participantNames?.includes(name)) consecutiveAbsent = 0;
-      return;
-    }
+    if (r.noParticipants || r.skipStreak) return;
     if (r.participantNames && !r.participantNames.includes(name)) {
       if (++consecutiveAbsent >= STREAK_MAX_ABSENT) curStreak = 0;
       return;
@@ -1303,10 +1297,7 @@ function getPreviousStreak(weekly, name, today) {
   for (const date of past) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) {
-      if (rec.skipStreak && rec.participantNames?.includes(name)) consecutiveAbsent = 0;
-      continue;
-    }
+    if (rec.skipStreak || rec.noParticipants) continue;
     // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
     const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
     if (wasAbsent) {
@@ -2619,10 +2610,7 @@ function getTrailingAbsent(weekly, name, today) {
   for (const date of Object.keys(weekly || {}).filter(d => d < today).sort().reverse()) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) {
-      if (rec.skipStreak && rec.participantNames?.includes(name)) break;
-      continue;
-    }
+    if (rec.skipStreak || rec.noParticipants) continue;
     const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
     if (!wasAbsent) break;
     k++;
