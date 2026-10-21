@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-20 14:40";
+  const BUILD_TIME = "2026-10-21 10:03";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2603,6 +2603,20 @@ function SpecialDayBanner() {
   );
 }
 
+// 目前連續缺席幾個開獎日（跟 computeStreak 同一套跳過規則）；超過 14 個連勝就會歸零
+function getTrailingAbsent(weekly, name, today) {
+  let k = 0;
+  for (const date of Object.keys(weekly || {}).filter(d => d < today).sort().reverse()) {
+    const rec = weekly[date];
+    if (!rec) break;
+    if (rec.skipStreak || rec.noParticipants) continue;
+    const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
+    if (!wasAbsent) break;
+    k++;
+  }
+  return k;
+}
+
 function StreakWarning({ weekly }) {
   if (DB_PREFIX === "lunch_test") return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
@@ -2615,14 +2629,14 @@ function StreakWarning({ weekly }) {
   const allNames = new Set();
   Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
   const warnings = [...allNames]
-    .map(name => ({ name, streak: computeStreak(weekly, name, today) }))
+    .map(name => ({ name, streak: computeStreak(weekly, name, today), absent: getTrailingAbsent(weekly, name, today) }))
     .filter(x => x.streak >= 3)
     .sort((a, b) => b.streak - a.streak);
   if (warnings.length === 0) return null;
   return (
     <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-orange-bg)",border:"1px solid var(--c-orange-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-orange-tx)"}}>
       {warnings.map(w => (
-        <div key={w.name}>⚠️ <strong>{w.name}</strong> 再贏一次就 {w.streak} 連勝，可以得到一人 <strong>{w.streak * 10} 元</strong>的贊助費。</div>
+        <div key={w.name}>⚠️ <strong>{w.name}</strong> 再贏一次就 {w.streak} 連勝，可以得到一人 <strong>{w.streak * 10} 元</strong>的贊助費。{w.absent > 0 && <span>（已連續缺席 {w.absent} 個開獎日，再缺席 {Math.max(0, 14 - w.absent)} 個連勝歸零）</span>}</div>
       ))}
     </div>
   );
