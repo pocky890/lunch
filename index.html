@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 21, rules: 13, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 21, rules: 14, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"], 20: ["cardRefund"], 21: ["thirsty_card","mine_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"], 14: ["youbike"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-21 10:58";
+  const BUILD_TIME = "2026-10-30 11:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1417,7 +1417,7 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🚲 YouBike Day{newSections.includes("youbike") && <NewDot />}</div>
-            <div>每週五，如果<strong style={{color:"var(--t1)"}}>中午氣溫在 22～29 度之間，且降雨機率小於 30%</strong>，首頁會出現 YouBike Day 橫幅，當天餐廳類型只能選「🚲 YouBike」。天氣由當天第一位打開頁面的人判定，之後全員共用同一個結果；抓不到天氣資料就當作不是 YouBike Day。</div>
+            <div>每週五，如果<strong style={{color:"var(--t1)"}}>中午氣溫在 22～29 度之間，且降雨機率小於 30%</strong>，首頁會出現 YouBike Day 橫幅，當天餐廳類型多出「🚲 YouBike」可以選（其他餐廳照常能選）。天氣由當天第一位打開頁面的人判定，之後全員共用同一個結果；抓不到天氣資料就當作不是 YouBike Day。</div>
           </div>
           <div>
             <div style={{fontWeight:"600",color:"var(--t1)",marginBottom:"6px"}}>🛒 發薪日優惠{newSections.includes("payday") && <NewDot />}</div>
@@ -5005,10 +5005,7 @@ function App() {
   }, []);
 
   const isYoubikeDay = youbikeDay?.on === true || (TEST_MODE && new URLSearchParams(location.search).has("youbike"));
-  const visibleCats = isYoubikeDay ? [YOUBIKE_CAT] : CATEGORIES.filter(c => c !== YOUBIKE_CAT);
-  useEffect(() => {
-    if (isYoubikeDay && form.category && form.category !== YOUBIKE_CAT) { setIsRandom(false); setForm(f => ({...f, category:"", rest:"", cust:""})); }
-  }, [isYoubikeDay, form.category]);
+  const visibleCats = isYoubikeDay ? CATEGORIES : CATEGORIES.filter(c => c !== YOUBIKE_CAT);
 
   // 週紀錄即時監聽（所有人自動同步）
   useEffect(() => {
@@ -6019,7 +6016,7 @@ function App() {
   const PROMOS = <RestPromoBanner promos={restPromos} />;
   const YOUBIKE = isYoubikeDay ? (
     <div style={{textAlign:"center",padding:"10px 16px",background:"var(--c-green-bg)",border:"1px solid var(--c-green-bd)",borderRadius:"10px",marginBottom:"12px",fontSize:"14px",color:"var(--c-green-tx)"}}>
-      🚲 <strong>YouBike Day</strong>｜{youbikeDay?.temp != null ? `中午 ${youbikeDay.temp}°C、降雨機率 ${youbikeDay.pop}%，` : ""}天氣超適合騎車！今天只能選 YouBike 類別的餐廳
+      🚲 <strong>YouBike Day</strong>｜{youbikeDay?.temp != null ? `中午 ${youbikeDay.temp}°C、降雨機率 ${youbikeDay.pop}%，` : ""}天氣超適合騎車！今天多了 YouBike 類別可以選
     </div>
   ) : null;
 
