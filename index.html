@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 21, rules: 14, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"], 20: ["cardRefund"], 21: ["thirsty_card","mine_card"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"], 14: ["youbike"] };
+  const WHATSNEW_VERSION       = { cards: 22, rules: 15, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"], 20: ["cardRefund"], 21: ["thirsty_card","mine_card"], 22: ["streak_protect"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"], 14: ["youbike"], 15: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-10-30 11:12";
+  const BUILD_TIME = "2026-11-03 17:23";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -959,7 +959,12 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) continue;
+    if (rec.noParticipants) continue;
+    if (rec.skipStreak) {
+      // 連勝保護卡造成的不計輸贏日：只保護持卡人，當天贏的人那場照樣算進他的連勝
+      if (rec.streakProtectedBy && isWinnerOf(rec, winnerName)) { consecutiveAbsent = 0; streak++; }
+      continue;
+    }
     // 標記不參加、或當天根本沒參加（連不參加都沒按），都視為同一種「不在場」，套用同一個連續缺席上限（STREAK_MAX_ABSENT）保護連勝。
     // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
     const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
@@ -996,7 +1001,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   // 這種舊資料沒辦法判斷是否缺席，直接看輸贏就好，不能當成缺席，否則會把舊的連勝紀錄洗掉
   let maxStreak = 0, curStreak = 0, consecutiveAbsent = 0;
   recs.forEach(r => {
-    if (r.noParticipants || r.skipStreak) return;
+    if (r.noParticipants || (r.skipStreak && !(r.streakProtectedBy && isWinnerOf(r, name)))) return;
     if (r.participantNames && !r.participantNames.includes(name)) {
       if (++consecutiveAbsent >= STREAK_MAX_ABSENT) curStreak = 0;
       return;
@@ -1007,7 +1012,7 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   });
   let maxLose = 0, curLose = 0;
   recs.forEach(r => {
-    if (r.noParticipants || r.skipStreak) return;
+    if (r.noParticipants || (r.skipStreak && !(r.streakProtectedBy && isWinnerOf(r, name)))) return;
     if (!r.participantNames || !r.participantNames.includes(name)) return;
     if (isWinnerOf(r, name)) { curLose = 0; } else { curLose++; maxLose = Math.max(maxLose, curLose); }
   });
@@ -1297,7 +1302,11 @@ function getPreviousStreak(weekly, name, today) {
   for (const date of past) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) continue;
+    if (rec.noParticipants) continue;
+    if (rec.skipStreak) {
+      if (rec.streakProtectedBy && isWinnerOf(rec, name)) { consecutiveAbsent = 0; count++; }
+      continue;
+    }
     // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
     const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
     if (wasAbsent) {
@@ -1439,7 +1448,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
   const cards = [
     { type:"follow_restaurant", desc:["加入時宣告使用","非獨贏時，不論開獎號碼是誰，當天統一去你選的餐廳","若有人獨贏（完全命中），獨贏最大，卡牌無效","若多人同天使用，以號碼最接近開獎號碼的人優先","連勝機制照常計算"] },
     { type:"extra_number",      desc:["加入時宣告使用，需同時選兩個號碼","開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼"] },
-    { type:"streak_protect",    desc:["被動卡，無需手動操作","開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡","今天會標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持"] },
+    { type:"streak_protect",    desc:["被動卡，無需手動操作","開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡","今天會標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持","只保護持卡人：當天最接近的人那一場照樣算進他自己的連勝和成就"] },
     { type:"reveal_numbers",    desc:["加入時宣告使用","使用後立即公開所有人已選的號碼，截止前所有人都能看見","可據此調整策略"] },
     { type:"steal_card",        desc:["加入時宣告使用","隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌","若無人持有卡牌則無效，盜牌卡保留","生日卡不會被偷"] },
     { type:"cheapskate_card",   desc:["被動卡，無需手動操作","以下情況自動啟動，免除你該次的出資份額：連勝請客（≥3 連勝，對獨贏無效）、當天有人使用口渴卡、你踩到別人的地雷","擋地雷時一張卡擋一顆，同一天只會用掉 1 張"] },
@@ -2610,7 +2619,11 @@ function getTrailingAbsent(weekly, name, today) {
   for (const date of Object.keys(weekly || {}).filter(d => d < today).sort().reverse()) {
     const rec = weekly[date];
     if (!rec) break;
-    if (rec.skipStreak || rec.noParticipants) continue;
+    if (rec.noParticipants) continue;
+    if (rec.skipStreak) {
+      if (rec.streakProtectedBy && isWinnerOf(rec, name)) break;
+      continue;
+    }
     const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
     if (!wasAbsent) break;
     k++;
