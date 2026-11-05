@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-05 10:08";
+  const BUILD_TIME = "2026-11-05 11:24";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2647,7 +2647,8 @@ function CardPoolDisplay({ cardPool, cardConfig = {} }) {
 
 function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   const today = todayStr();
-  const usable = (cards||[]).filter(c => !["streak_protect","cheapskate_card"].includes(c.type) && c.expiresAt >= today);
+  const PASSIVE = ["streak_protect","cheapskate_card"];
+  const usable = (cards||[]).filter(c => c.expiresAt >= today);
   if (usable.length === 0) return null;
   // Group by type, sort each group by nearest expiry first
   const grouped = {};
@@ -2665,7 +2666,8 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
         const ct = CARD_TYPES[type];
         const group = grouped[type];
         const nearest = group[0]; // use nearest-expiry card first
-        const active = group.some(c => c.id === cardToUse);
+        const passive = PASSIVE.includes(type);
+        const active = !passive && group.some(c => c.id === cardToUse);
         const rawDays = group.map(c => Math.ceil((new Date(c.expiresAt)-new Date(today))/86400000));
         const fmtDay = d => d > 999 ? "∞" : d;
         // 3 張以下逐一列出；再多就只顯示「最快~最慢」區間，避免文字長度隨張數無上限增長
@@ -2673,8 +2675,8 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
           ? rawDays.map(fmtDay).join("d、") + "d"
           : (() => { const s = [...rawDays].sort((a,b)=>a-b); return `${fmtDay(s[0])}d ~ ${fmtDay(s[s.length-1])}d`; })();
         return (
-          <div key={type} className="card-item" onClick={() => onSelectCard(active ? "" : nearest.id)}
-            style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:"pointer",marginBottom:"4px",
+          <div key={type} className={passive ? undefined : "card-item"} onClick={passive ? undefined : () => onSelectCard(active ? "" : nearest.id)}
+            style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:passive?"default":"pointer",opacity:passive?0.7:1,marginBottom:"4px",
               background:active?"var(--a)":"var(--s1)",border:`1px solid ${active?"var(--a)":"var(--b1)"}`,
               color:active?"#fff":"var(--t1)",transition:"all 0.15s"}}>
             <span style={{fontSize:"16px"}}>{ct.emoji}</span>
@@ -2684,6 +2686,7 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"2px",flexShrink:0}}>
               <span style={{fontSize:"11px",opacity:0.6}}>剩 {daysText}</span>
+              {passive && <span style={{fontSize:"11px",fontWeight:"600",color:"var(--t3)"}}>被動・自動啟動</span>}
               {active && <span style={{fontSize:"11px",fontWeight:"700"}}>✓ 使用中</span>}
             </div>
           </div>
