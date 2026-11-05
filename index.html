@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-05 11:24";
+  const BUILD_TIME = "2026-11-05 11:26";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -2662,7 +2662,7 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
   return (
     <div style={{border:"1px solid var(--abd)",borderRadius:"var(--r)",padding:"12px 14px",marginBottom:"16px",background:"var(--abg)"}}>
       <div style={{fontSize:"12px",fontWeight:"600",color:"var(--a)",marginBottom:"8px"}}>🃏 你的手牌（點擊使用）</div>
-      {Object.keys(CARD_TYPES).filter(type => grouped[type]).map(type => {
+      {Object.keys(CARD_TYPES).filter(type => grouped[type]).sort((a, b) => PASSIVE.includes(a) - PASSIVE.includes(b)).map(type => {
         const ct = CARD_TYPES[type];
         const group = grouped[type];
         const nearest = group[0]; // use nearest-expiry card first
@@ -2676,8 +2676,8 @@ function MyCardsBadge({ cards, cardToUse, onSelectCard }) {
           : (() => { const s = [...rawDays].sort((a,b)=>a-b); return `${fmtDay(s[0])}d ~ ${fmtDay(s[s.length-1])}d`; })();
         return (
           <div key={type} className={passive ? undefined : "card-item"} onClick={passive ? undefined : () => onSelectCard(active ? "" : nearest.id)}
-            style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:passive?"default":"pointer",opacity:passive?0.7:1,marginBottom:"4px",
-              background:active?"var(--a)":"var(--s1)",border:`1px solid ${active?"var(--a)":"var(--b1)"}`,
+            style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",cursor:passive?"default":"pointer",marginBottom:"4px",
+              background:active?"var(--a)":passive?"var(--s3)":"var(--s1)",border:`1px ${passive?"dashed":"solid"} ${active?"var(--a)":"var(--b1)"}`,
               color:active?"#fff":"var(--t1)",transition:"all 0.15s"}}>
             <span style={{fontSize:"16px"}}>{ct.emoji}</span>
             <div style={{flex:1}}>
