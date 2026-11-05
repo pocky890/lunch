@@ -434,9 +434,9 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 22, rules: 15, shop: 1 };
+  const WHATSNEW_VERSION       = { cards: 22, rules: 16, shop: 1 };
   const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"], 20: ["cardRefund"], 21: ["thirsty_card","mine_card"], 22: ["streak_protect"] };
-  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"], 14: ["youbike"], 15: ["streak"] };
+  const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"], 14: ["youbike"], 15: ["streak"], 16: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
     const seen = parseInt(seenVer) || 0;
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-03 17:23";
+  const BUILD_TIME = "2026-11-05 10:05";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -950,32 +950,32 @@ function isWinnerOf(rec, name) {
 }
 
 const STREAK_MAX_ABSENT = 10;
+// 連勝缺席額度：從連勝起算「累計」缺席達 STREAK_MAX_ABSENT 次連勝歸零，中途有出席、贏了都不重新計算；連勝中斷（輸或額度用完）後重新起算。
+// skipStreak 的日子整天略過（人數不足、保護卡），例外：保護卡日當天贏的人那場照樣算進他的連勝
+function simulateStreak(weekly, name, today) {
+  let wins = 0, absent = 0;
+  for (const date of Object.keys(weekly || {}).filter(d => d < today).sort()) {
+    const rec = weekly[date];
+    if (!rec || rec.noParticipants) continue;
+    if (rec.skipStreak) {
+      if (rec.streakProtectedBy && isWinnerOf(rec, name)) wins++;
+      continue;
+    }
+    // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
+    const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
+    if (wasAbsent) {
+      if (wins > 0 && ++absent >= STREAK_MAX_ABSENT) { wins = 0; absent = 0; }
+      continue;
+    }
+    if (isWinnerOf(rec, name)) wins++; else { wins = 0; absent = 0; }
+  }
+  return { wins, absent };
+}
+
 function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
   if (todayPtsCount < 3) return 0;
-  const pastDates = Object.keys(weekly).filter(d => d < today).sort().reverse();
-  let streak = 1;
-  let consecutiveAbsent = 0;
-  for (const date of pastDates) {
-    const rec = weekly[date];
-    if (!rec) break;
-    if (rec.noParticipants) continue;
-    if (rec.skipStreak) {
-      // 連勝保護卡造成的不計輸贏日：只保護持卡人，當天贏的人那場照樣算進他的連勝
-      if (rec.streakProtectedBy && isWinnerOf(rec, winnerName)) { consecutiveAbsent = 0; streak++; }
-      continue;
-    }
-    // 標記不參加、或當天根本沒參加（連不參加都沒按），都視為同一種「不在場」，套用同一個連續缺席上限（STREAK_MAX_ABSENT）保護連勝。
-    // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
-    const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
-    if (wasAbsent) {
-      if (++consecutiveAbsent >= STREAK_MAX_ABSENT) break;
-      continue;
-    }
-    consecutiveAbsent = 0;
-    if (isWinnerOf(rec, winnerName)) { streak++; } else { break; }
-  }
-  return streak;
+  return simulateStreak(weekly, winnerName, today).wins + 1;
 }
 
 function computeLoserStreak(weekly, name, today) {
@@ -996,19 +996,18 @@ function computeAchievements(name, weeklyData, participationCount, specialAchiev
   const recs = Object.entries(weeklyData || {}).sort(([a],[b]) => a < b ? -1 : 1).map(([,r]) => r).filter(Boolean);
   const soloWins = recs.filter(r => r.soloWin && isWinnerOf(r, name)).length;
   // 邏輯需跟 computeStreak/getPreviousStreak 一致：skipStreak/noParticipants 一律跳過不中斷，
-  // 完全沒參加（不在 participantNames 裡）視同不在場、套用連續缺席上限（STREAK_MAX_ABSENT），達到上限才真的打斷連勝。
+  // 完全沒參加（不在 participantNames 裡）視同不在場、套用累計缺席上限（STREAK_MAX_ABSENT），達到上限才真的打斷連勝。
   // participantNames 是後來才加的欄位，早期紀錄完全沒有這個欄位（undefined，不是「沒人在裡面」），
   // 這種舊資料沒辦法判斷是否缺席，直接看輸贏就好，不能當成缺席，否則會把舊的連勝紀錄洗掉
-  let maxStreak = 0, curStreak = 0, consecutiveAbsent = 0;
+  let maxStreak = 0, curStreak = 0, usedAbsent = 0;
   recs.forEach(r => {
     if (r.noParticipants || (r.skipStreak && !(r.streakProtectedBy && isWinnerOf(r, name)))) return;
     if (r.participantNames && !r.participantNames.includes(name)) {
-      if (++consecutiveAbsent >= STREAK_MAX_ABSENT) curStreak = 0;
+      if (curStreak > 0 && ++usedAbsent >= STREAK_MAX_ABSENT) { curStreak = 0; usedAbsent = 0; }
       return;
     }
-    consecutiveAbsent = 0;
     if (isWinnerOf(r, name)) { curStreak++; maxStreak = Math.max(maxStreak, curStreak); }
-    else { curStreak = 0; }
+    else { curStreak = 0; usedAbsent = 0; }
   });
   let maxLose = 0, curLose = 0;
   recs.forEach(r => {
@@ -1296,27 +1295,7 @@ async function reconcilePendingCardReturns(today) {
 // 邏輯必須跟 computeStreak 完全一致（skipStreak/noParticipants 一律跳過不中斷，完全沒參加視同不在場、套用連續缺席上限），
 // 否則會低估連勝而讓連勝保護卡該生效卻沒生效
 function getPreviousStreak(weekly, name, today) {
-  const past = Object.keys(weekly||{}).filter(d => d < today).sort().reverse();
-  let count = 0;
-  let consecutiveAbsent = 0;
-  for (const date of past) {
-    const rec = weekly[date];
-    if (!rec) break;
-    if (rec.noParticipants) continue;
-    if (rec.skipStreak) {
-      if (rec.streakProtectedBy && isWinnerOf(rec, name)) { consecutiveAbsent = 0; count++; }
-      continue;
-    }
-    // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
-    const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
-    if (wasAbsent) {
-      if (++consecutiveAbsent >= STREAK_MAX_ABSENT) break;
-      continue;
-    }
-    consecutiveAbsent = 0;
-    if (isWinnerOf(rec, name)) { count++; } else { break; }
-  }
-  return count;
+  return simulateStreak(weekly, name, today).wins;
 }
 
 // 地雷卡結算：踩中 = 主號碼等於地雷號碼（加號卡第二號、生日卡額外號碼、寵物自動號碼都不算），放雷者本人免疫。被核彈炸出局的人仍算踩中
@@ -1409,7 +1388,7 @@ function HelpModal({ onClose, numMax = 99, newSections = [] }) {
             <div style={{marginTop:"8px",display:"flex",flexDirection:"column",gap:"6px"}}>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>⚠️ 當日人數少於 3 人時，當天不計入連勝次數，但<strong style={{color:"var(--t2)"}}>不會中斷</strong>之前的連勝紀錄，隔日人數達 3 人以上可繼續累積。</div>
               <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🎯 獨贏時連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>，下次最接近可繼續累積。若連勝金額超過 50 元，獨贏請客金額也會跟著提高。</div>
-              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🙅 <strong style={{color:"var(--t2)"}}>今日不參加</strong>（不管是主動標記，還是完全沒動作）時，連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>。但若連續 10 個開獎日未參加，連勝就會歸零。</div>
+              <div style={{padding:"10px 12px",background:"var(--c-tip-bg)",border:"1px solid var(--c-tip-bd)",borderRadius:"8px",fontSize:"13px",color:"var(--c-tip-tx)"}}>🙅 <strong style={{color:"var(--t2)"}}>今日不參加</strong>（不管是主動標記，還是完全沒動作）時，連勝同樣<strong style={{color:"var(--t2)"}}>不會中斷</strong>。但從這波連勝開始，累計缺席滿 10 個開獎日，連勝就會歸零；中途有參加、又贏了也不會重新計算，連勝中斷後才重新起算。</div>
             </div>
           </div>
           <div>
@@ -2613,22 +2592,10 @@ function SpecialDayBanner() {
   );
 }
 
-// 目前連續缺席幾個開獎日（跟 computeStreak 同一套跳過規則）；達到 STREAK_MAX_ABSENT 個連勝就會歸零
+// 目前這波連勝已累計缺席幾個開獎日（達到 STREAK_MAX_ABSENT 個連勝就會歸零）
 function getTrailingAbsent(weekly, name, today) {
-  let k = 0;
-  for (const date of Object.keys(weekly || {}).filter(d => d < today).sort().reverse()) {
-    const rec = weekly[date];
-    if (!rec) break;
-    if (rec.noParticipants) continue;
-    if (rec.skipStreak) {
-      if (rec.streakProtectedBy && isWinnerOf(rec, name)) break;
-      continue;
-    }
-    const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
-    if (!wasAbsent) break;
-    k++;
-  }
-  return k;
+  const { wins, absent } = simulateStreak(weekly, name, today);
+  return wins > 0 ? absent : 0;
 }
 
 function StreakWarning({ weekly }) {

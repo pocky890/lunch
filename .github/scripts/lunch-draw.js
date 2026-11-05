@@ -131,29 +131,32 @@ function isWinnerOf(rec, name) {
 
 // 與 index.html 的 computeStreak 保持一致：skipStreak/noParticipants 跳過不中斷，缺席視同不在場，連續缺席達上限才歸零
 const STREAK_MAX_ABSENT = 10;
+// 連勝缺席額度：從連勝起算「累計」缺席達 STREAK_MAX_ABSENT 次連勝歸零，中途有出席、贏了都不重新計算；連勝中斷（輸或額度用完）後重新起算。
+// skipStreak 的日子整天略過（人數不足、保護卡），例外：保護卡日當天贏的人那場照樣算進他的連勝
+function simulateStreak(weekly, name, today) {
+  let wins = 0, absent = 0;
+  for (const date of Object.keys(weekly || {}).filter(d => d < today).sort()) {
+    const rec = weekly[date];
+    if (!rec || rec.noParticipants) continue;
+    if (rec.skipStreak) {
+      if (rec.streakProtectedBy && isWinnerOf(rec, name)) wins++;
+      continue;
+    }
+    // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
+    const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
+    if (wasAbsent) {
+      if (wins > 0 && ++absent >= STREAK_MAX_ABSENT) { wins = 0; absent = 0; }
+      continue;
+    }
+    if (isWinnerOf(rec, name)) wins++; else { wins = 0; absent = 0; }
+  }
+  return { wins, absent };
+}
+
 function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
   if (todayPtsCount < 3) return 0; // 人數不足，今日不計入連勝
-  const pastDates = Object.keys(weekly || {}).filter(d => d < today).sort().reverse();
-  let streak = 1;
-  let consecutiveAbsent = 0;
-  for (const date of pastDates) {
-    const rec = weekly[date];
-    if (!rec) break;
-    if (rec.noParticipants) continue;
-    if (rec.skipStreak) {
-      if (rec.streakProtectedBy && isWinnerOf(rec, winnerName)) { consecutiveAbsent = 0; streak++; }
-      continue;
-    }
-    const wasAbsent = rec.absentNames?.includes(winnerName) || (rec.participantNames && !rec.participantNames.includes(winnerName));
-    if (wasAbsent) {
-      if (++consecutiveAbsent >= STREAK_MAX_ABSENT) break;
-      continue;
-    }
-    consecutiveAbsent = 0;
-    if (isWinnerOf(rec, winnerName)) { streak++; } else { break; }
-  }
-  return streak;
+  return simulateStreak(weekly, winnerName, today).wins + 1;
 }
 
 function determineResult(pts, drawnNumber) {
