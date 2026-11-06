@@ -131,6 +131,7 @@ function isWinnerOf(rec, name) {
 
 // 與 index.html 的 computeStreak 保持一致：skipStreak/noParticipants 跳過不中斷，缺席視同不在場，連續缺席達上限才歸零
 const STREAK_MAX_ABSENT = 10;
+const STREAK_MIN_PEOPLE = 4; // 與 index.html 一致：當日參加人數達此門檻才計入連勝
 // 連勝缺席額度：從連勝起算「累計」缺席達 STREAK_MAX_ABSENT 次連勝歸零，中途有出席、贏了都不重新計算；連勝中斷（輸或額度用完）後重新起算。
 // skipStreak 的日子整天略過（人數不足、保護卡），例外：保護卡日當天贏的人那場照樣算進他的連勝
 function simulateStreak(weekly, name, today) {
@@ -155,7 +156,7 @@ function simulateStreak(weekly, name, today) {
 
 function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
   if (!winnerName) return 0;
-  if (todayPtsCount < 3) return 0; // 人數不足，今日不計入連勝
+  if (todayPtsCount < STREAK_MIN_PEOPLE) return 0; // 人數不足，今日不計入連勝
   return simulateStreak(weekly, winnerName, today).wins + 1;
 }
 
@@ -243,7 +244,7 @@ async function main() {
 
   // 7. 計算連勝並寫入 weekly
   const weeklyAll = await fbGet("weekly");
-  const skipStreak = pts.length < 3;
+  const skipStreak = pts.length < STREAK_MIN_PEOPLE;
   const streak = (result.soloWin || skipStreak) ? 0 : computeStreak(weeklyAll, result.winner.name, today, pts.length);
   // 人數不足或獨贏時，往前算保留中的連勝數（供通知顯示用）
   let preservedStreak = 0;
