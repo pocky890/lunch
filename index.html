@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-06 13:59";
+  const BUILD_TIME = "2026-11-09 10:00";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -985,7 +985,10 @@ function computeLoserStreak(weekly, name, today) {
   for (const date of pastDates) {
     const rec = weekly[date];
     if (!rec || rec.noParticipants) continue;
-    if (rec.skipStreak) continue; // 跟連勝統計一致：skipStreak 當天不論輸贏都不計入、也不打斷
+    if (rec.skipStreak) {
+      if (rec.streakProtectedBy && isWinnerOf(rec, name)) break; // 跟連勝統計一致：保護卡日當天贏的人那場照樣算，連敗到此結束
+      continue; // 其餘 skipStreak 日不論輸贏都不計入、也不打斷
+    }
     if (!rec.participantNames || !rec.participantNames.includes(name)) continue;
     if (isWinnerOf(rec, name)) break;
     count++;
