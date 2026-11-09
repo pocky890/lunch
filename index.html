@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-09 10:23";
+  const BUILD_TIME = "2026-11-09 10:32";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3117,7 +3117,7 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
         const record = [...allNames].map(name => ({ name, s: computeMaxLoserStreak(weekly, name) })).filter(x => x.s >= 2).sort(byS);
         return <>
           {board("😢 連槓排行榜", "（目前連續有參加卻沒中的次數）", current, () => null)}
-          {board("🏆 連槓歷史紀錄", "（歷史上連續最多次，不會因為後來中獎而消失）", record, x => currentOf[x.name] === x.s ? <span style={{fontSize:"11px",color:"var(--c-orange-tx)",flexShrink:0}}>進行中</span> : null)}
+          {board("🏆 連槓歷史紀錄", "（歷史上連續最多次）", record, x => currentOf[x.name] === x.s ? <span style={{fontSize:"11px",color:"var(--c-orange-tx)",flexShrink:0}}>進行中</span> : null)}
         </>;
       })()}
     </div>
