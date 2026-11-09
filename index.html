@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-09 10:16";
+  const BUILD_TIME = "2026-11-09 10:23";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -980,7 +980,7 @@ function computeStreak(weekly, winnerName, today, todayPtsCount = 99) {
 }
 
 function computeLoserStreak(weekly, name, today) {
-  const pastDates = Object.keys(weekly || {}).filter(d => d < today).sort().reverse();
+  const pastDates = Object.keys(weekly || {}).filter(d => d <= today).sort().reverse();
   let count = 0;
   for (const date of pastDates) {
     const rec = weekly[date];
@@ -991,6 +991,19 @@ function computeLoserStreak(weekly, name, today) {
     count++;
   }
   return count;
+}
+
+// 歷史最高連槓：整段歷史由舊到新掃一遍，規則同 computeLoserStreak（贏了歸零、人數不足日略過、保護卡日照常算）
+function computeMaxLoserStreak(weekly, name) {
+  let max = 0, cur = 0;
+  for (const date of Object.keys(weekly || {}).sort()) {
+    const rec = weekly[date];
+    if (!rec || rec.noParticipants) continue;
+    if (rec.skipStreak && !rec.streakProtectedBy) continue;
+    if (!rec.participantNames || !rec.participantNames.includes(name)) continue;
+    if (isWinnerOf(rec, name)) cur = 0; else max = Math.max(max, ++cur);
+  }
+  return max;
 }
 
 function computeAchievements(name, weeklyData, participationCount, specialAchievements = {}) {
@@ -3075,29 +3088,37 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
         // 全公司歷史範圍：不限今天有沒有加入，只要出現在過歷史紀錄裡就一起比
         const allNames = new Set();
         Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
-        const ranking = [...allNames].map(name => ({ name, s: computeLoserStreak(weekly, name, today) }))
-          .filter(x => x.s >= 2).sort((x, y) => y.s - x.s || x.name.localeCompare(y.name));
-        if (ranking.length === 0) return null;
-        // 前 5 名（同次數的一併列出），名次相同者並列
-        const cut = ranking[Math.min(4, ranking.length - 1)].s;
-        const shown = ranking.filter(x => x.s >= cut);
-        let lastS = null, lastRank = 0;
-        return (
-          <div style={{marginTop:"16px",padding:"10px 12px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"10px"}}>
-            <div style={{fontSize:"12px",fontWeight:"600",color:"var(--t2)",marginBottom:"6px"}}>😢 連槓排行榜<span style={{fontWeight:"400",color:"var(--t3)"}}>（連續有參加卻沒中的次數）</span></div>
-            {shown.map((x, i) => {
-              const rank = x.s === lastS ? lastRank : i + 1;
-              lastS = x.s; lastRank = rank;
-              return (
-                <div key={x.name} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",padding:"3px 0",color:rank === 1 ? "var(--t1)" : "var(--t2)",fontWeight:rank === 1 ? "600" : "400"}}>
-                  <span style={{width:"22px",color:"var(--t3)",flexShrink:0}}>{rank === 1 ? "👑" : rank}</span>
-                  <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{x.name}</span>
-                  <span style={{flexShrink:0}}>連續 {x.s} 次</span>
-                </div>
-              );
-            })}
-          </div>
-        );
+        const board = (title, sub, rows, tagFn) => {
+          if (rows.length === 0) return null;
+          // 前 5 名（同次數的一併列出），名次相同者並列
+          const cut = rows[Math.min(4, rows.length - 1)].s;
+          let lastS = null, lastRank = 0;
+          return (
+            <div style={{marginTop:"16px",padding:"10px 12px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"10px"}}>
+              <div style={{fontSize:"12px",fontWeight:"600",color:"var(--t2)",marginBottom:"6px"}}>{title}<span style={{fontWeight:"400",color:"var(--t3)"}}>{sub}</span></div>
+              {rows.filter(x => x.s >= cut).map((x, i) => {
+                const rank = x.s === lastS ? lastRank : i + 1;
+                lastS = x.s; lastRank = rank;
+                return (
+                  <div key={x.name} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",padding:"3px 0",color:rank === 1 ? "var(--t1)" : "var(--t2)",fontWeight:rank === 1 ? "600" : "400"}}>
+                    <span style={{width:"22px",color:"var(--t3)",flexShrink:0}}>{rank === 1 ? "👑" : rank}</span>
+                    <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{x.name}</span>
+                    {tagFn(x)}
+                    <span style={{flexShrink:0}}>{x.s} 次</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        };
+        const byS = (x, y) => y.s - x.s || x.name.localeCompare(y.name);
+        const current = [...allNames].map(name => ({ name, s: computeLoserStreak(weekly, name, today) })).filter(x => x.s >= 2).sort(byS);
+        const currentOf = Object.fromEntries(current.map(x => [x.name, x.s]));
+        const record = [...allNames].map(name => ({ name, s: computeMaxLoserStreak(weekly, name) })).filter(x => x.s >= 2).sort(byS);
+        return <>
+          {board("😢 連槓排行榜", "（目前連續有參加卻沒中的次數）", current, () => null)}
+          {board("🏆 連槓歷史紀錄", "（歷史上連續最多次，不會因為後來中獎而消失）", record, x => currentOf[x.name] === x.s ? <span style={{fontSize:"11px",color:"var(--c-orange-tx)",flexShrink:0}}>進行中</span> : null)}
+        </>;
       })()}
     </div>
   );
