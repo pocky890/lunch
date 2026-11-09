@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-09 10:12";
+  const BUILD_TIME = "2026-11-09 10:16";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -3075,11 +3075,29 @@ function PtList({list, absent = [], hideNumbers = false, weekly = {}, userTitles
         // 全公司歷史範圍：不限今天有沒有加入，只要出現在過歷史紀錄裡就一起比
         const allNames = new Set();
         Object.values(weekly || {}).forEach(rec => (rec?.participantNames || []).forEach(n => allNames.add(n)));
-        const streaks = [...allNames].map(name => ({ name, s: computeLoserStreak(weekly, name, today) }));
-        const maxS = Math.max(0, ...streaks.map(x => x.s));
-        if (maxS < 2) return null;
-        const losers = streaks.filter(x => x.s === maxS);
-        return <div style={{marginTop:"16px",textAlign:"center",fontSize:"12px",color:"var(--t3)"}}>😢 最久未中：<strong style={{color:"var(--t2)"}}>{losers.map(x=>x.name).join("、")}</strong>（連續 {maxS} 次）</div>;
+        const ranking = [...allNames].map(name => ({ name, s: computeLoserStreak(weekly, name, today) }))
+          .filter(x => x.s >= 2).sort((x, y) => y.s - x.s || x.name.localeCompare(y.name));
+        if (ranking.length === 0) return null;
+        // 前 5 名（同次數的一併列出），名次相同者並列
+        const cut = ranking[Math.min(4, ranking.length - 1)].s;
+        const shown = ranking.filter(x => x.s >= cut);
+        let lastS = null, lastRank = 0;
+        return (
+          <div style={{marginTop:"16px",padding:"10px 12px",background:"var(--s3)",border:"1px solid var(--b1)",borderRadius:"10px"}}>
+            <div style={{fontSize:"12px",fontWeight:"600",color:"var(--t2)",marginBottom:"6px"}}>😢 連槓排行榜<span style={{fontWeight:"400",color:"var(--t3)"}}>（連續有參加卻沒中的次數）</span></div>
+            {shown.map((x, i) => {
+              const rank = x.s === lastS ? lastRank : i + 1;
+              lastS = x.s; lastRank = rank;
+              return (
+                <div key={x.name} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",padding:"3px 0",color:rank === 1 ? "var(--t1)" : "var(--t2)",fontWeight:rank === 1 ? "600" : "400"}}>
+                  <span style={{width:"22px",color:"var(--t3)",flexShrink:0}}>{rank === 1 ? "👑" : rank}</span>
+                  <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{x.name}</span>
+                  <span style={{flexShrink:0}}>連續 {x.s} 次</span>
+                </div>
+              );
+            })}
+          </div>
+        );
       })()}
     </div>
   );
