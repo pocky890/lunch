@@ -154,6 +154,7 @@ const oc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } 
 ## 卡牌系統
 - extra_number（加號卡）、follow_rest（跟著我吃）、no_pay（免付卡）、thirsty_card（口渴卡 1 張）、streak_protect（連勝保護卡）
 - birthday_card（生日卡）：生日當月 1 號自動發放（1 號當天無人上線則當月內首位上線者補發；2/29 平年視為 2/28），用 `userBirthdayCardIssued/{uid}` transaction 原子搶佔防止多 client 重複發卡。固定當月底到期（逾期作廢），效果同加號卡但多選 4 個號碼。不列入 `cardPool`/`CARD_DEFAULTS`，不可在點數商店上架，不可被盜牌卡偷取。
+- steal_card（盜牌卡）：偷取目標「先抽人、再抽卡」——先把有可偷卡（未過期、非生日卡、非 `fromAuction`）的玩家隨機排列，每人機率相同、與手牌張數無關（2026-11-10 起，原本是所有卡平均抽，囤卡多的人被偷較頻繁）；再隨機排列該玩家的卡逐張用 transaction 認領，撲空就換下一張／下一人，全撲空則保留盜牌卡。
 - 卡牌使用流程：doJoin 先以 transaction 原子認領（從 `userCards` 移除，防與盜牌卡競態），寫入 `pendingCardReturns/{date}`（含 `name`），開獎時 `reconcilePendingCardReturns` 統一結算（含補掃過去日期的滯留記錄）。商店購買的卡帶 `fromShop: true`，任何歸還路徑（reconcile / returnCardToPool / 離職回收）都不回 `cardPool`（商店庫存與卡牌池獨立）。
 - 用卡後取消參加的退還規則：`IMMEDIATE_EFFECT_CARD_TYPES`（reveal_numbers、steal_card）使用當下就已生效，取消一律不退還、直接進 `cardPool`。其餘卡種（follow_restaurant/extra_number/thirsty_card/nuke_card/birthday_card）效果要等開獎才生效，`reconcilePendingCardReturns` 會檢查 `weekly/{date}.participantNames` 是否包含該人——當天最終沒有留在參加名單裡（效果從未套用）就直接退還卡牌到本人 `userCards`（不進公共池）；若又重新加入，就照正常流程進池子。當天人數不足 2 人、`weekly/{date}` 是 `{noParticipants:true}`（沒有 `participantNames`）時沒有開獎，除了 steal_card（偷牌已發生，退了等於白拿）以外，所有卡（含公開卡）一律退還本人手牌。所有退還（含取消參加後退還、地雷卡未踩中）都保留卡片原到期日：`pendingCardReturns` 記錄帶 `expiresAt`，reconcile 優先採用（舊記錄沒有此欄位才用 expireDays 重算）。
 - 防重複用卡：`cardUsedToday/{date}/{key}` 是獨立於 `participants` 的持久標記，用卡當下就寫入、取消參加（`doCancel` 刪 `participants` 記錄）不會清掉，避免「用卡→取消→重買一張→再加入」無限重複用卡/偷卡的漏洞。`doReset`（管理員清除今日遊戲）會一併清掉這個標記。

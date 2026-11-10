@@ -434,8 +434,8 @@
   };
   const ADMIN_EMAIL = "pocky890@gmail.com";
   // 「有更新」提示版本：新增卡牌/規則說明時，在下方 history 加一條 { 版號: [key...] }，並把 VERSION +1
-  const WHATSNEW_VERSION       = { cards: 22, rules: 17, shop: 1 };
-  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"], 20: ["cardRefund"], 21: ["thirsty_card","mine_card"], 22: ["streak_protect"] };
+  const WHATSNEW_VERSION       = { cards: 23, rules: 17, shop: 1 };
+  const WHATSNEW_CARDS_HISTORY = { 2: ["thirsty_card"], 5: ["thirsty_card"], 6: ["nuke_card"], 7: ["birthday_card"], 8: ["steal_card"], 9: ["birthday_card"], 10: ["birthday_card"], 11: ["cheapskate_card"], 12: ["nuke_card"], 13: ["cardRefund"], 14: ["mine_card"], 15: ["steal_card"], 16: ["cardRefund"], 17: ["cardRefund"], 18: ["mine_card"], 19: ["mine_card"], 20: ["cardRefund"], 21: ["thirsty_card","mine_card"], 22: ["streak_protect"], 23: ["steal_card"] };
   const WHATSNEW_RULES_HISTORY = { 2: ["solo"], 5: ["payday"], 6: ["bonusday"], 7: ["streak"], 8: ["cardEdit"], 9: ["streak"], 10: ["streak"], 11: ["luckyday"], 12: ["youbike"], 13: ["streak"], 14: ["youbike"], 15: ["streak"], 16: ["streak"], 17: ["streak"] };
   const WHATSNEW_SHOP_HISTORY  = { 1: ["pets"] };
   const getUnseenItems = (history, seenVer, currentVer) => {
@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-09 10:32";
+  const BUILD_TIME = "2026-11-10 13:12";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -1443,7 +1443,7 @@ function CardHelpModal({ onClose, cardConfig = {}, newCardTypes = [] }) {
     { type:"extra_number",      desc:["加入時宣告使用，需同時選兩個號碼","開獎時系統自動取其中更接近幸運號碼的那個作為你的有效號碼"] },
     { type:"streak_protect",    desc:["被動卡，無需手動操作","開獎後若你已有 2 連勝以上且今天即將中斷，系統自動使用此卡","今天會標記為不計入連勝（skipStreak），讓連勝紀錄繼續保持","只保護持卡人：當天最接近的人那一場照樣算進他自己的連勝和成就"] },
     { type:"reveal_numbers",    desc:["加入時宣告使用","使用後立即公開所有人已選的號碼，截止前所有人都能看見","可據此調整策略"] },
-    { type:"steal_card",        desc:["加入時宣告使用","隨機從任意一名持有卡牌的玩家手中偷走一張卡牌，立即加入你的手牌","若無人持有卡牌則無效，盜牌卡保留","生日卡不會被偷"] },
+    { type:"steal_card",        desc:["加入時宣告使用","先隨機抽一名持有卡牌的玩家（每人機率相同，與手牌張數無關），再從他手中隨機偷走一張卡牌，立即加入你的手牌","若無人持有卡牌則無效，盜牌卡保留","生日卡不會被偷"] },
     { type:"cheapskate_card",   desc:["被動卡，無需手動操作","以下情況自動啟動，免除你該次的出資份額：連勝請客（≥3 連勝，對獨贏無效）、當天有人使用口渴卡、你踩到別人的地雷","擋地雷時一張卡擋一顆，同一天只會用掉 1 張"] },
     { type:"thirsty_card",      desc:["加入時宣告使用","開獎後所有參加者合請你一杯（上限 100 元），飲料由你自選","若被核彈卡炸出局，效果取消","飲料當天要買；被請的人當天忘了買就視同放棄，不能擇日補請"] },
     { type:"nuke_card",         desc:["加入時另外選一個號碼作為核彈核心（獨立於你的主號碼，不影響你自己中獎的機會）","開獎時，核心周圍九宮格內的其他人全數出局（固定以 10 欄計算相鄰格）","持有多個號碼的人，只要有一個號碼存活即繼續參賽","核彈卡使用者只對自己的核彈免疫，仍可能被別人的核彈炸死"] },
@@ -5589,10 +5589,10 @@ function App() {
           }
         }
         if (victims.length > 0) {
-          // 建立所有可偷組合並隨機排列，逐一嘗試直到成功或全部撲空
+          // 先隨機排列持卡玩家（每人機率相同，不看手牌張數），再隨機排列該玩家的卡，逐一嘗試直到成功或全部撲空
+          const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
           const pool = [];
-          for (const v of victims) for (const [cId] of v.cards) pool.push({ victim: v, cardId: cId });
-          for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+          for (const v of shuffle(victims)) for (const [cId] of shuffle([...v.cards])) pool.push({ victim: v, cardId: cId });
           let stolen = null, stolenVictim = null;
           for (const { victim, cardId } of pool) {
             let attempt = null;
