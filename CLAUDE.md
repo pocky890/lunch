@@ -167,6 +167,9 @@ const oc = isDarkMode ? { ... } : activeTheme==="xxx" ? { bg:"rgba(...)", ... } 
 - 連勝保護卡（streak_protect）：發動時 `weekly/{date}` 寫 `skipStreak:true` + `streakProtectedBy`，該日對所有人不計輸贏、不累計缺席也不歸零；**例外：當天最接近的人那場照樣算進他自己的連勝**（`computeStreak` / `getPreviousStreak` / `computeAchievements` / `getTrailingAbsent` / `computeLoserStreak`（最久未中橫幅）與備援 `lunch-draw.js` 的 `computeStreak` 都以 `streakProtectedBy` 判斷，人數不足造成的 `skipStreak`（沒有 `streakProtectedBy`）仍整天略過）。連敗（`computeLoserStreak`、`computeAchievements` 的 maxLose、最久未中橫幅）則不同：保護卡日照常算輸贏（沒中就是輸、贏了就歸零），只有人數不足的日子略過。
 - 卡牌設定存 Firebase `cardConfig/`
 
+## Firebase transaction 鐵則
+**絕不可在 transaction 回呼裡設旗標（`claimed = true`、`didWrite = true`）來判斷自己有沒有搶到。** 回呼會先用本機快取跑一次，快取是空的就當成沒人寫過，之後伺服器駁回重跑、回呼改為放棄時旗標已設成 true 收不回來，兩個同時開獎的瀏覽器會都以為自己成功，重複發點數、發卡、還池（2026-11-06、11-09 實際發生過）。一律用回傳值 `const tx = await ref.transaction(...); if (tx?.committed)`；需要知道「被移除的是什麼」時，在回呼裡記錄最後一次看到的 `cur`，搭配 `committed` 一起判斷。回呼對「空值」要回傳 `null`／新值而不是 `undefined`，才會強制向伺服器確認；`fRef` 在 TEST_MODE 的 mock 不回傳結果，所以一律寫 `tx?.committed`。商店購買（`stockOk`／`pointsOk`）仍是旗標寫法，尚未改（改了會影響 TEST_MODE 的假購買流程）。
+
 ## 版本顯示
 `BUILD_TIME` 常數硬編碼在 index.html 頂部，每次 push 時手動更新，顯示於管理員面板標題旁。
 

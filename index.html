@@ -552,7 +552,7 @@
     godzilla_01: 'gif/godzilla_01.gif',
     chopper_01:  'gif/chopper_nobg.gif',
   };
-  const BUILD_TIME = "2026-11-10 13:14";
+  const BUILD_TIME = "2026-11-10 13:34";
 
   const ACHIEVEMENTS = [
     { key:"join50",   emoji:"🍽️", name:"辦公室地縛靈",   desc:"參與 50 次",              rarity:1 },
@@ -907,9 +907,8 @@ async function logNotification(sanitizedName, type, data) {
 }
 
 async function givePointsForDay(ptsList, absentList, dateStr) {
-  let claimed = false;
-  await fRef(`pointsAwarded/${dateStr}`).transaction(cur => { if (cur) return; claimed = true; return true; });
-  if (!claimed) return;
+  const claim = await fRef(`pointsAwarded/${dateStr}`).transaction(cur => cur ? undefined : true);
+  if (!claim?.committed) return;
   const isBonus = getWeeklyBonusDay() === dateStr;
   const diceRolls = isBonus ? (await fGet(`dailyDice/${dateStr}`) || {}) : {};
   for (const p of ptsList) {
@@ -1191,9 +1190,9 @@ async function reclaimExpiredCards(today) {
   for (const [key, cards] of Object.entries(all || {})) {
     for (const [id, c] of Object.entries(cards || {})) {
       if (!poolCard(c) || !(c.expiresAt > through && c.expiresAt <= today)) continue;
-      let removed = false;
-      await fRef(`userCards/${key}/${id}`).transaction(cur => { if (cur === null) return null; removed = true; return null; });
-      if (removed) reclaimed[c.type] = (reclaimed[c.type] || 0) + 1;
+      let seen = null;
+      const rm = await fRef(`userCards/${key}/${id}`).transaction(cur => { seen = cur; return null; });
+      if (rm?.committed && seen !== null) reclaimed[c.type] = (reclaimed[c.type] || 0) + 1;
     }
   }
   for (const [type, n] of Object.entries(reclaimed)) {
@@ -1207,12 +1206,8 @@ async function reclaimExpiredCards(today) {
 async function checkAndAwardCard(name, number, today) {
   const entry = await fGet(`dailyCards/${today}/${number}`);
   if (!entry || entry.pickedBy != null) return null;
-  let claimed = false;
-  await fRef(`dailyCards/${today}/${number}/pickedBy`).transaction(cur => {
-    if (cur !== null) return;
-    claimed = true; return name;
-  });
-  if (!claimed) return null;
+  const claim = await fRef(`dailyCards/${today}/${number}/pickedBy`).transaction(cur => cur !== null ? undefined : name);
+  if (!claim?.committed) return null;
   const type = entry.type;
   const cardCfg = await fGet(`cardConfig/${type}`);
   const expMs = (cardCfg?.expireDays ?? CARD_DEFAULTS[type]?.expireDays ?? 30) * 86400000;
@@ -5253,13 +5248,8 @@ function App() {
     // 無人或人數不足，發「無人參加」通知後結束
     if (!result?.winner || pts.length < 2) {
       (async () => {
-        let didWrite = false;
-        await fRef(`weekly/${today}`).transaction(current => {
-          if (current !== null) return;
-          didWrite = true;
-          return { noParticipants: true };
-        });
-        if (didWrite) {
+        const wtx = await fRef(`weekly/${today}`).transaction(current => current !== null ? undefined : { noParticipants: true });
+        if (wtx?.committed) {
           await givePointsForDay(pts, absent, today);
           await reconcilePendingCardReturns(today);
           fetch(WEBHOOK_URL, {
@@ -5289,12 +5279,11 @@ function App() {
     const mines = resolveMines(pts);
     const rec = {winner:result.winner.name, rest:result.winner.rest, soloWin:result.soloWin, drawnNumber:result.drawnNumber, streak, participantNames:pts.map(p=>p.name), ...(mines.length > 0 && {mines}), ...(soloWinners.length > 1 && {winners: soloWinners.map(w=>w.name)}), ...(result.tiedParticipants && {tiedParticipants: result.tiedParticipants}), ...(skipStreak && {skipStreak: true}), ...(result.followRestUser && {followRestUser:result.followRestUser}), ...(isDoubleDay() && {specialDay: true}), ...(absent.length > 0 && {absentNames: absent}), ...(birthdayCardWinnerEntry && {birthdayCardWinner: birthdayCardWinnerEntry.name})};
     (async () => {
-      let didWrite = false;
-      await fRef(`weekly/${today}`).transaction(current => {
-        if (current !== null) return; // 已有紀錄，放棄寫入
-        didWrite = true;
-        return rec;
-      });
+      // 是否寫入成功一律看 transaction 回傳的 committed，不能在回呼裡設旗標：
+      // 回呼會先用本機快取跑一次，快取是空的會誤以為沒人寫過，之後伺服器駁回重跑時旗標已經設成 true 收不回來，
+      // 兩個同時開獎的瀏覽器就會都以為自己寫入成功，重複發點數、發卡、還池
+      const writeTx = await fRef(`weekly/${today}`).transaction(current => current !== null ? undefined : rec); // 已有紀錄，放棄寫入
+      const didWrite = !!writeTx?.committed;
       // 用 merge 不用整個覆蓋：本地算出來的 rec 不包含連勝保護卡/免付卡等後續才用 .update() 補寫的欄位，
       // 整個覆蓋會把即時監聽已經拿到的正確資料蓋掉（每次重新整理都會重演一次，欄位永遠顯示不出來）
       setWeekly(prev => ({...prev, [today]: {...(prev[today]||{}), ...rec}}));
@@ -5611,12 +5600,8 @@ function App() {
           let stolen = null, stolenVictim = null;
           for (const { victim, cardId } of pool) {
             let attempt = null;
-            const txResult = await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => {
-              if (cur === null) return null;
-              attempt = cur;
-              return null;
-            });
-            if (txResult.committed && attempt) { stolen = attempt; stolenVictim = victim; break; }
+            const txResult = await fRef(`userCards/${sanitizeKey(victim.name)}/${cardId}`).transaction(cur => { attempt = cur; return null; });
+            if (txResult?.committed && attempt) { stolen = attempt; stolenVictim = victim; break; }
           }
           if (stolen && stolenVictim) {
             const newRef = fRef(`userCards/${sanitizeKey(name)}`).push();
