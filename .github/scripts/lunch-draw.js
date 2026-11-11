@@ -133,16 +133,19 @@ function isWinnerOf(rec, name) {
 const STREAK_MAX_ABSENT = 10;
 const STREAK_MIN_PEOPLE = 4; // 與 index.html 一致：當日參加人數達此門檻才計入連勝
 // 連勝缺席額度：從連勝起算「累計」缺席達 STREAK_MAX_ABSENT 次連勝歸零，中途有出席、贏了都不重新計算；連勝中斷（輸或額度用完）後重新起算。
-// skipStreak 的日子整天略過（人數不足、保護卡），例外：保護卡日當天贏的人那場照樣算進他的連勝
+// 這天對 name 是否略過（不計輸贏、不累計缺席也不歸零）：人數不足的日子整天略過；
+// 連勝保護卡日只略過發動保護卡的人（streakProtectedBy，多人以「、」相連），其他人照常計算輸贏與缺席
+function isStreakSkipDay(rec, name) {
+  if (!rec?.skipStreak) return false;
+  if (!rec.streakProtectedBy) return true;
+  return rec.streakProtectedBy.split("、").includes(name);
+}
 function simulateStreak(weekly, name, today) {
   let wins = 0, absent = 0;
   for (const date of Object.keys(weekly || {}).filter(d => d < today).sort()) {
     const rec = weekly[date];
     if (!rec || rec.noParticipants) continue;
-    if (rec.skipStreak) {
-      if (rec.streakProtectedBy && isWinnerOf(rec, name)) wins++;
-      continue;
-    }
+    if (isStreakSkipDay(rec, name)) continue;
     // participantNames 是後來才加的欄位，早期紀錄沒有這個欄位時（undefined）沒辦法判斷是否缺席，直接看輸贏
     const wasAbsent = rec.absentNames?.includes(name) || (rec.participantNames && !rec.participantNames.includes(name));
     if (wasAbsent) {
@@ -253,7 +256,7 @@ async function main() {
     for (const date of pastDates) {
       const rec = weeklyAll[date];
       if (!rec) break;
-      if (rec.skipStreak) continue;
+      if (isStreakSkipDay(rec, result.winner.name)) continue;
       if (isWinnerOf(rec, result.winner.name)) { preservedStreak++; } else { break; }
     }
   }
